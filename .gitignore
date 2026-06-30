@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+venv/
+.venv/
+
+# Environment — NEVER commit these
+.env
+.env.local
+.env.production
+
+# Data — local Qdrant data, SQLite DB
+qora-backend/data/qdrant/
+qora-backend/data/qora.db
+qora-backend/data/backups/
+
+# Node
+node_modules/
+dist/
+.DS_Store
+
+# IDE
+.vscode/settings.json
+.idea/

@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>Qora</AssemblyName>
+    <RootNamespace>Qora</RootNamespace>
+    <PackageId>Qora</PackageId>
+    <Version>0.1.0</Version>
+    <Authors>Qora</Authors>
+    <Description>Official .NET client for Qora Vector Database</Description>
+    <PackageProjectUrl>https://qora.in</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/qora-db/qora-sdk-dotnet</RepositoryUrl>
+    <PackageTags>vector;search;ai;embeddings;rag</PackageTags>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Text.Json" Version="8.0.0" />
+  </ItemGroup>
+
+</Project>
