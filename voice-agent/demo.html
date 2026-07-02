@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dr. Sharma Clinic — AI Receptionist Demo</title>
+<title>Dr. Sharma Clinic — AI Receptionist</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -12,7 +12,6 @@
     color: #fff;
     min-height: 100vh;
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
     padding: 20px;
@@ -22,13 +21,12 @@
     border: 1px solid #222;
     border-radius: 20px;
     padding: 40px;
-    max-width: 420px;
+    max-width: 400px;
     width: 100%;
     text-align: center;
   }
   .logo {
-    width: 70px;
-    height: 70px;
+    width: 70px; height: 70px;
     background: linear-gradient(135deg, #6366f1, #8b5cf6);
     border-radius: 50%;
     display: flex;
@@ -38,7 +36,7 @@
     font-size: 30px;
   }
   h1 { font-size: 22px; margin-bottom: 6px; }
-  .subtitle { color: #888; font-size: 14px; margin-bottom: 30px; }
+  .subtitle { color: #888; font-size: 14px; margin-bottom: 24px; }
   .info {
     background: #1a1a1a;
     border-radius: 12px;
@@ -47,12 +45,13 @@
     text-align: left;
   }
   .info p { font-size: 13px; color: #aaa; margin-bottom: 6px; }
-  .info p span { color: #fff; }
-  .call-btn {
+  .info p:last-child { margin-bottom: 0; }
+  .info span { color: #fff; }
+  .btn {
     background: linear-gradient(135deg, #6366f1, #8b5cf6);
-    color: white;
+    color: #fff;
     border: none;
-    padding: 16px 32px;
+    padding: 16px 24px;
     border-radius: 50px;
     font-size: 16px;
     font-weight: 600;
@@ -62,38 +61,21 @@
     align-items: center;
     justify-content: center;
     gap: 10px;
-    transition: opacity 0.2s;
+    transition: all 0.2s;
   }
-  .call-btn:hover { opacity: 0.9; }
-  .call-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-  .status {
-    margin-top: 16px;
-    font-size: 13px;
-    color: #888;
-    min-height: 20px;
-  }
-  .status.active { color: #4ade80; }
-  .powered { margin-top: 30px; font-size: 11px; color: #444; }
-  .pulse {
-    display: inline-block;
-    width: 8px; height: 8px;
-    background: #4ade80;
-    border-radius: 50%;
-    margin-right: 6px;
-    animation: pulse 1.5s infinite;
-  }
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.3; }
-  }
+  .btn:hover { opacity: 0.9; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn.active { background: #dc2626; }
+  .status { margin-top: 14px; font-size: 13px; color: #666; }
+  .status.live { color: #4ade80; }
+  .powered { margin-top: 24px; font-size: 11px; color: #333; }
 </style>
 </head>
 <body>
-
 <div class="card">
   <div class="logo">🏥</div>
   <h1>Dr. Sharma Clinic</h1>
-  <p class="subtitle">AI Receptionist — Available 24/7</p>
+  <p class="subtitle">AI Receptionist — 24/7 Available</p>
 
   <div class="info">
     <p>📅 <span>Appointment Booking</span></p>
@@ -102,72 +84,63 @@
     <p>🌐 <span>Hindi & English</span></p>
   </div>
 
-  <button class="call-btn" id="callBtn" onclick="toggleCall()">
+  <button class="btn" id="btn" onclick="toggleCall()">
     📞 Talk to AI Receptionist
   </button>
-
-  <div class="status" id="status">Click to start — works in browser, no app needed</div>
+  <p class="status" id="status">Click to connect — no app needed</p>
   <p class="powered">Powered by Qora Voice AI</p>
 </div>
 
-<!-- Official Vapi Web SDK -->
-<script>
-  var vapiInstance = null;
-  const assistant = "314e9131-0984-4bd8-90a2-2cd5f24cb1ce";
-  const apiKey = "7b1bfc35-455d-4b0a-acf0-99a9a858ebdf";
-  const buttonConfig = {};
+<script type="module">
+  import Vapi from 'https://cdn.jsdelivr.net/npm/@vapi-ai/web@2.2.0/dist/vapi.js';
 
-  (function (d, t) {
-    var g = document.createElement(t),
-      s = d.getElementsByTagName(t)[0];
-    g.src =
-      "https://cdn.jsdelivr.net/gh/VapiAI/html-script-tag@latest/dist/assets/index.js";
-    g.defer = true;
-    g.async = true;
-    s.parentNode.insertBefore(g, s);
+  const PUBLIC_KEY = "7b1bfc35-455d-4b0a-acf0-99a9a858ebdf";
+  const ASSISTANT_ID = "314e9131-0984-4bd8-90a2-2cd5f24cb1ce";
 
-    g.onload = function () {
-      vapiInstance = window.vapiSDK.run({
-        apiKey: apiKey,
-        assistant: assistant,
-        config: buttonConfig,
+  const vapi = new Vapi(PUBLIC_KEY);
+  let active = false;
+
+  const btn = document.getElementById('btn');
+  const status = document.getElementById('status');
+
+  vapi.on('call-start', () => {
+    active = true;
+    btn.className = 'btn active';
+    btn.innerHTML = '🔴 End Call';
+    status.className = 'status live';
+    status.textContent = '● Connected — speak in Hindi or English';
+  });
+
+  vapi.on('call-end', () => {
+    active = false;
+    btn.className = 'btn';
+    btn.innerHTML = '📞 Talk to AI Receptionist';
+    status.className = 'status';
+    status.textContent = 'Call ended. Click to call again.';
+  });
+
+  vapi.on('error', (e) => {
+    console.error('Vapi error:', e);
+    btn.disabled = false;
+    status.className = 'status';
+    status.textContent = 'Error: ' + (e?.message || 'Try again');
+  });
+
+  window.toggleCall = function() {
+    if (active) {
+      vapi.stop();
+    } else {
+      btn.disabled = true;
+      status.textContent = 'Connecting...';
+      vapi.start(ASSISTANT_ID).then(() => {
+        btn.disabled = false;
+      }).catch(err => {
+        btn.disabled = false;
+        status.textContent = 'Failed to connect. Try again.';
+        console.error(err);
       });
-
-      vapiInstance.on("call-start", function () {
-        document.getElementById("callBtn").innerHTML = "🔴 End Call";
-        document.getElementById("callBtn").style.background = "#ef4444";
-        document.getElementById("status").innerHTML = '<span class="pulse"></span> Connected — speak in Hindi or English';
-        document.getElementById("status").className = "status active";
-      });
-
-      vapiInstance.on("call-end", function () {
-        document.getElementById("callBtn").innerHTML = "📞 Talk to AI Receptionist";
-        document.getElementById("callBtn").style.background = "linear-gradient(135deg, #6366f1, #8b5cf6)";
-        document.getElementById("status").textContent = "Call ended. Click to call again.";
-        document.getElementById("status").className = "status";
-      });
-
-      vapiInstance.on("error", function (e) {
-        console.error(e);
-        document.getElementById("status").textContent = "Error. Please try again.";
-      });
-    };
-  })(document, "script");
-
-  function toggleCall() {
-    if (!vapiInstance) {
-      document.getElementById("status").textContent = "Loading... please wait and try again.";
-      return;
     }
-    vapiInstance.send({ type: "add-message", message: { role: "system", content: "User clicked call button" } });
-    // Start or stop call
-    try {
-      vapiInstance.start(assistant);
-    } catch(e) {
-      vapiInstance.stop();
-    }
-  }
+  };
 </script>
-
 </body>
 </html>
