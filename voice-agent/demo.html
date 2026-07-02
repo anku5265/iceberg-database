@@ -116,14 +116,32 @@
   <p class="powered">Powered by Qora Voice AI</p>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@vapi-ai/web@2.0.0/dist/vapi.js"></script>
 <script>
+  // Load Vapi SDK properly
+
   // Replace with your Vapi Public Key and Assistant ID
   const VAPI_PUBLIC_KEY = "7b1bfc35-455d-4b0a-acf0-99a9a858ebdf";
   const ASSISTANT_ID = "314e9131-0984-4bd8-90a2-2cd5f24cb1ce";
 
   let vapi = null;
   let isCallActive = false;
+
+  // Load Vapi SDK
+  function loadVapiSDK() {
+    return new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/@vapi-ai/web@latest/dist/index.js';
+      script.onload = () => {
+        // Try different ways to access Vapi
+        if (window.Vapi) resolve(window.Vapi);
+        else if (window.vapi) resolve(window.vapi);
+        else if (typeof Vapi !== 'undefined') resolve(Vapi);
+        else reject(new Error('Vapi not found'));
+      };
+      script.onerror = reject;
+      document.head.appendChild(script);
+    });
+  }
 
   async function startCall() {
     const btn = document.getElementById('callBtn');
@@ -138,7 +156,8 @@
     status.textContent = 'Connecting...';
 
     try {
-      vapi = new window.Vapi(VAPI_PUBLIC_KEY);
+      const VapiClass = await loadVapiSDK();
+      vapi = new VapiClass(VAPI_PUBLIC_KEY);
 
       vapi.on('call-start', () => {
         isCallActive = true;
