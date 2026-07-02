@@ -116,6 +116,7 @@
   <p class="powered">Powered by Qora Voice AI</p>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@vapi-ai/web@2.0.0/dist/vapi.js"></script>
 <script>
   // Replace with your Vapi Public Key and Assistant ID
   const VAPI_PUBLIC_KEY = "7b1bfc35-455d-4b0a-acf0-99a9a858ebdf";
@@ -123,15 +124,6 @@
 
   let vapi = null;
   let isCallActive = false;
-
-  async function loadVapi() {
-    return new Promise((resolve) => {
-      const script = document.createElement('script');
-      script.src = 'https://cdn.jsdelivr.net/npm/@vapi-ai/web@latest/dist/vapi.js';
-      script.onload = resolve;
-      document.head.appendChild(script);
-    });
-  }
 
   async function startCall() {
     const btn = document.getElementById('callBtn');
@@ -146,7 +138,6 @@
     status.textContent = 'Connecting...';
 
     try {
-      await loadVapi();
       vapi = new window.Vapi(VAPI_PUBLIC_KEY);
 
       vapi.on('call-start', () => {
