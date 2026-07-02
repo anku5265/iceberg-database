@@ -73,15 +73,10 @@
     min-height: 20px;
   }
   .status.active { color: #4ade80; }
-  .powered {
-    margin-top: 30px;
-    font-size: 11px;
-    color: #444;
-  }
+  .powered { margin-top: 30px; font-size: 11px; color: #444; }
   .pulse {
     display: inline-block;
-    width: 8px;
-    height: 8px;
+    width: 8px; height: 8px;
     background: #4ade80;
     border-radius: 50%;
     margin-right: 6px;
@@ -107,89 +102,69 @@
     <p>🌐 <span>Hindi & English</span></p>
   </div>
 
-  <button class="call-btn" id="callBtn" onclick="startCall()">
+  <button class="call-btn" id="callBtn" onclick="toggleCall()">
     📞 Talk to AI Receptionist
   </button>
 
   <div class="status" id="status">Click to start — works in browser, no app needed</div>
-
   <p class="powered">Powered by Qora Voice AI</p>
 </div>
 
+<!-- Official Vapi Web SDK -->
 <script>
-  // Load Vapi SDK properly
+  var vapiInstance = null;
+  const assistant = "314e9131-0984-4bd8-90a2-2cd5f24cb1ce";
+  const apiKey = "7b1bfc35-455d-4b0a-acf0-99a9a858ebdf";
+  const buttonConfig = {};
 
-  // Replace with your Vapi Public Key and Assistant ID
-  const VAPI_PUBLIC_KEY = "7b1bfc35-455d-4b0a-acf0-99a9a858ebdf";
-  const ASSISTANT_ID = "314e9131-0984-4bd8-90a2-2cd5f24cb1ce";
+  (function (d, t) {
+    var g = document.createElement(t),
+      s = d.getElementsByTagName(t)[0];
+    g.src =
+      "https://cdn.jsdelivr.net/gh/VapiAI/html-script-tag@latest/dist/assets/index.js";
+    g.defer = true;
+    g.async = true;
+    s.parentNode.insertBefore(g, s);
 
-  let vapi = null;
-  let isCallActive = false;
+    g.onload = function () {
+      vapiInstance = window.vapiSDK.run({
+        apiKey: apiKey,
+        assistant: assistant,
+        config: buttonConfig,
+      });
 
-  // Load Vapi SDK
-  function loadVapiSDK() {
-    return new Promise((resolve, reject) => {
-      const script = document.createElement('script');
-      script.src = 'https://cdn.jsdelivr.net/npm/@vapi-ai/web@latest/dist/index.js';
-      script.onload = () => {
-        // Try different ways to access Vapi
-        if (window.Vapi) resolve(window.Vapi);
-        else if (window.vapi) resolve(window.vapi);
-        else if (typeof Vapi !== 'undefined') resolve(Vapi);
-        else reject(new Error('Vapi not found'));
-      };
-      script.onerror = reject;
-      document.head.appendChild(script);
-    });
-  }
+      vapiInstance.on("call-start", function () {
+        document.getElementById("callBtn").innerHTML = "🔴 End Call";
+        document.getElementById("callBtn").style.background = "#ef4444";
+        document.getElementById("status").innerHTML = '<span class="pulse"></span> Connected — speak in Hindi or English';
+        document.getElementById("status").className = "status active";
+      });
 
-  async function startCall() {
-    const btn = document.getElementById('callBtn');
-    const status = document.getElementById('status');
+      vapiInstance.on("call-end", function () {
+        document.getElementById("callBtn").innerHTML = "📞 Talk to AI Receptionist";
+        document.getElementById("callBtn").style.background = "linear-gradient(135deg, #6366f1, #8b5cf6)";
+        document.getElementById("status").textContent = "Call ended. Click to call again.";
+        document.getElementById("status").className = "status";
+      });
 
-    if (isCallActive) {
-      vapi.stop();
+      vapiInstance.on("error", function (e) {
+        console.error(e);
+        document.getElementById("status").textContent = "Error. Please try again.";
+      });
+    };
+  })(document, "script");
+
+  function toggleCall() {
+    if (!vapiInstance) {
+      document.getElementById("status").textContent = "Loading... please wait and try again.";
       return;
     }
-
-    btn.disabled = true;
-    status.textContent = 'Connecting...';
-
+    vapiInstance.send({ type: "add-message", message: { role: "system", content: "User clicked call button" } });
+    // Start or stop call
     try {
-      const VapiClass = await loadVapiSDK();
-      vapi = new VapiClass(VAPI_PUBLIC_KEY);
-
-      vapi.on('call-start', () => {
-        isCallActive = true;
-        btn.disabled = false;
-        btn.textContent = '🔴 End Call';
-        btn.style.background = '#ef4444';
-        status.innerHTML = '<span class="pulse"></span> Connected — speak in Hindi or English';
-        status.className = 'status active';
-      });
-
-      vapi.on('call-end', () => {
-        isCallActive = false;
-        btn.disabled = false;
-        btn.innerHTML = '📞 Talk to AI Receptionist';
-        btn.style.background = 'linear-gradient(135deg, #6366f1, #8b5cf6)';
-        status.textContent = 'Call ended. Click to call again.';
-        status.className = 'status';
-      });
-
-      vapi.on('error', (e) => {
-        btn.disabled = false;
-        status.textContent = 'Error: ' + (e.message || 'Something went wrong');
-        status.className = 'status';
-        console.error(e);
-      });
-
-      await vapi.start(ASSISTANT_ID);
-
-    } catch (err) {
-      btn.disabled = false;
-      status.textContent = 'Failed to connect. Try again.';
-      console.error(err);
+      vapiInstance.start(assistant);
+    } catch(e) {
+      vapiInstance.stop();
     }
   }
 </script>
