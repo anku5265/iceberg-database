@@ -7,6 +7,7 @@ import ApiKeys from './pages/ApiKeys'
 import Logs from './pages/Logs'
 import Docs from './pages/Docs'
 import Login from './pages/Login'
+import LoginKey from './pages/LoginKey'
 import Signup from './pages/Signup'
 import Admin from './pages/Admin'
 import Assistants from './pages/Assistants'
@@ -30,6 +31,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/login/key" element={<LoginKey />} />
       <Route path="/signup" element={<Signup />} />
       <Route path="/" element={<ProtectedLayout><Overview /></ProtectedLayout>} />
       <Route path="/collections" element={<ProtectedLayout><Collections /></ProtectedLayout>} />

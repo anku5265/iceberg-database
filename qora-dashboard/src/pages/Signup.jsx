@@ -24,6 +24,7 @@ export default function Signup() {
       // Save session
       localStorage.setItem('qora_user', JSON.stringify(data))
       localStorage.setItem('qora_api_key', data.api_key)
+      localStorage.setItem('qora_project_id', data.project_id)
       navigate('/')
     } catch {
       setError('Could not connect to server')
