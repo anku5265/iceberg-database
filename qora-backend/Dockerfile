@@ -23,4 +23,4 @@ RUN python -c "from fastembed import TextEmbedding; TextEmbedding(model_name='se
 EXPOSE 8000
 ENV PYTHONUNBUFFERED=1
 
-CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 1"]
+CMD ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
