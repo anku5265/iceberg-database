@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 
+const BASE = import.meta.env.VITE_API_URL || '/api'
+
 export default function Signup() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -15,7 +17,7 @@ export default function Signup() {
     if (password.length < 8) { setError('Password must be at least 8 characters'); return }
     setLoading(true)
     try {
-      const r = await fetch('/api/auth/signup', {
+      const r = await fetch(`${BASE}/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
