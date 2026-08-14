@@ -2,11 +2,15 @@ import { useEffect, useState } from 'react'
 import { api } from '../lib/api'
 import { API_URL } from '../lib/config'
 import { Link } from 'react-router-dom'
+import OnboardingModal from '../components/OnboardingModal'
 
 export default function Overview() {
   const [collections, setCollections] = useState([])
   const [status, setStatus] = useState('checking')
   const [stats, setStats] = useState({})
+  const [showOnboarding, setShowOnboarding] = useState(
+    !localStorage.getItem('qora_onboarding_done')
+  )
 
   useEffect(() => {
     api.health().then(() => setStatus('online')).catch(() => setStatus('offline'))
@@ -14,8 +18,14 @@ export default function Overview() {
     api.getStats().then(d => setStats(d)).catch(() => {})
   }, [])
 
+  function handleOnboardingDone(newCollection) {
+    setShowOnboarding(false)
+    api.getCollections().then(d => setCollections(d.collections || []))
+  }
+
   return (
     <div className="p-8 max-w-5xl">
+      {showOnboarding && <OnboardingModal onDone={handleOnboardingDone} />}
       <div className="mb-8">
         <h1 className="text-2xl font-semibold text-white mb-1">Overview</h1>
         <p className="text-[#666] text-sm">Your Qora workspace</p>
