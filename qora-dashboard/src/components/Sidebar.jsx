@@ -12,17 +12,17 @@ const links = [
   { to: '/admin', label: 'Admin', icon: <AdminIcon /> },
 ]
 
-export default function Sidebar() {
+export default function Sidebar({ open = true }) {
   return (
-    <aside className="w-56 min-h-screen bg-[#111111] border-r border-[#222] flex flex-col">
+    <aside className={`${open ? 'w-56' : 'w-0'} shrink-0 min-h-screen bg-[#111111] border-r border-[#222] flex flex-col overflow-hidden transition-all duration-200`}>
       {/* Logo */}
-      <div className="px-5 py-5 border-b border-[#222]">
+      <div className="px-5 py-5 border-b border-[#222] whitespace-nowrap">
         <span className="text-white font-semibold text-lg">Qora</span>
         <span className="ml-2 text-xs text-[#666] bg-[#1a1a1a] px-2 py-0.5 rounded-full border border-[#2a2a2a]">beta</span>
       </div>
 
       {/* Nav links */}
-      <nav className="flex-1 px-3 py-4 space-y-0.5">
+      <nav className="flex-1 px-3 py-4 space-y-0.5 whitespace-nowrap">
         {links.map(l => (
           <NavLink
             key={l.to}

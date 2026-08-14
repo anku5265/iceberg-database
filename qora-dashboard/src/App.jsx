@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import Sidebar from './components/Sidebar'
 import ProfileMenu from './components/ProfileMenu'
@@ -20,12 +21,24 @@ function isLoggedIn() {
 
 function ProtectedLayout({ children }) {
   if (!isLoggedIn()) return <Navigate to="/login" replace />
+  const [sidebarOpen, setSidebarOpen] = useState(true)
   return (
     <div className="flex min-h-screen bg-[#0a0a0a] text-white">
-      <Sidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <Sidebar open={sidebarOpen} />
+      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         {/* Top bar */}
-        <header className="h-12 border-b border-[#1a1a1a] flex items-center justify-end px-6 shrink-0">
+        <header className="h-12 border-b border-[#1a1a1a] flex items-center justify-between px-4 shrink-0">
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="p-1.5 rounded-md text-[#555] hover:text-white hover:bg-[#1a1a1a] transition"
+            aria-label="Toggle sidebar"
+          >
+            <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+              <line x1="3" y1="6" x2="21" y2="6"/>
+              <line x1="3" y1="12" x2="21" y2="12"/>
+              <line x1="3" y1="18" x2="21" y2="18"/>
+            </svg>
+          </button>
           <ProfileMenu />
         </header>
         <main className="flex-1 overflow-auto">{children}</main>
