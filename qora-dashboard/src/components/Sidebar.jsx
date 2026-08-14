@@ -1,5 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
-import { NavLink, useNavigate } from 'react-router-dom'
+import { NavLink } from 'react-router-dom'
 
 const links = [
   { to: '/', label: 'Overview', icon: <GridIcon /> },
@@ -14,31 +13,6 @@ const links = [
 ]
 
 export default function Sidebar() {
-  const navigate = useNavigate()
-  const user = JSON.parse(localStorage.getItem('qora_user') || '{}')
-  const [open, setOpen] = useState(false)
-  const ref = useRef(null)
-
-  // Close dropdown on outside click
-  useEffect(() => {
-    function handler(e) {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false)
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [])
-
-  const logout = () => {
-    localStorage.removeItem('qora_api_key')
-    localStorage.removeItem('qora_user')
-    localStorage.removeItem('qora_project_id')
-    localStorage.removeItem('qora_api_key_prefix')
-    navigate('/login')
-  }
-
-  // Avatar initials from email
-  const initials = user.email ? user.email[0].toUpperCase() : '?'
-
   return (
     <aside className="w-56 min-h-screen bg-[#111111] border-r border-[#222] flex flex-col">
       {/* Logo */}
@@ -67,75 +41,6 @@ export default function Sidebar() {
           </NavLink>
         ))}
       </nav>
-
-      {/* Profile button — bottom */}
-      <div className="px-3 py-4 border-t border-[#222]" ref={ref}>
-        {/* Dropdown */}
-        {open && (
-          <div className="mb-2 bg-[#161616] border border-[#2a2a2a] rounded-xl shadow-2xl overflow-hidden">
-            {/* User info */}
-            <div className="px-4 py-3 border-b border-[#1f1f1f]">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-600 to-violet-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
-                  {initials}
-                </div>
-                <div className="min-w-0">
-                  <div className="text-white text-xs font-medium truncate">{user.email || 'Unknown'}</div>
-                  <div className="text-[#555] text-xs mt-0.5">Free plan</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Menu items */}
-            <div className="py-1">
-              <button
-                onClick={() => { setOpen(false); navigate('/apikeys') }}
-                className="w-full flex items-center gap-3 px-4 py-2 text-sm text-[#888] hover:text-white hover:bg-[#1f1f1f] transition text-left"
-              >
-                <KeyIcon />
-                API Keys
-              </button>
-              <button
-                onClick={() => { setOpen(false); navigate('/admin') }}
-                className="w-full flex items-center gap-3 px-4 py-2 text-sm text-[#888] hover:text-white hover:bg-[#1f1f1f] transition text-left"
-              >
-                <AdminIcon />
-                Account
-              </button>
-            </div>
-
-            <div className="border-t border-[#1f1f1f] py-1">
-              <button
-                onClick={logout}
-                className="w-full flex items-center gap-3 px-4 py-2 text-sm text-[#666] hover:text-red-400 hover:bg-[#1f1f1f] transition text-left"
-              >
-                <LogoutIcon />
-                Sign out
-              </button>
-            </div>
-
-            <div className="px-4 py-2 border-t border-[#1f1f1f]">
-              <div className="text-[#444] text-xs">v0.1.0</div>
-            </div>
-          </div>
-        )}
-
-        {/* Profile trigger button */}
-        <button
-          onClick={() => setOpen(!open)}
-          className="w-full flex items-center gap-3 px-3 py-2 rounded-md hover:bg-[#1a1a1a] transition group"
-        >
-          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-600 to-violet-600 flex items-center justify-center text-white text-[10px] font-bold shrink-0">
-            {initials}
-          </div>
-          <div className="flex-1 min-w-0 text-left">
-            <div className="text-xs text-[#888] group-hover:text-white transition truncate">
-              {user.email || 'Account'}
-            </div>
-          </div>
-          <ChevronIcon className={`transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
-        </button>
-      </div>
     </aside>
   )
 }

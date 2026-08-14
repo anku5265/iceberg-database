@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import Sidebar from './components/Sidebar'
+import ProfileMenu from './components/ProfileMenu'
 import Overview from './pages/Overview'
 import Collections from './pages/Collections'
 import Explorer from './pages/Explorer'
@@ -22,7 +23,13 @@ function ProtectedLayout({ children }) {
   return (
     <div className="flex min-h-screen bg-[#0a0a0a] text-white">
       <Sidebar />
-      <main className="flex-1 overflow-auto">{children}</main>
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Top bar */}
+        <header className="h-12 border-b border-[#1a1a1a] flex items-center justify-end px-6 shrink-0">
+          <ProfileMenu />
+        </header>
+        <main className="flex-1 overflow-auto">{children}</main>
+      </div>
     </div>
   )
 }
