@@ -28,16 +28,16 @@ const groups = [
 
 export default function Sidebar({ open = true }) {
   return (
-    <aside className={`${open ? 'w-56' : 'w-14'} shrink-0 min-h-screen bg-[#0d0d0d] border-r border-[#1a1a1a] flex flex-col overflow-hidden transition-all duration-200`}>
+    <aside className={`${open ? 'w-56' : 'w-14'} shrink-0 min-h-screen bg-[var(--bg-surface)] border-r border-[var(--border)] flex flex-col overflow-hidden transition-all duration-200`}>
       {/* Logo */}
-      <div className="px-4 py-[18px] border-b border-[#1a1a1a] flex items-center">
+      <div className="px-4 py-[18px] border-b border-[var(--border)] flex items-center">
         {open ? (
           <>
-            <span className="text-white font-bold text-base tracking-tight whitespace-nowrap">Qora</span>
-            <span className="ml-2 text-[10px] text-[#555] bg-[#1a1a1a] px-1.5 py-0.5 rounded border border-[#252525] whitespace-nowrap font-medium uppercase tracking-wider">beta</span>
+            <span className="text-[var(--text-primary)] font-bold text-base tracking-tight whitespace-nowrap">Qora</span>
+            <span className="ml-2 text-[10px] text-[var(--text-muted)] bg-[var(--bg-hover)] px-1.5 py-0.5 rounded border border-[var(--border2)] whitespace-nowrap font-medium uppercase tracking-wider">beta</span>
           </>
         ) : (
-          <span className="text-white font-bold text-base mx-auto">Q</span>
+          <span className="text-[var(--text-primary)] font-bold text-base mx-auto">Q</span>
         )}
       </div>
 
@@ -47,7 +47,7 @@ export default function Sidebar({ open = true }) {
           <div key={gi}>
             {group.label && open && (
               <div className="px-3 mb-1">
-                <span className="text-[10px] font-semibold text-[#3a3a3a] uppercase tracking-widest">{group.label}</span>
+                <span className="text-[10px] font-semibold text-[var(--text-dim)] uppercase tracking-widest">{group.label}</span>
               </div>
             )}
             <div className="space-y-0.5">
@@ -62,8 +62,8 @@ export default function Sidebar({ open = true }) {
                       open ? '' : 'justify-center'
                     } ${
                       isActive
-                        ? 'bg-[#1c1c1c] text-white border border-[#272727]'
-                        : 'text-[#666] hover:text-[#ccc] hover:bg-[#161616] border border-transparent'
+                        ? 'bg-[var(--bg-hover)] text-[var(--text-primary)] border border-[var(--border2)]'
+                        : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] border border-transparent'
                     }`
                   }
                 >
@@ -72,7 +72,7 @@ export default function Sidebar({ open = true }) {
                 </NavLink>
               ))}
             </div>
-            {gi < groups.length - 1 && open && <div className="mt-3 mx-2 h-px bg-[#1a1a1a]"/>}
+            {gi < groups.length - 1 && open && <div className="mt-3 mx-2 h-px bg-[var(--border)]"/>}
           </div>
         ))}
       </nav>

@@ -27,10 +27,10 @@ function ProtectedLayout({ children }) {
       <Sidebar open={sidebarOpen} />
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         {/* Top bar */}
-        <header className="h-12 bg-[#0d0d0d] border-b border-[#1a1a1a] flex items-center justify-between px-4 shrink-0">
+        <header className="h-12 bg-[var(--bg-surface)] border-b border-[var(--border)] flex items-center justify-between px-4 shrink-0">
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-1.5 rounded-md text-[#444] hover:text-[#aaa] hover:bg-[#1a1a1a] transition"
+            className="p-1.5 rounded-md text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition"
             aria-label="Toggle sidebar"
           >
             <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
