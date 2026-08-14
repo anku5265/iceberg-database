@@ -11,74 +11,72 @@ export default function Explorer() {
   const [alpha, setAlpha] = useState(0.5)
   const [results, setResults] = useState(null)
   const [loading, setLoading] = useState(false)
-  const [tab, setTab] = useState('search') // search | upload | text
+  const [tab, setTab] = useState('search')
   const [text, setText] = useState('')
   const [file, setFile] = useState(null)
   const [indexing, setIndexing] = useState(false)
   const [indexResult, setIndexResult] = useState(null)
 
-  useEffect(() => {
-    api.getCollections().then(d => setCollections(d.collections || []))
-  }, [])
+  useEffect(() => { api.getCollections().then(d => setCollections(d.collections || [])) }, [])
 
   const search = async (e) => {
     e.preventDefault()
     if (!query.trim() || !collection) return
-    setLoading(true)
-    setResults(null)
+    setLoading(true); setResults(null)
     const res = await api.search(collection, query, 5, searchType, alpha)
-    setResults(res)
-    setLoading(false)
+    setResults(res); setLoading(false)
   }
 
   const indexText = async (e) => {
     e.preventDefault()
     if (!text.trim() || !collection) return
-    setIndexing(true)
-    setIndexResult(null)
+    setIndexing(true); setIndexResult(null)
     const res = await api.indexText(collection, text)
-    setIndexResult(res)
-    setIndexing(false)
-    setText('')
+    setIndexResult(res); setIndexing(false); setText('')
   }
 
   const uploadFile = async (e) => {
     e.preventDefault()
     if (!file || !collection) return
-    setIndexing(true)
-    setIndexResult(null)
+    setIndexing(true); setIndexResult(null)
     const res = await api.uploadFile(collection, file)
-    setIndexResult(res)
-    setIndexing(false)
-    setFile(null)
+    setIndexResult(res); setIndexing(false); setFile(null)
   }
 
   return (
     <div className="p-8 max-w-5xl">
-      <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-white mb-1">Explorer</h1>
-        <p className="text-[#666] text-sm">Search, upload, and explore your vectors</p>
+      {/* Header */}
+      <div className="flex items-start justify-between mb-8">
+        <div>
+          <h1 className="text-xl font-semibold text-white tracking-tight">Explorer</h1>
+          <p className="text-[#555] text-sm mt-0.5">Search, index, and explore your vectors</p>
+        </div>
+        {/* Collection selector */}
+        <div className="flex items-center gap-2">
+          <label className="text-[#444] text-xs font-medium">Collection</label>
+          <select value={collection} onChange={e => setCollection(e.target.value)}
+            className="bg-[#111] border border-[#1e1e1e] text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-600 min-w-44">
+            <option value="">Select collection</option>
+            {collections.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </div>
       </div>
 
-      {/* Collection selector */}
-      <div className="mb-6">
-        <label className="text-[#888] text-xs mb-2 block">Collection</label>
-        <select
-          value={collection}
-          onChange={e => setCollection(e.target.value)}
-          className="bg-[#111] border border-[#222] text-white text-sm rounded-md px-3 py-2 focus:outline-none focus:border-blue-600 min-w-48"
-        >
-          <option value="">Select collection</option>
-          {collections.map(c => <option key={c} value={c}>{c}</option>)}
-        </select>
-      </div>
+      {!collection && (
+        <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-3 mb-6 flex items-center gap-3">
+          <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24" className="text-amber-400 shrink-0">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"/>
+          </svg>
+          <p className="text-amber-400 text-sm">Select a collection to get started</p>
+        </div>
+      )}
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-6 bg-[#111] border border-[#222] rounded-lg p-1 w-fit">
-        {['search', 'text', 'upload'].map(t => (
-          <button key={t} onClick={() => setTab(t)}
-            className={`px-4 py-1.5 rounded-md text-sm font-medium transition capitalize ${tab === t ? 'bg-[#1e1e1e] text-white' : 'text-[#666] hover:text-white'}`}>
-            {t === 'search' ? 'Search' : t === 'text' ? 'Index Text' : 'Upload File'}
+      <div className="flex gap-1 mb-6 bg-[#111] border border-[#1e1e1e] rounded-xl p-1 w-fit">
+        {[['search','Search'],['text','Index Text'],['upload','Upload File']].map(([val, label]) => (
+          <button key={val} onClick={() => setTab(val)}
+            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition ${tab === val ? 'bg-[#1e1e1e] text-white shadow-sm' : 'text-[#555] hover:text-[#aaa]'}`}>
+            {label}
           </button>
         ))}
       </div>
@@ -88,64 +86,75 @@ export default function Explorer() {
         <div>
           <form onSubmit={search} className="space-y-3 mb-6">
             <div className="flex gap-3">
-              <input
-                value={query}
-                onChange={e => setQuery(e.target.value)}
-                placeholder="Search semantically..."
-                className="flex-1 bg-[#111] border border-[#222] rounded-md px-4 py-2.5 text-white text-sm focus:outline-none focus:border-blue-600 placeholder-[#444]"
-              />
-              <button type="submit" disabled={loading || !collection}
-                className="bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white text-sm font-medium px-5 py-2.5 rounded-md transition">
+              <input value={query} onChange={e => setQuery(e.target.value)}
+                placeholder="Type your search query..."
+                className="flex-1 bg-[#111] border border-[#1e1e1e] rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-600 placeholder-[#333]" />
+              <button type="submit" disabled={loading || !collection || !query.trim()}
+                className="bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white text-sm font-medium px-6 py-3 rounded-xl transition">
                 {loading ? 'Searching...' : 'Search'}
               </button>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="flex gap-1 bg-[#111] border border-[#222] rounded-lg p-1">
-                {[['hybrid','Hybrid'],['semantic','Semantic'],['keyword','Keyword']].map(([val,label]) => (
+
+            {/* Search type + alpha */}
+            <div className="flex items-center gap-4 flex-wrap">
+              <div className="flex gap-1 bg-[#111] border border-[#1e1e1e] rounded-lg p-1">
+                {[['hybrid','Hybrid'],['semantic','Semantic'],['keyword','Keyword']].map(([val, label]) => (
                   <button key={val} type="button" onClick={() => setSearchType(val)}
-                    className={`px-3 py-1 rounded-md text-xs font-medium transition ${searchType === val ? 'bg-[#1e1e1e] text-white' : 'text-[#666] hover:text-white'}`}>
+                    className={`px-3 py-1 rounded-md text-xs font-medium transition ${searchType === val ? 'bg-[#1e1e1e] text-white' : 'text-[#555] hover:text-[#aaa]'}`}>
                     {label}
                   </button>
                 ))}
               </div>
               {searchType === 'hybrid' && (
-                <div className="flex items-center gap-2 text-xs text-[#666]">
+                <div className="flex items-center gap-3 text-xs text-[#444]">
                   <span>Keyword</span>
                   <input type="range" min="0" max="1" step="0.1" value={alpha}
                     onChange={e => setAlpha(parseFloat(e.target.value))}
                     className="w-24 accent-blue-500" />
                   <span>Semantic</span>
-                  <span className="text-blue-400 font-mono ml-1">{alpha}</span>
+                  <span className="text-blue-400 font-mono bg-blue-500/10 px-2 py-0.5 rounded-md border border-blue-500/20">{alpha}</span>
                 </div>
               )}
             </div>
           </form>
 
+          {loading && (
+            <div className="flex items-center gap-3 text-[#555] text-sm py-8 justify-center">
+              <div className="w-4 h-4 border-2 border-[#333] border-t-blue-500 rounded-full animate-spin"/>
+              Searching...
+            </div>
+          )}
+
           {results && (
             <div>
-              <div className="text-xs text-[#555] mb-3">{results.results?.length || 0} results for "{results.query}"</div>
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-xs text-[#444] font-semibold uppercase tracking-wider">{results.results?.length || 0} results</span>
+                <div className="flex-1 h-px bg-[#1a1a1a]"/>
+                <span className="text-xs text-[#333]">"{results.query}"</span>
+              </div>
               {results.results?.length === 0 ? (
-                <div className="bg-[#111] border border-[#222] rounded-lg p-8 text-center text-[#555] text-sm">
-                  No results found. Try indexing some content first.
+                <div className="bg-[#111] border border-[#1e1e1e] rounded-xl p-12 text-center">
+                  <p className="text-[#555] text-sm">No results — try indexing some content first</p>
                 </div>
               ) : (
                 <div className="space-y-3">
                   {results.results?.map((r, i) => (
-                    <div key={i} className="bg-[#111] border border-[#222] rounded-lg p-4 hover:border-[#333] transition">
-                      <div className="flex items-start justify-between mb-2">
-                        <span className="text-xs text-[#555] font-mono">#{i + 1}</span>
+                    <div key={i} className="bg-[#111] border border-[#1e1e1e] hover:border-[#272727] rounded-xl p-4 transition">
+                      <div className="flex items-center justify-between mb-2.5">
+                        <span className="text-[#333] text-xs font-mono">#{i + 1}</span>
                         <div className="flex items-center gap-2">
                           {r.metadata?.source && (
-                            <span className="text-xs text-[#555] bg-[#1a1a1a] px-2 py-0.5 rounded border border-[#222]">
-                              {r.metadata.source}
-                            </span>
+                            <span className="text-xs text-[#555] bg-[#1a1a1a] px-2 py-0.5 rounded-full border border-[#252525]">{r.metadata.source}</span>
                           )}
-                          <span className={`text-xs font-mono px-2 py-0.5 rounded border ${r.score > 0.7 ? 'text-green-400 border-green-900 bg-green-900/20' : r.score > 0.5 ? 'text-yellow-400 border-yellow-900 bg-yellow-900/20' : 'text-[#666] border-[#222]'}`}>
+                          <span className={`text-xs font-mono font-semibold px-2.5 py-0.5 rounded-full border
+                            ${r.score > 0.7 ? 'text-emerald-400 border-emerald-500/20 bg-emerald-500/10'
+                            : r.score > 0.5 ? 'text-amber-400 border-amber-500/20 bg-amber-500/10'
+                            : 'text-[#555] border-[#252525] bg-[#1a1a1a]'}`}>
                             {(r.score * 100).toFixed(1)}%
                           </span>
                         </div>
                       </div>
-                      <p className="text-[#ccc] text-sm leading-relaxed">{r.text}</p>
+                      <p className="text-[#bbb] text-sm leading-relaxed">{r.text}</p>
                     </div>
                   ))}
                 </div>
@@ -158,20 +167,18 @@ export default function Explorer() {
       {/* Index text tab */}
       {tab === 'text' && (
         <form onSubmit={indexText}>
-          <textarea
-            value={text}
-            onChange={e => setText(e.target.value)}
-            placeholder="Paste your text here to index it."
+          <textarea value={text} onChange={e => setText(e.target.value)}
+            placeholder="Paste your text here to index it into the selected collection..."
             rows={8}
-            className="w-full bg-[#111] border border-[#222] rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-600 placeholder-[#444] resize-none mb-3"
-          />
+            className="w-full bg-[#111] border border-[#1e1e1e] rounded-xl px-4 py-3.5 text-white text-sm focus:outline-none focus:border-blue-600 placeholder-[#333] resize-none mb-3 leading-relaxed" />
           {indexResult && (
-            <div className="bg-green-900/20 border border-green-900 rounded-md px-4 py-2 text-green-400 text-sm mb-3">
-              ✓ Indexed {indexResult.chunks_indexed} chunk{indexResult.chunks_indexed !== 1 ? 's' : ''}
+            <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-4 py-3 text-emerald-400 text-sm mb-3">
+              <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+              Indexed {indexResult.chunks_indexed} chunk{indexResult.chunks_indexed !== 1 ? 's' : ''}
             </div>
           )}
-          <button type="submit" disabled={indexing || !collection}
-            className="bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white text-sm font-medium px-5 py-2.5 rounded-md transition">
+          <button type="submit" disabled={indexing || !collection || !text.trim()}
+            className="bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white text-sm font-medium px-5 py-2.5 rounded-xl transition">
             {indexing ? 'Indexing...' : 'Index Text'}
           </button>
         </form>
@@ -180,31 +187,40 @@ export default function Explorer() {
       {/* Upload file tab */}
       {tab === 'upload' && (
         <form onSubmit={uploadFile}>
-          <div
-            className="border-2 border-dashed border-[#222] hover:border-[#333] rounded-lg p-12 text-center mb-3 transition cursor-pointer"
-            onClick={() => document.getElementById('fileInput').click()}
-          >
+          <div onClick={() => document.getElementById('fileInput').click()}
+            className="border-2 border-dashed border-[#1e1e1e] hover:border-[#2a2a2a] rounded-xl p-16 text-center mb-3 transition cursor-pointer group">
             <input id="fileInput" type="file" accept=".pdf,.txt,.md" className="hidden"
               onChange={e => setFile(e.target.files[0])} />
             {file ? (
               <div>
+                <div className="w-10 h-10 bg-blue-500/10 rounded-xl flex items-center justify-center mx-auto mb-3">
+                  <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24" className="text-blue-400">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/>
+                  </svg>
+                </div>
                 <p className="text-white text-sm font-medium">{file.name}</p>
-                <p className="text-[#555] text-xs mt-1">{(file.size / 1024).toFixed(1)} KB</p>
+                <p className="text-[#444] text-xs mt-1">{(file.size / 1024).toFixed(1)} KB</p>
               </div>
             ) : (
               <div>
+                <div className="w-10 h-10 bg-[#1a1a1a] rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:bg-[#222] transition">
+                  <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24" className="text-[#555]">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                  </svg>
+                </div>
                 <p className="text-[#666] text-sm">Drop a file or click to browse</p>
-                <p className="text-[#444] text-xs mt-1">PDF, TXT, MD supported</p>
+                <p className="text-[#333] text-xs mt-1">PDF, TXT, MD</p>
               </div>
             )}
           </div>
           {indexResult && (
-            <div className="bg-green-900/20 border border-green-900 rounded-md px-4 py-2 text-green-400 text-sm mb-3">
-              ✓ Indexed {indexResult.chunks_indexed} chunks from {indexResult.filename}
+            <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-4 py-3 text-emerald-400 text-sm mb-3">
+              <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+              Indexed {indexResult.chunks_indexed} chunks from {indexResult.filename}
             </div>
           )}
           <button type="submit" disabled={indexing || !file || !collection}
-            className="bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white text-sm font-medium px-5 py-2.5 rounded-md transition">
+            className="bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white text-sm font-medium px-5 py-2.5 rounded-xl transition">
             {indexing ? 'Uploading...' : 'Upload & Index'}
           </button>
         </form>
