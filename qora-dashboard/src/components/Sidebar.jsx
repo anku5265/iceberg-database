@@ -14,30 +14,39 @@ const links = [
 
 export default function Sidebar({ open = true }) {
   return (
-    <aside className={`${open ? 'w-56' : 'w-0'} shrink-0 min-h-screen bg-[#111111] border-r border-[#222] flex flex-col overflow-hidden transition-all duration-200`}>
+    <aside className={`${open ? 'w-56' : 'w-14'} shrink-0 min-h-screen bg-[#111111] border-r border-[#222] flex flex-col overflow-hidden transition-all duration-200`}>
       {/* Logo */}
-      <div className="px-5 py-5 border-b border-[#222] whitespace-nowrap">
-        <span className="text-white font-semibold text-lg">Qora</span>
-        <span className="ml-2 text-xs text-[#666] bg-[#1a1a1a] px-2 py-0.5 rounded-full border border-[#2a2a2a]">beta</span>
+      <div className="px-4 py-5 border-b border-[#222] flex items-center overflow-hidden">
+        {open ? (
+          <>
+            <span className="text-white font-semibold text-lg whitespace-nowrap">Qora</span>
+            <span className="ml-2 text-xs text-[#666] bg-[#1a1a1a] px-2 py-0.5 rounded-full border border-[#2a2a2a] whitespace-nowrap">beta</span>
+          </>
+        ) : (
+          <span className="text-white font-bold text-base mx-auto">Q</span>
+        )}
       </div>
 
       {/* Nav links */}
-      <nav className="flex-1 px-3 py-4 space-y-0.5 whitespace-nowrap">
+      <nav className="flex-1 px-2 py-4 space-y-0.5">
         {links.map(l => (
           <NavLink
             key={l.to}
             to={l.to}
             end={l.to === '/'}
+            title={!open ? l.label : undefined}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-all ${
+              `flex items-center gap-3 px-2.5 py-2 rounded-md text-sm transition-all ${
+                open ? '' : 'justify-center'
+              } ${
                 isActive
                   ? 'bg-[#1a1a1a] text-white border border-[#2a2a2a]'
                   : 'text-[#888] hover:text-white hover:bg-[#1a1a1a]'
               }`
             }
           >
-            <span className="opacity-70">{l.icon}</span>
-            {l.label}
+            <span className="opacity-70 shrink-0">{l.icon}</span>
+            {open && <span className="whitespace-nowrap">{l.label}</span>}
           </NavLink>
         ))}
       </nav>
