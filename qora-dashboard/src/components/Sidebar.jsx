@@ -1,53 +1,79 @@
 import { NavLink } from 'react-router-dom'
 
-const links = [
-  { to: '/', label: 'Overview', icon: <GridIcon /> },
-  { to: '/collections', label: 'Collections', icon: <DbIcon /> },
-  { to: '/explorer', label: 'Explorer', icon: <SearchIcon /> },
-  { to: '/assistants', label: 'Assistants', icon: <BotIcon /> },
-  { to: '/memory', label: 'Memory', icon: <MemIcon /> },
-  { to: '/apikeys', label: 'API Keys', icon: <KeyIcon /> },
-  { to: '/logs', label: 'Logs', icon: <LogIcon /> },
-  { to: '/docs', label: 'Docs', icon: <DocIcon /> },
-  { to: '/admin', label: 'Admin', icon: <AdminIcon /> },
+const groups = [
+  {
+    links: [
+      { to: '/', label: 'Overview', icon: <GridIcon /> },
+      { to: '/collections', label: 'Collections', icon: <DbIcon /> },
+      { to: '/explorer', label: 'Explorer', icon: <SearchIcon /> },
+    ]
+  },
+  {
+    label: 'AI',
+    links: [
+      { to: '/assistants', label: 'Assistants', icon: <BotIcon /> },
+      { to: '/memory', label: 'Memory', icon: <MemIcon /> },
+    ]
+  },
+  {
+    label: 'Manage',
+    links: [
+      { to: '/apikeys', label: 'API Keys', icon: <KeyIcon /> },
+      { to: '/logs', label: 'Logs', icon: <LogIcon /> },
+      { to: '/docs', label: 'Docs', icon: <DocIcon /> },
+      { to: '/admin', label: 'Admin', icon: <AdminIcon /> },
+    ]
+  },
 ]
 
 export default function Sidebar({ open = true }) {
   return (
-    <aside className={`${open ? 'w-56' : 'w-14'} shrink-0 min-h-screen bg-[#111111] border-r border-[#222] flex flex-col overflow-hidden transition-all duration-200`}>
+    <aside className={`${open ? 'w-56' : 'w-14'} shrink-0 min-h-screen bg-[#0d0d0d] border-r border-[#1a1a1a] flex flex-col overflow-hidden transition-all duration-200`}>
       {/* Logo */}
-      <div className="px-4 py-5 border-b border-[#222] flex items-center overflow-hidden">
+      <div className="px-4 py-[18px] border-b border-[#1a1a1a] flex items-center">
         {open ? (
           <>
-            <span className="text-white font-semibold text-lg whitespace-nowrap">Qora</span>
-            <span className="ml-2 text-xs text-[#666] bg-[#1a1a1a] px-2 py-0.5 rounded-full border border-[#2a2a2a] whitespace-nowrap">beta</span>
+            <span className="text-white font-bold text-base tracking-tight whitespace-nowrap">Qora</span>
+            <span className="ml-2 text-[10px] text-[#555] bg-[#1a1a1a] px-1.5 py-0.5 rounded border border-[#252525] whitespace-nowrap font-medium uppercase tracking-wider">beta</span>
           </>
         ) : (
           <span className="text-white font-bold text-base mx-auto">Q</span>
         )}
       </div>
 
-      {/* Nav links */}
-      <nav className="flex-1 px-2 py-4 space-y-0.5">
-        {links.map(l => (
-          <NavLink
-            key={l.to}
-            to={l.to}
-            end={l.to === '/'}
-            title={!open ? l.label : undefined}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-2.5 py-2 rounded-md text-sm transition-all ${
-                open ? '' : 'justify-center'
-              } ${
-                isActive
-                  ? 'bg-[#1a1a1a] text-white border border-[#2a2a2a]'
-                  : 'text-[#888] hover:text-white hover:bg-[#1a1a1a]'
-              }`
-            }
-          >
-            <span className="opacity-70 shrink-0">{l.icon}</span>
-            {open && <span className="whitespace-nowrap">{l.label}</span>}
-          </NavLink>
+      {/* Nav groups */}
+      <nav className="flex-1 px-2 py-3 space-y-4 overflow-hidden">
+        {groups.map((group, gi) => (
+          <div key={gi}>
+            {group.label && open && (
+              <div className="px-3 mb-1">
+                <span className="text-[10px] font-semibold text-[#3a3a3a] uppercase tracking-widest">{group.label}</span>
+              </div>
+            )}
+            <div className="space-y-0.5">
+              {group.links.map(l => (
+                <NavLink
+                  key={l.to}
+                  to={l.to}
+                  end={l.to === '/'}
+                  title={!open ? l.label : undefined}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 px-2.5 py-2 rounded-lg text-sm transition-all ${
+                      open ? '' : 'justify-center'
+                    } ${
+                      isActive
+                        ? 'bg-[#1c1c1c] text-white border border-[#272727]'
+                        : 'text-[#666] hover:text-[#ccc] hover:bg-[#161616] border border-transparent'
+                    }`
+                  }
+                >
+                  <span className="shrink-0">{l.icon}</span>
+                  {open && <span className="whitespace-nowrap font-medium">{l.label}</span>}
+                </NavLink>
+              ))}
+            </div>
+            {gi < groups.length - 1 && open && <div className="mt-3 mx-2 h-px bg-[#1a1a1a]"/>}
+          </div>
         ))}
       </nav>
     </aside>
