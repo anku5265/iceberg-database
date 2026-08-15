@@ -31,21 +31,21 @@ export default function Logs() {
     <div className="p-8 max-w-5xl">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-semibold text-white mb-1">Logs</h1>
-          <p className="text-[#666] text-sm">Recent API activity</p>
+          <h1 className="text-2xl font-semibold text-[var(--text-primary)] mb-1">Logs</h1>
+          <p className="text-[var(--text-muted)] text-sm">Recent API activity</p>
         </div>
-        <div className="flex gap-1 bg-[#111] border border-[#222] rounded-lg p-1">
+        <div className="flex gap-1 bg-[var(--card-bg)] border border-[var(--border2)] rounded-lg p-1">
           {['all', 'search', 'index', 'create'].map(f => (
             <button key={f} onClick={() => setFilter(f)}
-              className={`px-3 py-1 rounded-md text-xs font-medium transition capitalize ${filter === f ? 'bg-[#1e1e1e] text-white' : 'text-[#666] hover:text-white'}`}>
+              className={`px-3 py-1 rounded-md text-xs font-medium transition capitalize ${filter === f ? 'bg-[var(--bg-hover)] text-[var(--text-primary)]' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}>
               {f}
             </button>
           ))}
         </div>
       </div>
 
-      <div className="bg-[#111] border border-[#222] rounded-lg overflow-hidden">
-        <div className="grid grid-cols-12 px-4 py-2 border-b border-[#1a1a1a] text-xs text-[#555] uppercase tracking-wider">
+      <div className="bg-[var(--card-bg)] border border-[var(--border2)] rounded-lg overflow-hidden">
+        <div className="grid grid-cols-12 px-4 py-2 border-b border-[var(--bg-hover)] text-xs text-[var(--text-secondary)] uppercase tracking-wider">
           <div className="col-span-2">Type</div>
           <div className="col-span-2">Collection</div>
           <div className="col-span-4">Detail</div>
@@ -54,24 +54,24 @@ export default function Logs() {
         </div>
 
         {loading ? (
-          <div className="px-4 py-12 text-center text-[#555] text-sm">Loading...</div>
+          <div className="px-4 py-12 text-center text-[var(--text-secondary)] text-sm">Loading...</div>
         ) : filtered.length === 0 ? (
-          <div className="px-4 py-12 text-center text-[#555] text-sm">No logs yet. Start using the API.</div>
+          <div className="px-4 py-12 text-center text-[var(--text-secondary)] text-sm">No logs yet. Start using the API.</div>
         ) : (
           filtered.map((log, i) => (
             <div key={log.id}
-              className={`grid grid-cols-12 items-center px-4 py-3 text-sm hover:bg-[#151515] transition ${i !== filtered.length - 1 ? 'border-b border-[#1a1a1a]' : ''}`}>
+              className={`grid grid-cols-12 items-center px-4 py-3 text-sm hover:bg-[var(--bg-hover)] transition ${i !== filtered.length - 1 ? 'border-b border-[var(--bg-hover)]' : ''}`}>
               <div className="col-span-2">
-                <span className={`text-xs px-2 py-0.5 rounded border capitalize ${TYPE_STYLE[log.action] || 'text-[#666] border-[#222]'}`}>
+                <span className={`text-xs px-2 py-0.5 rounded border capitalize ${TYPE_STYLE[log.action] || 'text-[var(--text-muted)] border-[var(--border2)]'}`}>
                   {log.action}
                 </span>
               </div>
-              <div className="col-span-2 text-[#888] font-mono text-xs">{log.collection || '—'}</div>
-              <div className="col-span-4 text-[#aaa] text-xs truncate pr-4">{log.detail || '—'}</div>
-              <div className="col-span-2 text-xs text-[#666]">
+              <div className="col-span-2 text-[var(--text-secondary)] font-mono text-xs">{log.collection || '—'}</div>
+              <div className="col-span-4 text-[var(--text-secondary)] text-xs truncate pr-4">{log.detail || '—'}</div>
+              <div className="col-span-2 text-xs text-[var(--text-muted)]">
                 {log.duration_ms ? `${log.duration_ms}ms` : '—'}
               </div>
-              <div className="col-span-2 text-right text-xs text-[#555]">{formatTime(log.created_at)}</div>
+              <div className="col-span-2 text-right text-xs text-[var(--text-secondary)]">{formatTime(log.created_at)}</div>
             </div>
           ))
         )}

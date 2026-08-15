@@ -23,7 +23,7 @@ function ProtectedLayout({ children }) {
   if (!isLoggedIn()) return <Navigate to="/login" replace />
   const [sidebarOpen, setSidebarOpen] = useState(true)
   return (
-    <div className="flex min-h-screen bg-[#0a0a0a] text-white">
+    <div className="flex min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)]">
       <Sidebar open={sidebarOpen} />
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         {/* Top bar */}
@@ -39,7 +39,7 @@ function ProtectedLayout({ children }) {
           </button>
           <ProfileMenu />
         </header>
-        <main className="flex-1 overflow-auto">{children}</main>
+        <main className="flex-1 overflow-auto bg-[var(--bg-base)]">{children}</main>
       </div>
     </div>
   )

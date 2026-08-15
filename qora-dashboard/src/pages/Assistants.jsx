@@ -52,8 +52,8 @@ export default function Assistants() {
     <div className="p-8 max-w-6xl">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-semibold text-white mb-1">Assistants</h1>
-          <p className="text-[#666] text-sm">No-code RAG chatbots — upload docs, get a chatbot</p>
+          <h1 className="text-2xl font-semibold text-[var(--text-primary)] mb-1">Assistants</h1>
+          <p className="text-[var(--text-muted)] text-sm">No-code RAG chatbots — upload docs, get a chatbot</p>
         </div>
         <button onClick={() => setCreating(true)}
           className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium px-4 py-2 rounded-md transition">
@@ -63,36 +63,36 @@ export default function Assistants() {
 
       {/* Create form */}
       {creating && (
-        <form onSubmit={create} className="bg-[#111] border border-[#222] rounded-lg p-5 mb-6 space-y-3">
-          <h3 className="text-white font-medium">Create assistant</h3>
+        <form onSubmit={create} className="bg-[var(--card-bg)] border border-[var(--border2)] rounded-lg p-5 mb-6 space-y-3">
+          <h3 className="text-[var(--text-primary)] font-medium">Create assistant</h3>
           <div className="grid md:grid-cols-2 gap-3">
             <div>
-              <label className="text-[#888] text-xs mb-1 block">Name</label>
+              <label className="text-[var(--text-secondary)] text-xs mb-1 block">Name</label>
               <input value={form.name} onChange={e => setForm({...form, name: e.target.value})} required placeholder="My Support Bot"
-                className="w-full bg-[#0a0a0a] border border-[#2a2a2a] rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-600 placeholder-[#444]" />
+                className="w-full bg-[var(--input-bg)] border border-[var(--input-border)] rounded-md px-3 py-2 text-[var(--text-primary)] text-sm focus:outline-none focus:border-blue-600 placeholder-[var(--text-dim)]" />
             </div>
             <div>
-              <label className="text-[#888] text-xs mb-1 block">Greeting message</label>
+              <label className="text-[var(--text-secondary)] text-xs mb-1 block">Greeting message</label>
               <input value={form.greeting} onChange={e => setForm({...form, greeting: e.target.value})}
-                className="w-full bg-[#0a0a0a] border border-[#2a2a2a] rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-600" />
+                className="w-full bg-[var(--input-bg)] border border-[var(--input-border)] rounded-md px-3 py-2 text-[var(--text-primary)] text-sm focus:outline-none focus:border-blue-600" />
             </div>
             <div>
-              <label className="text-[#888] text-xs mb-1 block">LLM Provider</label>
+              <label className="text-[var(--text-secondary)] text-xs mb-1 block">LLM Provider</label>
               <select value={form.llm_provider} onChange={e => setForm({...form, llm_provider: e.target.value})}
-                className="w-full bg-[#0a0a0a] border border-[#2a2a2a] rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-600">
+                className="w-full bg-[var(--input-bg)] border border-[var(--input-border)] rounded-md px-3 py-2 text-[var(--text-primary)] text-sm focus:outline-none focus:border-blue-600">
                 <option value="openai">OpenAI (GPT)</option>
                 <option value="gemini">Google Gemini</option>
               </select>
             </div>
             <div>
-              <label className="text-[#888] text-xs mb-1 block">LLM API Key</label>
+              <label className="text-[var(--text-secondary)] text-xs mb-1 block">LLM API Key</label>
               <input type="password" value={form.llm_api_key} onChange={e => setForm({...form, llm_api_key: e.target.value})} placeholder="sk-..."
-                className="w-full bg-[#0a0a0a] border border-[#2a2a2a] rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-600 placeholder-[#444]" />
+                className="w-full bg-[var(--input-bg)] border border-[var(--input-border)] rounded-md px-3 py-2 text-[var(--text-primary)] text-sm focus:outline-none focus:border-blue-600 placeholder-[var(--text-dim)]" />
             </div>
           </div>
           <div className="flex gap-2 pt-1">
             <button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium px-4 py-2 rounded-md transition">Create</button>
-            <button type="button" onClick={() => setCreating(false)} className="text-[#666] hover:text-white text-sm px-4 py-2 transition">Cancel</button>
+            <button type="button" onClick={() => setCreating(false)} className="text-[var(--text-muted)] hover:text-[var(--text-primary)] text-sm px-4 py-2 transition">Cancel</button>
           </div>
         </form>
       )}
@@ -101,38 +101,38 @@ export default function Assistants() {
         {/* List */}
         <div className="space-y-2">
           {assistants.length === 0 && !creating && (
-            <div className="bg-[#111] border border-[#222] rounded-lg p-8 text-center">
-              <p className="text-[#555] text-sm mb-3">No assistants yet</p>
+            <div className="bg-[var(--card-bg)] border border-[var(--border2)] rounded-lg p-8 text-center">
+              <p className="text-[var(--text-secondary)] text-sm mb-3">No assistants yet</p>
               <button onClick={() => setCreating(true)} className="text-blue-400 text-sm hover:text-blue-300 transition">Create your first →</button>
             </div>
           )}
           {assistants.map(a => (
             <div key={a.id} onClick={() => setSelected(a)}
-              className={`bg-[#111] border rounded-lg p-4 cursor-pointer transition ${selected?.id === a.id ? 'border-blue-600' : 'border-[#222] hover:border-[#333]'}`}>
+              className={`bg-[var(--card-bg)] border rounded-lg p-4 cursor-pointer transition ${selected?.id === a.id ? 'border-blue-600' : 'border-[var(--border2)] hover:border-[#333]'}`}>
               <div className="flex items-center justify-between">
-                <div className="text-white text-sm font-medium">{a.name}</div>
+                <div className="text-[var(--text-primary)] text-sm font-medium">{a.name}</div>
                 <div className="w-2 h-2 rounded-full bg-green-400"></div>
               </div>
-              <div className="text-[#555] text-xs mt-1 font-mono">#{a.id}</div>
+              <div className="text-[var(--text-secondary)] text-xs mt-1 font-mono">#{a.id}</div>
             </div>
           ))}
         </div>
 
         {/* Detail */}
         {selected && (
-          <div className="md:col-span-2 bg-[#111] border border-[#222] rounded-lg p-5 space-y-5">
+          <div className="md:col-span-2 bg-[var(--card-bg)] border border-[var(--border2)] rounded-lg p-5 space-y-5">
             <div className="flex items-center justify-between">
-              <div className="text-white font-medium">{selected.name}</div>
-              <button onClick={() => del(selected.id)} className="text-xs text-[#555] hover:text-red-400 transition">Delete</button>
+              <div className="text-[var(--text-primary)] font-medium">{selected.name}</div>
+              <button onClick={() => del(selected.id)} className="text-xs text-[var(--text-secondary)] hover:text-red-400 transition">Delete</button>
             </div>
 
             {/* Upload */}
             <div>
-              <div className="text-[#888] text-xs mb-2">Upload document to train</div>
+              <div className="text-[var(--text-secondary)] text-xs mb-2">Upload document to train</div>
               <label className="cursor-pointer">
                 <input type="file" accept=".pdf,.txt,.md" className="hidden"
                   onChange={e => e.target.files[0] && upload(selected.id, e.target.files[0])} />
-                <div className="border border-dashed border-[#333] hover:border-blue-600 rounded-lg p-4 text-center text-sm text-[#555] hover:text-white transition">
+                <div className="border border-dashed border-[#333] hover:border-blue-600 rounded-lg p-4 text-center text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition">
                   {uploading ? 'Uploading...' : 'Click to upload PDF, TXT, or MD'}
                 </div>
               </label>
@@ -140,13 +140,13 @@ export default function Assistants() {
 
             {/* Chat URL */}
             <div>
-              <div className="text-[#888] text-xs mb-2">Chat URL — share with users</div>
+              <div className="text-[var(--text-secondary)] text-xs mb-2">Chat URL — share with users</div>
               <div className="flex items-center gap-2">
-                <code className="flex-1 bg-[#0a0a0a] border border-[#1a1a1a] rounded px-3 py-2 text-xs text-[#aaa] truncate">
+                <code className="flex-1 bg-[var(--input-bg)] border border-[var(--border)] rounded px-3 py-2 text-xs text-[var(--text-secondary)] truncate">
                   {selected.chat_url || `${API_URL}/assistant/${selected.id}/chat`}
                 </code>
                 <button onClick={() => copy(selected.chat_url || `${API_URL}/assistant/${selected.id}/chat`, 'chat')}
-                  className="text-xs text-[#666] hover:text-white px-2 py-1 border border-[#222] rounded transition">
+                  className="text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] px-2 py-1 border border-[var(--border2)] rounded transition">
                   {copied === 'chat' ? 'Copied!' : 'Copy'}
                 </button>
               </div>
@@ -154,13 +154,13 @@ export default function Assistants() {
 
             {/* Embed */}
             <div>
-              <div className="text-[#888] text-xs mb-2">Website embed — paste in your HTML</div>
+              <div className="text-[var(--text-secondary)] text-xs mb-2">Website embed — paste in your HTML</div>
               <div className="flex items-center gap-2">
-                <code className="flex-1 bg-[#0a0a0a] border border-[#1a1a1a] rounded px-3 py-2 text-xs text-[#aaa] truncate">
+                <code className="flex-1 bg-[var(--input-bg)] border border-[var(--border)] rounded px-3 py-2 text-xs text-[var(--text-secondary)] truncate">
                   {selected.embed_code || `<script src="${API_URL}/assistant/${selected.id}/widget.js"></script>`}
                 </code>
                 <button onClick={() => copy(selected.embed_code || '', 'embed')}
-                  className="text-xs text-[#666] hover:text-white px-2 py-1 border border-[#222] rounded transition">
+                  className="text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] px-2 py-1 border border-[var(--border2)] rounded transition">
                   {copied === 'embed' ? 'Copied!' : 'Copy'}
                 </button>
               </div>
@@ -168,17 +168,17 @@ export default function Assistants() {
 
             {/* WhatsApp */}
             <div>
-              <div className="text-[#888] text-xs mb-2">WhatsApp webhook URL</div>
+              <div className="text-[var(--text-secondary)] text-xs mb-2">WhatsApp webhook URL</div>
               <div className="flex items-center gap-2">
-                <code className="flex-1 bg-[#0a0a0a] border border-[#1a1a1a] rounded px-3 py-2 text-xs text-[#aaa] truncate">
+                <code className="flex-1 bg-[var(--input-bg)] border border-[var(--border)] rounded px-3 py-2 text-xs text-[var(--text-secondary)] truncate">
                   {selected.whatsapp_webhook || `${API_URL}/assistant/${selected.id}/whatsapp`}
                 </code>
                 <button onClick={() => copy(selected.whatsapp_webhook || '', 'wa')}
-                  className="text-xs text-[#666] hover:text-white px-2 py-1 border border-[#222] rounded transition">
+                  className="text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] px-2 py-1 border border-[var(--border2)] rounded transition">
                   {copied === 'wa' ? 'Copied!' : 'Copy'}
                 </button>
               </div>
-              <p className="text-xs text-[#444] mt-1">Point your WhatsApp Business webhook here</p>
+              <p className="text-xs text-[var(--text-dim)] mt-1">Point your WhatsApp Business webhook here</p>
             </div>
           </div>
         )}
