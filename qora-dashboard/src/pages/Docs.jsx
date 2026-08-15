@@ -219,17 +219,17 @@ export default function Docs() {
   return (
     <div className="flex h-screen overflow-hidden">
       {/* Docs sidebar */}
-      <div className="w-52 border-r border-[#1a1a1a] p-4 flex-shrink-0 overflow-y-auto">
-        <div className="text-xs text-[#555] uppercase tracking-wider mb-3">Documentation</div>
+      <div className="w-52 border-r border-[var(--border)] p-4 flex-shrink-0 overflow-y-auto">
+        <div className="text-xs text-[var(--text-secondary)] uppercase tracking-wider mb-3">Documentation</div>
         <nav className="space-y-0.5">
           {SECTIONS.map(s => (
             <button key={s.id} onClick={() => setActive(s.id)}
-              className={`w-full text-left px-3 py-2 rounded-md text-sm transition ${active === s.id ? 'bg-[#1a1a1a] text-white' : 'text-[#666] hover:text-white'}`}>
+              className={`w-full text-left px-3 py-2 rounded-md text-sm transition ${active === s.id ? 'bg-[var(--bg-hover)] text-[var(--text-primary)]' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}>
               {s.title}
             </button>
           ))}
         </nav>
-        <div className="mt-6 pt-4 border-t border-[#1a1a1a]">
+        <div className="mt-6 pt-4 border-t border-[var(--border)]">
           <a href={`${API_URL}/docs`} target="_blank"
             className="text-xs text-blue-400 hover:text-blue-300 transition block">
             Interactive API Docs ↗
@@ -241,8 +241,8 @@ export default function Docs() {
       <div className="flex-1 overflow-y-auto p-8 max-w-3xl">
         <div className="prose prose-invert prose-sm max-w-none">
           {section?.content.split('\n').map((line, i) => {
-            if (line.startsWith('# ')) return <h1 key={i} className="text-2xl font-bold text-white mb-4 mt-0">{line.slice(2)}</h1>
-            if (line.startsWith('## ')) return <h2 key={i} className="text-lg font-semibold text-white mt-8 mb-3">{line.slice(3)}</h2>
+            if (line.startsWith('# ')) return <h1 key={i} className="text-2xl font-bold text-[var(--text-primary)] mb-4 mt-0">{line.slice(2)}</h1>
+            if (line.startsWith('## ')) return <h2 key={i} className="text-lg font-semibold text-[var(--text-primary)] mt-8 mb-3">{line.slice(3)}</h2>
             if (line.startsWith('```')) return null
             if (line === '') return <div key={i} className="h-2" />
             return <p key={i} className="text-[#aaa] text-sm leading-relaxed">{line}</p>
@@ -252,7 +252,7 @@ export default function Docs() {
           {section?.content.match(/```[\s\S]*?```/g)?.map((block, i) => {
             const lines = block.replace(/```\w*\n?/, '').replace(/```$/, '')
             return (
-              <div key={i} className="bg-[#0d1117] border border-[#1a1a1a] rounded-lg p-4 my-3 font-mono text-xs text-[#aaa] overflow-x-auto whitespace-pre">
+              <div key={i} className="bg-[#0d1117] border border-[var(--border)] rounded-lg p-4 my-3 font-mono text-xs text-[#aaa] overflow-x-auto whitespace-pre">
                 {lines}
               </div>
             )

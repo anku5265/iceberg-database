@@ -1,232 +1,127 @@
-# Qora DB — Project Progress
-## Last Updated: June 2026
+# Qora Progress — July 10, 2026
+
+## Aaj ka kaam (Landing Page Hero Demo)
+
+### Status
+- Landing: localhost:5174 (ya 5173)
+- Dashboard: localhost:5173
+- Backend: localhost:8000
 
 ---
 
-## Project Structure
+## Jo kiya aaj
 
-```
-qora-db/
-├── qora-landing/        # React landing page (port 5173)
-├── qora-dashboard/      # React dashboard (port 3000)
-├── qora-backend/        # FastAPI backend (port 8000)
-├── qora-sdk-python/     # Python SDK (pip install qora)
-├── qora-sdk-js/         # JavaScript SDK (npm install qora)
-├── qora-sdk-go/         # Go SDK (go get)
-├── qora-terraform/      # Terraform BYOC module (AWS)
-```
+### 1. Dark/Light Mode
+- Navbar mein theme toggle button add kiya (moon/sun icon) — "Start free" ke baad right side mein
+- Poori site dark/light aware bani — hero, cards, pricing, footer sab
+- Body se hardcoded `#050507` background hataya
+- badge-live, result-card, icon-box — light mode classes add kiye
+- Dividers dark/light aware
+- Marquee pills styled (badge look with border)
 
----
+### 2. Real Tech Logos (Marquee section)
+- Emojis (🐍🦙 etc.) hata ke real SVG logos lagaye
+- Python, LangChain, LlamaIndex, Java, Node.js, Rust, Go, .NET, Spring Boot, React, FastAPI, Next.js
 
-## How to Run
+### 3. Hero Demo — 4 Options try kiye
 
-```bash
-# Backend
-cd qora-backend
-venv\Scripts\python.exe -m uvicorn main:app --host 0.0.0.0 --port 8000
+**Option 1 (BEST — "bahut bdia laga"):**
+- Auto-typing placeholder — character by character query type hoti hai
+- Auto-cycle: type → spinner → results → score bars fill → clear → repeat
+- Score bars 0% se animated fill
+- ~14ms green badge after results
+- User type kare toh auto-cycle ruk jaata hai
+- Status: WORKING ✅
 
-# Dashboard
-cd qora-dashboard
-node node_modules/vite/bin/vite.js --port 3000
+**Option 2 — Split Panel:**
+- Left: Python/JS/Go code tabs with syntax highlight
+- Right: Live search results
+- Status: Implemented but "utna bdia nahi"
 
-# Landing
-cd qora-landing
-node node_modules/vite/bin/vite.js --port 5173
-```
+**Option 3 — Dashboard Mockup (bdia tha):**
+- Sidebar with 4 working tabs (Overview, Collections, Search, API Keys)
+- Overview: bar chart query volume
+- Collections: clickable rows, selected highlight, live log
+- Search: working search with chips, score bars
+- API Keys: 3 keys with roles, status dots
+- Status: Working ✅ but moved to Option 4
 
-Default API Key: `qr_dev_test123`
+**Option 4 — 3-Step Animated Flow:**
+- Step 1: Upload & Index — code + progress bar "842K vectors indexed"
+- Step 2: Semantic Search — live query box + score bars
+- Step 3: Production Ready — RAG/Memory/Search cards
+- Status: Working but "utna bdia nahi"
 
----
-
-## Backend — Completed Features
-
-### Auth & Users
-- POST /auth/signup — creates user + default project + admin API key
-- POST /auth/login — returns user info + all API keys
-- POST /auth/keys — create additional key with role (admin/read_write/read_only)
-- DELETE /auth/keys/{prefix} — revoke key
-
-### Collections
-- POST /collections — create
-- GET /collections — list
-- GET /collections/{name} — info (vector count, status)
-- DELETE /collections/{name} — delete
-
-### Documents
-- POST /documents/text — index plain text (with namespace support)
-- POST /documents/upload — upload PDF/TXT/MD (auto-chunking)
-
-### Search (HYBRID)
-- POST /search — hybrid search (Dense + BM25 via RRF)
-  - search_type: "hybrid" | "semantic" | "keyword"
-  - alpha: 0.0 (keyword) → 1.0 (semantic)
-  - namespace: filter within namespace
-  - filters: metadata filters e.g. {"source": "file.pdf"}
-
-### Agent Memory
-- POST /memory/{agent_id}/remember — store memory (long_term/short_term/episodic/semantic)
-- POST /memory/{agent_id}/recall — semantic search in memories
-- GET /memory/{agent_id} — list memories
-- DELETE /memory/{agent_id} — clear all memories
-
-### Assistants (No-code RAG)
-- POST /assistant — create assistant
-- GET /assistant — list all
-- DELETE /assistant/{id} — delete
-- POST /assistant/{id}/upload — upload docs to train
-- POST /assistant/{id}/chat — chat (public endpoint)
-- POST /assistant/{id}/whatsapp — WhatsApp webhook
-- GET /assistant/{id}/widget.js — embed widget JS
-
-### Backup & Restore
-- POST /backup/{collection} — create backup (local or R2)
-- GET /backup — list backups
-- POST /backup/{collection}/restore/{backup_id} — restore
-
-### Read Nodes
-- GET /nodes — node pool status
-
-### Admin
-- GET /admin/status — instance info, tunnel, storage
-- POST /admin/tunnel/open — open Cloudflare tunnel (4hr)
-- DELETE /admin/tunnel — close tunnel
-- GET /admin/billing — plan limits
-- GET /admin/analytics — searches/day graph
-
-### Usage
-- GET /usage/stats — searches today, chunks indexed
-- GET /usage/logs — recent activity
-
-### Projects
-- GET /projects — list
-- POST /projects — create
-- DELETE /projects/{id} — delete
-
-### Waitlist
-- POST /waitlist — add email
-
-### Status/SLA
-- GET /status — uptime, SLA info (99.9% target)
-- GET /health — quick health check
+**Combo (Option 1 + 3) — Currently implementing:**
+- Left 45%: Mini Dashboard (stats grid, collections list, live log)
+- Right 55%: Auto-typing live search (Option 1 animation)
+- Status: JSX error hai — `</div>` structure broken at line 475-476
+- File ends at line 476 — missing closing section + Marquee + Features + Pricing + CTA + Footer + HeroCodeBlock
 
 ---
 
-## Dashboard Pages (9 total)
+## Current Problem (UNSOLVED — stopped here)
 
-| Page | URL | Description |
-|---|---|---|
-| Overview | / | Stats, API status, quick actions |
-| Collections | /collections | Create/delete collections |
-| Explorer | /explorer | Search (hybrid/semantic/keyword), upload, index |
-| Assistants | /assistants | No-code RAG chatbot builder |
-| Memory | /memory | Agent memory store/recall |
-| API Keys | /apikeys | RBAC keys management |
-| Logs | /logs | Real-time activity |
-| Docs | /docs | Built-in documentation |
-| Admin | /admin | Instance, billing, tunnel, analytics |
+**HomePageNew.jsx line 475:18 — Unterminated JSX contents**
 
----
+File sirf 476 lines hai. Missing sections:
+- `</div></div></section>` — hero section close
+- Marquee section
+- Code section (HeroCodeBlock)
+- Features section
+- How it works section
+- Pricing section
+- CTA / Waitlist section
+- Footer
+- HeroCodeBlock function
 
-## Landing Page
-- Supabase-style navbar with Product dropdown
-- Product dropdown: Qora Database, SDK, Dashboard, Assistant (coming soon)
-- Capabilities: Security, Integrations
-- Hero: "Build in a weekend / Scale to millions"
-- Code block with Python/JS/cURL tabs
-- Features: India Hosted, Hybrid Search, Namespaces, RBAC, Backup, SDKs
-- Pricing: Free/Starter(₹799)/Growth(₹3,999)/Scale(₹12,999) with yearly
-- Waitlist form (saves to backend)
+### Root cause
+Bar bar PowerShell `$newDemo.Split()` replacement karte waqt file truncate hoti rahi — `$after` lines theek se attach nahi hui.
 
 ---
 
-## SDKs
+## Files changed
+- `qora-landing/src/HomePageNew.jsx` — main file (broken)
+- `qora-landing/src/index.css` — dark/light CSS classes added
 
-### Python (qora-sdk-python/)
-```python
-from qora import Client
-client = Client(api_key="qr_your_key")
-client.create_collection("docs")
-client.upload("docs", "file.pdf")
-results = client.search("docs", "your query")
-```
+## Next session mein karna hai
+1. HomePageNew.jsx fix karo — ya clean rewrite ya missing tail append
+2. Combo demo (left: dashboard, right: auto-search) sahi se karo
+3. Build verify karo
+4. Deploy karo Railway/Vercel
 
-### JavaScript (qora-sdk-js/)
+---
+
+## Key code snippets
+
+### Auto-cycle logic (Option 1 — working)
 ```js
-import { Client } from 'qora'
-const client = new Client({ apiKey: "qr_your_key" })
-await client.createCollection("docs")
-const results = await client.search("docs", "query")
+const runAutoCycle = () => {
+  const q = DEMO_QUERIES[queryIdxRef.current % DEMO_QUERIES.length]
+  queryIdxRef.current += 1
+  // type char by char at 38ms interval
+  // then search, show results, fill score bars
+  // auto-restart after 4200ms
+}
+useEffect(() => {
+  const start = setTimeout(runAutoCycle, 1200)
+  return () => { clearTimeout(start); clearTimeout(autoRef.current); clearInterval(typeRef.current) }
+}, [])
 ```
 
-### Go (qora-sdk-go/)
-```go
-client := qora.New("qr_your_key")
-client.CreateCollection("docs")
-results, _ := client.Search("docs", "query", 5)
+### Dashboard sidebar tabs (Option 3 — working)
+```js
+const [dashTab, setDashTab] = useState('collections')
+// tabs: overview, collections, search, apikeys
+// each renders different content
 ```
 
----
-
-## BYOC (qora-terraform/)
-- `curl https://install.qora.in | bash` — one-command Linux install
-- Terraform module for AWS Mumbai auto-deploy
-- Cloudflare tunnel for remote access (zero inbound access)
-
----
-
-## Comparison vs Pinecone & Weaviate
-
-### Qora has that competitors don't:
-- India hosting (DPDP compliant)
-- ₹799/mo (vs $20-25/mo)
-- PDF auto-chunking built-in
-- WhatsApp channel for assistants
-- Website embed widget (1 line JS)
-- Free BYOC (Pinecone charges $500+/mo)
-- Free tier forever (Weaviate only 14-day trial)
-- Agent memory (4 types)
-- Cloudflare R2 storage (zero egress)
-
-### Done features:
-- ✅ Core DB
-- ✅ Read nodes (auto pool)
-- ✅ BYOC (installer + Terraform)
-- ✅ Remote access (Cloudflare tunnel)
-- ✅ Agent memory
-- ✅ No-code RAG + WhatsApp
-- ✅ Hybrid search (Dense + BM25 + RRF)
-- ✅ Namespaces
-- ✅ RBAC + Multiple API keys
-- ✅ Backup/restore
-- ✅ Uptime SLA (99.9%)
-- ✅ Go SDK
-
-### Remaining (low priority):
-- Java SDK
-- SOC2/HIPAA (future, needs audit)
-- Marketplace (future)
-
----
-
-## Pricing
-
-| Plan | Monthly | Yearly | Vectors | Queries/day |
-|---|---|---|---|---|
-| Free | ₹0 | — | 200K | 2,000 |
-| Starter | ₹799 | ₹7,990 | 2M | 20,000 |
-| Growth | ₹3,999 | ₹39,990 | 15M | 100,000 |
-| Scale | ₹12,999 | ₹1,29,990 | 100M | 1,000,000 |
-
-Free tier pauses after 1 week inactivity.
-
----
-
-## Next Steps (new conversation mein karo)
-
-1. Deploy on server (Railway/Render/Hetzner)
-2. Domain setup (qora.in)
-3. Cloudflare R2 credentials add karein (.env mein)
-4. Business email (Zoho Mail free)
-5. Razorpay payment integration
-6. 10 beta users dhundho
-7. Java SDK (optional)
+### Theme tokens
+```js
+const bg = dark ? '#050507' : '#f8f9fc'
+const navBg = dark ? 'rgba(5,5,7,0.9)' : 'rgba(248,249,252,0.92)'
+const textPrimary = dark ? 'white' : '#111827'
+const textMuted = dark ? 'rgba(255,255,255,0.4)' : '#6b7280'
+const cardBg = dark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.025)'
+const cardBorder = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.08)'
+```

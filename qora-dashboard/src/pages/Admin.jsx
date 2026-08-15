@@ -34,15 +34,15 @@ export default function Admin() {
   return (
     <div className="p-8 max-w-5xl">
       <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-white mb-1">Admin</h1>
-        <p className="text-[#666] text-sm">Instance management, billing, and remote access</p>
+        <h1 className="text-2xl font-semibold text-[var(--text-primary)] mb-1">Admin</h1>
+        <p className="text-[var(--text-muted)] text-sm">Instance management, billing, and remote access</p>
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">
 
         {/* Instance Status */}
-        <div className="bg-[#111] border border-[#222] rounded-lg p-5">
-          <div className="text-sm font-medium text-white mb-4">Instance</div>
+        <div className="bg-[var(--card-bg)] border border-[var(--border2)] rounded-lg p-5">
+          <div className="text-sm font-medium text-[var(--text-primary)] mb-4">Instance</div>
           {status ? (
             <div className="space-y-2 text-sm">
               <Row label="Instance ID" value={<span className="font-mono text-xs">{status.instance_id}</span>} />
@@ -55,8 +55,8 @@ export default function Admin() {
         </div>
 
         {/* Billing */}
-        <div className="bg-[#111] border border-[#222] rounded-lg p-5">
-          <div className="text-sm font-medium text-white mb-4">Billing</div>
+        <div className="bg-[var(--card-bg)] border border-[var(--border2)] rounded-lg p-5">
+          <div className="text-sm font-medium text-[var(--text-primary)] mb-4">Billing</div>
           {billing ? (
             <div className="space-y-2 text-sm">
               <Row label="Plan" value={<Badge color="blue">{billing.plan}</Badge>} />
@@ -71,9 +71,9 @@ export default function Admin() {
         </div>
 
         {/* Remote Access (Tunnel) */}
-        <div className="bg-[#111] border border-[#222] rounded-lg p-5">
-          <div className="text-sm font-medium text-white mb-1">Remote Access</div>
-          <p className="text-xs text-[#555] mb-4">Allow Qora support team to access this instance for debugging</p>
+        <div className="bg-[var(--card-bg)] border border-[var(--border2)] rounded-lg p-5">
+          <div className="text-sm font-medium text-[var(--text-primary)] mb-1">Remote Access</div>
+          <p className="text-xs text-[var(--text-secondary)] mb-4">Allow Qora support team to access this instance for debugging</p>
           {status ? (
             <div className="space-y-3">
               <Row label="Tunnel status" value={
@@ -88,18 +88,18 @@ export default function Admin() {
                 </button>
               ) : (
                 <button onClick={openTunnel} disabled={tunnelLoading}
-                  className="w-full py-2 rounded-md border border-[#222] hover:border-[#444] text-[#aaa] hover:text-white text-sm transition disabled:opacity-50">
+                  className="w-full py-2 rounded-md border border-[var(--border2)] hover:border-[#444] text-[#aaa] hover:text-[var(--text-primary)] text-sm transition disabled:opacity-50">
                   {tunnelLoading ? 'Opening...' : 'Open tunnel for support (4 hours)'}
                 </button>
               )}
-              <p className="text-xs text-[#444]">Auto-closes after 4 hours. All access is logged.</p>
+              <p className="text-xs text-[var(--text-dim)]">Auto-closes after 4 hours. All access is logged.</p>
             </div>
           ) : <Skeleton />}
         </div>
 
         {/* Search Analytics */}
-        <div className="bg-[#111] border border-[#222] rounded-lg p-5">
-          <div className="text-sm font-medium text-white mb-4">Searches — last 7 days</div>
+        <div className="bg-[var(--card-bg)] border border-[var(--border2)] rounded-lg p-5">
+          <div className="text-sm font-medium text-[var(--text-primary)] mb-4">Searches — last 7 days</div>
           {analytics ? (
             <div>
               <div className="flex items-end gap-1 h-16 mb-2">
@@ -113,10 +113,10 @@ export default function Admin() {
                   )
                 })}
               </div>
-              <div className="flex justify-between text-xs text-[#555]">
+              <div className="flex justify-between text-xs text-[var(--text-secondary)]">
                 <span>7d ago</span><span>Today</span>
               </div>
-              <div className="mt-3 text-sm text-white font-medium">
+              <div className="mt-3 text-sm text-[var(--text-primary)] font-medium">
                 {analytics.total_chunks_indexed?.toLocaleString()} total chunks indexed
               </div>
             </div>
@@ -131,8 +131,8 @@ export default function Admin() {
 function Row({ label, value }) {
   return (
     <div className="flex items-center justify-between">
-      <span className="text-[#666]">{label}</span>
-      <span className="text-white">{value}</span>
+      <span className="text-[var(--text-muted)]">{label}</span>
+      <span className="text-[var(--text-primary)]">{value}</span>
     </div>
   )
 }
@@ -141,7 +141,7 @@ function Badge({ children, color = 'gray' }) {
   const colors = {
     blue: 'text-blue-400 bg-blue-900/20 border-blue-900/40',
     green: 'text-green-400 bg-green-900/20 border-green-900/40',
-    gray: 'text-[#666] bg-[#1a1a1a] border-[#222]',
+    gray: 'text-[var(--text-muted)] bg-[var(--bg-hover)] border-[var(--border2)]',
   }
   return <span className={`text-xs px-2 py-0.5 rounded border ${colors[color]}`}>{children}</span>
 }
@@ -149,7 +149,7 @@ function Badge({ children, color = 'gray' }) {
 function Skeleton() {
   return (
     <div className="space-y-2">
-      {[1,2,3].map(i => <div key={i} className="h-4 bg-[#1a1a1a] rounded animate-pulse" />)}
+      {[1,2,3].map(i => <div key={i} className="h-4 bg-[var(--bg-hover)] rounded animate-pulse" />)}
     </div>
   )
 }

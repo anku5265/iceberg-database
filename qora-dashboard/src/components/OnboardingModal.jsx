@@ -69,16 +69,16 @@ export default function OnboardingModal({ onDone }) {
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center px-4">
-      <div className="w-full max-w-lg bg-[#0f0f0f] border border-[#222] rounded-2xl overflow-hidden shadow-2xl">
+      <div className="w-full max-w-lg bg-[var(--bg-base)] border border-[var(--border2)] rounded-2xl overflow-hidden shadow-2xl">
 
         {/* Header */}
-        <div className="px-6 pt-6 pb-4 border-b border-[#1a1a1a]">
+        <div className="px-6 pt-6 pb-4 border-b border-[var(--border)]">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <div className="text-white font-semibold text-lg">Get started with Qora</div>
-              <div className="text-[#555] text-xs mt-0.5">Takes less than 2 minutes</div>
+              <div className="text-[var(--text-primary)] font-semibold text-lg">Get started with Qora</div>
+              <div className="text-[var(--text-secondary)] text-xs mt-0.5">Takes less than 2 minutes</div>
             </div>
-            <button onClick={finish} className="text-[#444] hover:text-[#888] text-xs transition">Skip</button>
+            <button onClick={finish} className="text-[var(--text-dim)] hover:text-[var(--text-secondary)] text-xs transition">Skip</button>
           </div>
           {/* Step progress */}
           <div className="flex items-center gap-2">
@@ -90,12 +90,12 @@ export default function OnboardingModal({ onDone }) {
                 <div key={n} className="flex items-center gap-2 flex-1">
                   <div className={`flex items-center gap-1.5 ${active ? 'opacity-100' : done ? 'opacity-100' : 'opacity-30'}`}>
                     <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0
-                      ${done ? 'bg-green-500 text-white' : active ? 'bg-blue-600 text-white' : 'bg-[#222] text-[#666]'}`}>
+                      ${done ? 'bg-green-500 text-[var(--text-primary)]' : active ? 'bg-blue-600 text-[var(--text-primary)]' : 'bg-[var(--border2)] text-[var(--text-muted)]'}`}>
                       {done ? '✓' : n}
                     </div>
-                    <span className={`text-xs ${active ? 'text-white' : done ? 'text-green-400' : 'text-[#555]'}`}>{label}</span>
+                    <span className={`text-xs ${active ? 'text-[var(--text-primary)]' : done ? 'text-green-400' : 'text-[var(--text-secondary)]'}`}>{label}</span>
                   </div>
-                  {i < STEP_LABELS.length - 1 && <div className={`h-px flex-1 ${step > n ? 'bg-green-500/40' : 'bg-[#222]'}`} />}
+                  {i < STEP_LABELS.length - 1 && <div className={`h-px flex-1 ${step > n ? 'bg-green-500/40' : 'bg-[var(--border2)]'}`} />}
                 </div>
               )
             })}
@@ -108,24 +108,24 @@ export default function OnboardingModal({ onDone }) {
           {/* STEP 1 */}
           {step === 1 && (
             <div>
-              <div className="text-[#888] text-sm mb-4">
+              <div className="text-[var(--text-secondary)] text-sm mb-4">
                 A collection stores your vectors — think of it like a table in a database.
               </div>
               <form onSubmit={handleCreate} className="space-y-3">
                 <div>
-                  <label className="text-[#666] text-xs mb-1.5 block">Collection name</label>
+                  <label className="text-[var(--text-muted)] text-xs mb-1.5 block">Collection name</label>
                   <input
                     autoFocus
                     value={collectionName}
                     onChange={e => setCollectionName(e.target.value)}
                     placeholder="e.g. my_products"
-                    className="w-full bg-[#0a0a0a] border border-[#2a2a2a] rounded-md px-3 py-2.5 text-white text-sm focus:outline-none focus:border-blue-600 placeholder-[#333] font-mono"
+                    className="w-full bg-[var(--input-bg)] border border-[var(--input-border)] rounded-md px-3 py-2.5 text-[var(--text-primary)] text-sm focus:outline-none focus:border-blue-600 placeholder-[var(--text-dim)] font-mono"
                   />
-                  <p className="text-[#444] text-xs mt-1">Lowercase, underscores only</p>
+                  <p className="text-[var(--text-dim)] text-xs mt-1">Lowercase, underscores only</p>
                 </div>
                 {error && <p className="text-red-400 text-xs">{error}</p>}
                 <button type="submit" disabled={loading || !collectionName.trim()}
-                  className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white text-sm font-medium py-2.5 rounded-md transition">
+                  className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-[var(--text-primary)] text-sm font-medium py-2.5 rounded-md transition">
                   {loading ? 'Creating...' : 'Create Collection →'}
                 </button>
               </form>
@@ -135,14 +135,14 @@ export default function OnboardingModal({ onDone }) {
           {/* STEP 2 */}
           {step === 2 && (
             <div>
-              <div className="text-[#888] text-sm mb-2">
+              <div className="text-[var(--text-secondary)] text-sm mb-2">
                 Load 5 sample movie descriptions to see hybrid search in action.
               </div>
-              <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-3 mb-4">
-                <div className="text-[#444] text-xs mb-2 font-mono">collection: <span className="text-blue-400">{collection}</span></div>
+              <div className="bg-[var(--input-bg)] border border-[var(--border)] rounded-lg p-3 mb-4">
+                <div className="text-[var(--text-dim)] text-xs mb-2 font-mono">collection: <span className="text-blue-400">{collection}</span></div>
                 <div className="space-y-1">
                   {SAMPLE_DATA.map((d, i) => (
-                    <div key={i} className={`flex items-center gap-2 text-xs transition-all duration-300 ${indexProgress > i ? 'text-green-400' : 'text-[#333]'}`}>
+                    <div key={i} className={`flex items-center gap-2 text-xs transition-all duration-300 ${indexProgress > i ? 'text-green-400' : 'text-[var(--text-dim)]'}`}>
                       <span>{indexProgress > i ? '✓' : '○'}</span>
                       <span>{d.label}</span>
                     </div>
@@ -150,16 +150,16 @@ export default function OnboardingModal({ onDone }) {
                 </div>
                 {loading && (
                   <div className="mt-3">
-                    <div className="h-1 bg-[#1a1a1a] rounded-full overflow-hidden">
+                    <div className="h-1 bg-[var(--border)] rounded-full overflow-hidden">
                       <div className="h-full bg-blue-600 rounded-full transition-all duration-500"
                         style={{ width: `${(indexProgress / SAMPLE_DATA.length) * 100}%` }} />
                     </div>
-                    <div className="text-[#555] text-xs mt-1">{indexProgress}/{SAMPLE_DATA.length} indexed</div>
+                    <div className="text-[var(--text-secondary)] text-xs mt-1">{indexProgress}/{SAMPLE_DATA.length} indexed</div>
                   </div>
                 )}
               </div>
               <button onClick={handleLoadSample} disabled={loading}
-                className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white text-sm font-medium py-2.5 rounded-md transition">
+                className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-[var(--text-primary)] text-sm font-medium py-2.5 rounded-md transition">
                 {loading ? `Indexing... ${indexProgress}/${SAMPLE_DATA.length}` : 'Load Sample Data →'}
               </button>
             </div>
@@ -168,7 +168,7 @@ export default function OnboardingModal({ onDone }) {
           {/* STEP 3 */}
           {step === 3 && (
             <div>
-              <div className="text-[#888] text-sm mb-4">
+              <div className="text-[var(--text-secondary)] text-sm mb-4">
                 Your collection is ready. Try a search — type anything, Qora uses hybrid search automatically.
               </div>
               <form onSubmit={handleSearch} className="flex gap-2 mb-4">
@@ -177,10 +177,10 @@ export default function OnboardingModal({ onDone }) {
                   value={query}
                   onChange={e => setQuery(e.target.value)}
                   placeholder="e.g. space travel, superhero, dream..."
-                  className="flex-1 bg-[#0a0a0a] border border-[#2a2a2a] rounded-md px-3 py-2.5 text-white text-sm focus:outline-none focus:border-blue-600 placeholder-[#333]"
+                  className="flex-1 bg-[var(--input-bg)] border border-[var(--input-border)] rounded-md px-3 py-2.5 text-[var(--text-primary)] text-sm focus:outline-none focus:border-blue-600 placeholder-[var(--text-dim)]"
                 />
                 <button type="submit" disabled={searching || !query.trim()}
-                  className="bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white text-sm font-medium px-4 rounded-md transition">
+                  className="bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-[var(--text-primary)] text-sm font-medium px-4 rounded-md transition">
                   {searching ? '...' : 'Search'}
                 </button>
               </form>
@@ -188,23 +188,23 @@ export default function OnboardingModal({ onDone }) {
               {results.length > 0 && (
                 <div className="space-y-2 mb-4">
                   {results.map((r, i) => (
-                    <div key={i} className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg px-3 py-2.5">
+                    <div key={i} className="bg-[var(--input-bg)] border border-[var(--border)] rounded-lg px-3 py-2.5">
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-[#555] text-xs">#{i + 1}</span>
+                        <span className="text-[var(--text-secondary)] text-xs">#{i + 1}</span>
                         <span className="text-blue-400 text-xs font-mono">{(r.score * 100).toFixed(0)}% match</span>
                       </div>
-                      <p className="text-white text-xs leading-relaxed line-clamp-2">{r.text}</p>
+                      <p className="text-[var(--text-primary)] text-xs leading-relaxed line-clamp-2">{r.text}</p>
                     </div>
                   ))}
                 </div>
               )}
 
               {results.length === 0 && query && !searching && (
-                <div className="text-[#444] text-xs mb-4">No results — try "space" or "hero"</div>
+                <div className="text-[var(--text-dim)] text-xs mb-4">No results — try "space" or "hero"</div>
               )}
 
               <button onClick={finish}
-                className="w-full bg-green-600 hover:bg-green-500 text-white text-sm font-medium py-2.5 rounded-md transition">
+                className="w-full bg-green-600 hover:bg-green-500 text-[var(--text-primary)] text-sm font-medium py-2.5 rounded-md transition">
                 Go to Dashboard →
               </button>
             </div>

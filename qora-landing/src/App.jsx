@@ -1,5 +1,6 @@
 ﻿import { useState, useRef, useEffect } from 'react'
 import { Routes, Route, Link } from 'react-router-dom'
+import HomePageComponent from './HomePageNew'
 import ProductDatabase from './pages/ProductDatabase'
 import ProductMemory from './pages/ProductMemory'
 import ProductAssistant from './pages/ProductAssistant'
@@ -107,7 +108,7 @@ function NsIcon() { return <svg width="18" height="18" fill="none" stroke="curre
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<HomePage />} />
+      <Route path="/" element={<HomePageComponent ProductDropdown={ProductDropdown} />} />
       <Route path="/product/database" element={<ProductDatabase />} />
       <Route path="/product/memory" element={<ProductMemory />} />
       <Route path="/product/assistant" element={<ProductAssistant />} />
@@ -122,9 +123,71 @@ export default function App() {
   )
 }
 
+const DEMO_RESULTS = {
+  'return policy': [
+    { text: 'Our return policy allows 30 day returns for all products purchased online.', score: 0.97, source: 'handbook.pdf' },
+    { text: 'Items must be unused and in original packaging to qualify for a return.', score: 0.91, source: 'faq.pdf' },
+    { text: 'Refunds are processed within 5-7 business days after receiving the item.', score: 0.86, source: 'handbook.pdf' },
+  ],
+  'pricing plans': [
+    { text: 'Free tier includes 500K vectors, unlimited collections, and never pauses.', score: 0.98, source: 'pricing.pdf' },
+    { text: 'Starter plan at ₹799/mo gives 5M vectors and 10K queries per day.', score: 0.93, source: 'pricing.pdf' },
+    { text: 'Growth plan includes metadata filters and priority at ₹3,999/mo.', score: 0.88, source: 'pricing.pdf' },
+  ],
+  'agent memory': [
+    { text: 'Long-term memory persists forever — ideal for user preferences and facts.', score: 0.96, source: 'memory-docs.pdf' },
+    { text: 'Short-term memory expires after 1 hour — perfect for session context.', score: 0.90, source: 'memory-docs.pdf' },
+    { text: 'Episodic memory stores specific events and expires after 30 days.', score: 0.85, source: 'memory-docs.pdf' },
+  ],
+}
+
+const STACK_ITEMS = [
+  { icon: '🐍', name: 'Python' }, { icon: '⚡', name: 'LangChain' }, { icon: '🦙', name: 'LlamaIndex' },
+  { icon: '☕', name: 'Java' }, { icon: '🟢', name: 'Node.js' }, { icon: '🦀', name: 'Rust' },
+  { icon: '🐹', name: 'Go' }, { icon: '🔷', name: '.NET' }, { icon: '🌿', name: 'Spring Boot' },
+  { icon: '⚛️', name: 'React' }, { icon: '🚀', name: 'FastAPI' }, { icon: '🌊', name: 'Next.js' },
+]
+
+function VectorNodes() {
+  const nodes = [
+    { x: 15, y: 20, delay: 0 }, { x: 80, y: 15, delay: 0.5 }, { x: 90, y: 70, delay: 1 },
+    { x: 10, y: 75, delay: 1.5 }, { x: 50, y: 10, delay: 0.3 }, { x: 85, y: 45, delay: 0.8 },
+  ]
+  return (
+    <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-20" style={{zIndex:0}}>
+      <defs>
+        <radialGradient id="ng" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#2563eb" stopOpacity="0.8" />
+          <stop offset="100%" stopColor="#2563eb" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      {nodes.map((n, i) => (
+        <g key={i}>
+          <circle
+            cx={`${n.x}%`} cy={`${n.y}%`} r="3"
+            fill="#2563eb"
+            style={{ animation: `breathe ${4 + n.delay}s ease-in-out infinite`, animationDelay: `${n.delay}s` }}
+          />
+          {nodes.slice(i + 1, i + 3).map((m, j) => (
+            <line key={j}
+              x1={`${n.x}%`} y1={`${n.y}%`}
+              x2={`${m.x}%`} y2={`${m.y}%`}
+              stroke="#2563eb" strokeWidth="0.5" strokeOpacity="0.3"
+            />
+          ))}
+        </g>
+      ))}
+    </svg>
+  )
+}
+
 function HomePage() {
   const [email, setEmail] = useState('')
   const [submitted, setSubmitted] = useState(false)
+  const [query, setQuery] = useState('')
+  const [results, setResults] = useState([])
+  const [searching, setSearching] = useState(false)
+  const [activeTab, setActiveTab] = useState(0)
 
   const submit = async (e) => {
     e.preventDefault()
