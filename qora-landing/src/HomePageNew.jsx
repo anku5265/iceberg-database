@@ -301,11 +301,6 @@ export default function HomePage({ ProductDropdown }) {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <a href="https://github.com/qora-db" target="_blank" rel="noreferrer"
-              className="hidden md:flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg transition border"
-              style={{ color: textMuted, borderColor: cardBorder }}>
-              <GHIcon /> GitHub
-            </a>
             <a href={`${D}/login`} className="text-sm px-3 py-1.5 transition" style={{ color: textMuted }}>Sign in</a>
             <a href={`${D}/signup`} className="btn-primary text-sm px-4 py-2 rounded-lg">Start free</a>
             {/* Theme toggle */}

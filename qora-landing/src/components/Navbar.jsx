@@ -17,9 +17,6 @@ export function Navbar({ dark, setDark }) {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <a href="https://github.com/qora-db" target="_blank" className={`hidden md:flex items-center gap-2 text-sm ${dark ? 'text-[#888] hover:text-white border-[#1f1f1f] hover:border-[#333]' : 'text-[#666] hover:text-black border-[#ddd] hover:border-[#aaa]'} border px-3 py-1.5 rounded-md transition`}>
-            <GHIcon /> GitHub
-          </a>
           <a href={`${D}/login`} className={`text-sm ${dark ? 'text-[#888] hover:text-white' : 'text-[#666] hover:text-black'} px-3 py-1.5 transition`}>Sign in</a>
           <a href={`${D}/signup`} className="bg-white text-black text-sm font-semibold px-4 py-1.5 rounded-md hover:bg-white/90 transition">Start your project</a>
           {setDark && (

@@ -211,9 +211,6 @@ function HomePage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <a href="https://github.com/qora-db" target="_blank" className="hidden md:flex items-center gap-2 text-[#666] hover:text-white text-sm border border-white/[0.08] hover:border-white/20 px-3 py-1.5 rounded-md transition">
-              <GHIcon /> GitHub
-            </a>
             <a href={`${D}/login`} className="text-sm text-[#666] hover:text-white px-3 py-1.5 transition">Sign in</a>
             <a href={`${D}/signup`} className="btn-glow bg-white text-black text-sm font-semibold px-4 py-1.5 rounded-md hover:bg-white/90 transition">Start for free</a>
           </div>
