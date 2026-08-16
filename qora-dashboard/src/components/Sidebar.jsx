@@ -28,51 +28,50 @@ const groups = [
 
 export default function Sidebar({ open = true }) {
   return (
-    <aside className={`${open ? 'w-56' : 'w-14'} shrink-0 min-h-screen bg-[var(--bg-surface)] border-r border-[var(--border)] flex flex-col overflow-hidden transition-all duration-200`}>
+    <aside className={`${open ? 'w-56' : 'w-[52px]'} shrink-0 min-h-screen bg-[var(--bg-surface)] border-r border-[var(--border)] flex flex-col overflow-hidden transition-all duration-200`}
+      style={{ boxShadow: 'inset -1px 0 0 var(--border)' }}>
+
       {/* Logo */}
-      <div className="px-4 py-[18px] border-b border-[var(--border)] flex items-center">
+      <div className={`flex items-center border-b border-[var(--border)] ${open ? 'px-5 py-4' : 'justify-center py-4'}`}>
         {open ? (
-          <>
-            <span className="text-[var(--text-primary)] font-bold text-base tracking-tight whitespace-nowrap">Qora</span>
-            <span className="ml-2 text-[10px] text-[var(--text-muted)] bg-[var(--bg-hover)] px-1.5 py-0.5 rounded border border-[var(--border2)] whitespace-nowrap font-medium uppercase tracking-wider">beta</span>
-          </>
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-md bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center">
+              <span className="text-white text-xs font-black">Q</span>
+            </div>
+            <span className="text-[var(--text-primary)] font-bold text-sm tracking-tight">Qora</span>
+            <span className="text-[9px] text-[var(--text-muted)] bg-[var(--bg-hover)] px-1.5 py-0.5 rounded-md border border-[var(--border2)] font-semibold uppercase tracking-wider">beta</span>
+          </div>
         ) : (
-          <span className="text-[var(--text-primary)] font-bold text-base mx-auto">Q</span>
+          <div className="w-6 h-6 rounded-md bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center">
+            <span className="text-white text-xs font-black">Q</span>
+          </div>
         )}
       </div>
 
-      {/* Nav groups */}
-      <nav className="flex-1 px-2 py-3 space-y-4 overflow-hidden">
+      {/* Nav */}
+      <nav className="flex-1 px-2 py-3 overflow-hidden">
         {groups.map((group, gi) => (
-          <div key={gi}>
+          <div key={gi} className={gi > 0 ? 'mt-4' : ''}>
             {group.label && open && (
-              <div className="px-3 mb-1">
-                <span className="text-[10px] font-semibold text-[var(--text-dim)] uppercase tracking-widest">{group.label}</span>
-              </div>
+              <p className="section-label px-3 mb-1.5">{group.label}</p>
             )}
-            <div className="space-y-0.5">
+            <div className="space-y-px">
               {group.links.map(l => (
-                <NavLink
-                  key={l.to}
-                  to={l.to}
-                  end={l.to === '/'}
-                  title={!open ? l.label : undefined}
+                <NavLink key={l.to} to={l.to} end={l.to === '/'} title={!open ? l.label : undefined}
                   className={({ isActive }) =>
-                    `flex items-center gap-3 px-2.5 py-2 rounded-lg text-sm transition-all ${
-                      open ? '' : 'justify-center'
-                    } ${
+                    `flex items-center gap-2.5 rounded-lg text-sm transition-all duration-100 ${open ? 'px-3 py-2' : 'justify-center py-2.5'} ${
                       isActive
-                        ? 'bg-[var(--bg-hover)] text-[var(--text-primary)] border border-[var(--border2)]'
-                        : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] border border-transparent'
+                        ? 'bg-blue-600/10 text-blue-400 font-medium'
+                        : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]'
                     }`
                   }
                 >
-                  <span className="shrink-0">{l.icon}</span>
-                  {open && <span className="whitespace-nowrap font-medium">{l.label}</span>}
+                  <span className="shrink-0 opacity-90">{l.icon}</span>
+                  {open && <span className="whitespace-nowrap">{l.label}</span>}
                 </NavLink>
               ))}
             </div>
-            {gi < groups.length - 1 && open && <div className="mt-3 mx-2 h-px bg-[var(--border)]"/>}
+            {gi < groups.length - 1 && open && <div className="mt-3 h-px bg-[var(--border)]"/>}
           </div>
         ))}
       </nav>
