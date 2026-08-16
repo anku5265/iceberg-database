@@ -11,7 +11,7 @@ export function Navbar({ dark, setDark }) {
           <Link to="/" className="text-xl font-bold text-white">Qora</Link>
           <div className="hidden md:flex items-center gap-1 text-sm">
             <ProductDropdown dark={dark} />
-            {[['Developers','#code'],['Pricing','/#pricing'],['Docs',`${D}/docs`],['Blog','#']].map(([l,h]) => (
+            {[['Developers','#code'],['Pricing','/#pricing'],['Docs','/docs'],['Blog','#']].map(([l,h]) => (
               <a key={l} href={h} className={`${dark ? 'text-[#888] hover:text-white hover:bg-white/5' : 'text-[#666] hover:text-black hover:bg-black/5'} px-3 py-1.5 rounded-md transition`}>{l}</a>
             ))}
           </div>

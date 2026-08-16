@@ -11,6 +11,7 @@ import Security from './pages/Security'
 import Integrations from './pages/Integrations'
 import ProductBackup from './pages/ProductBackup'
 import ProductNamespaces from './pages/ProductNamespaces'
+import Docs from './pages/Docs'
 
 const D = import.meta.env.VITE_DASHBOARD_URL || 'http://localhost:3000'
 const API = import.meta.env.VITE_API_URL || 'http://localhost:8000'
@@ -119,6 +120,7 @@ export default function App() {
       <Route path="/product/namespaces" element={<ProductNamespaces />} />
       <Route path="/security" element={<Security />} />
       <Route path="/integrations" element={<Integrations />} />
+      <Route path="/docs" element={<Docs />} />
     </Routes>
   )
 }
