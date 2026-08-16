@@ -45,12 +45,36 @@ function ProtectedLayout({ children }) {
   )
 }
 
-export default function App() {
+function PublicDocsLayout() {
+  return (
+    <div className="min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)]">
+      {/* Public header */}
+      <header className="h-12 bg-[var(--bg-surface)] border-b border-[var(--border)] flex items-center justify-between px-6 sticky top-0 z-10">
+        <div className="flex items-center gap-2">
+          <div className="w-5 h-5 rounded bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center">
+            <span className="text-white text-[10px] font-black">Q</span>
+          </div>
+          <span className="text-[var(--text-primary)] font-semibold text-sm">Qora</span>
+          <span className="text-[var(--text-dim)] text-xs mx-1">/</span>
+          <span className="text-[var(--text-muted)] text-sm">Docs</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <a href="/login" className="text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] px-3 py-1.5 transition">Sign in</a>
+          <a href="/signup" className="text-sm bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg transition font-medium">Get started</a>
+        </div>
+      </header>
+      <Docs />
+    </div>
+  )
+}
+
+
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/login/key" element={<LoginKey />} />
       <Route path="/signup" element={<Signup />} />
+      <Route path="/docs" element={<PublicDocsLayout />} />
       <Route path="/" element={<ProtectedLayout><Overview /></ProtectedLayout>} />
       <Route path="/collections" element={<ProtectedLayout><Collections /></ProtectedLayout>} />
       <Route path="/explorer" element={<ProtectedLayout><Explorer /></ProtectedLayout>} />
@@ -58,7 +82,6 @@ export default function App() {
       <Route path="/logs" element={<ProtectedLayout><Logs /></ProtectedLayout>} />
       <Route path="/assistants" element={<ProtectedLayout><Assistants /></ProtectedLayout>} />
       <Route path="/memory" element={<ProtectedLayout><Memory /></ProtectedLayout>} />
-      <Route path="/docs" element={<ProtectedLayout><Docs /></ProtectedLayout>} />
       <Route path="/admin" element={<ProtectedLayout><Admin /></ProtectedLayout>} />
     </Routes>
   )
