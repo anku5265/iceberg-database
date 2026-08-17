@@ -1,12 +1,12 @@
-"""
+﻿"""
 License & BYOC heartbeat system.
 
-Self-hosted Qora instances send periodic pings to Qora HQ:
+Self-hosted Iceberg instances send periodic pings to Iceberg HQ:
 - License validation
 - Anonymous usage stats (no user data, only counts)
 - Version check for updates
 
-Qora HQ has NO inbound access to customer servers.
+Iceberg HQ has NO inbound access to customer servers.
 Data stays 100% on customer infrastructure.
 """
 import hashlib
@@ -16,7 +16,7 @@ import httpx
 import platform
 from core.config import settings
 
-HEARTBEAT_URL = "https://api.qora.in/v1/heartbeat"
+HEARTBEAT_URL = "https://api.icebergdb.io/v1/heartbeat"
 HEARTBEAT_INTERVAL = 3600  # Every hour
 
 def get_instance_id() -> str:
@@ -26,7 +26,7 @@ def get_instance_id() -> str:
 
 def send_heartbeat(usage_stats: dict = None):
     """
-    Send anonymous heartbeat to Qora HQ.
+    Send anonymous heartbeat to Iceberg HQ.
     NO user data, NO vectors, NO content — only counts.
     """
     if not settings.byoc_license_key:
@@ -56,7 +56,7 @@ def validate_license(license_key: str) -> dict:
     """Check if license is valid."""
     try:
         r = httpx.post(
-            "https://api.qora.in/v1/license/validate",
+            "https://api.icebergdb.io/v1/license/validate",
             json={"license_key": license_key, "instance_id": get_instance_id()},
             timeout=10
         )

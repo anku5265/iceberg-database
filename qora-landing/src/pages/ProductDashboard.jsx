@@ -12,7 +12,7 @@ export default function ProductDashboard() {
       <Navbar dark={dark} />
 
       <section className="container mx-auto px-6 pt-24 pb-16 max-w-5xl">
-        <div className="inline-flex items-center gap-2 text-xs px-3 py-1.5 rounded-full border border-[#222] text-[#666] bg-[#111] mb-6">Qora Dashboard</div>
+        <div className="inline-flex items-center gap-2 text-xs px-3 py-1.5 rounded-full border border-[#222] text-[#666] bg-[#111] mb-6">Iceberg Dashboard</div>
         <h1 className="text-5xl md:text-6xl font-extrabold leading-tight tracking-tight mb-6">
           Your vector DB.<br />
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-blue-600">Fully visible.</span>
@@ -81,17 +81,17 @@ export default function ProductDashboard() {
         <div className="container mx-auto px-6 max-w-5xl">
           <p className="text-xs text-[#555] uppercase tracking-widest mb-3">Philosophy</p>
           <h2 className="text-3xl font-bold mb-4">Dashboard or terminal — your call</h2>
-          <p className="text-[#666] mb-12 max-w-2xl">Some developers prefer code. Others prefer UI. Qora supports both — full REST API and SDKs for code, dashboard for everything else.</p>
+          <p className="text-[#666] mb-12 max-w-2xl">Some developers prefer code. Others prefer UI. Iceberg supports both — full REST API and SDKs for code, dashboard for everything else.</p>
           <div className="grid md:grid-cols-2 gap-6">
             <div className="rounded-xl border border-[#1a1a1a] p-6">
               <p className="text-xs text-[#555] mb-4">For developers</p>
               <pre className="text-xs font-mono text-[#aaa] leading-6">{`# Create collection
-curl -X POST https://api.qora.in/collections \\
+curl -X POST https://api.icebergdb.io/collections \\
   -H "X-API-Key: qr_your_key" \\
   -d '{"name": "my_docs"}'
 
 # Search
-curl -X POST https://api.qora.in/search \\
+curl -X POST https://api.icebergdb.io/search \\
   -H "X-API-Key: qr_your_key" \\
   -d '{"collection":"my_docs","query":"returns"}'`}</pre>
             </div>
@@ -126,9 +126,9 @@ function Footer() {
   return (
     <footer className="border-t border-[#111] py-10">
       <div className="container mx-auto px-6 max-w-6xl flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-[#555]">
-        <Link to="/" className="text-white font-bold text-lg">Qora</Link>
+        <Link to="/" className="text-white font-bold text-lg">Iceberg</Link>
         <div className="flex gap-6">{['Privacy','Terms','Docs','Status'].map(l=><a key={l} href="#" className="hover:text-white transition">{l}</a>)}</div>
-        <div>© 2026 Qora</div>
+        <div>© 2026 Iceberg</div>
       </div>
     </footer>
   )

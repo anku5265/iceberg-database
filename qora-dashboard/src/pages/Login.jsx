@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 
 const BASE = import.meta.env.VITE_API_URL || '/api'
@@ -50,7 +50,7 @@ export default function Login() {
     <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <div className="text-2xl font-semibold text-white mb-1">Qora</div>
+          <div className="text-2xl font-semibold text-white mb-1">Iceberg</div>
           <div className="text-[#666] text-sm">Sign in to your account</div>
         </div>
 

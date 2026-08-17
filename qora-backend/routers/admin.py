@@ -1,5 +1,5 @@
-"""
-Admin endpoints — for Qora BYOC management.
+﻿"""
+Admin endpoints — for Iceberg BYOC management.
 Only accessible with master API key.
 """
 from fastapi import APIRouter, Depends, HTTPException
@@ -31,17 +31,17 @@ async def admin_status(user_id: str = Depends(verify_api_key)):
 @router.post("/tunnel/open")
 async def open_tunnel(user_id: str = Depends(verify_api_key)):
     """
-    Open secure tunnel — allows Qora support team to access this instance.
+    Open secure tunnel — allows iceberg support team to access this instance.
     Auto-closes after 4 hours. User can close anytime.
     """
     success = telemetry.open_tunnel()
     if success:
-        return {"message": "Tunnel opened — Qora team has access for 4 hours", "close_at": int(time.time()) + 4*3600}
+        return {"message": "Tunnel opened — Iceberg team has access for 4 hours", "close_at": int(time.time()) + 4*3600}
     raise HTTPException(status_code=500, detail="Failed to open tunnel. Is cloudflared installed?")
 
 @router.delete("/tunnel")
 async def close_tunnel(user_id: str = Depends(verify_api_key)):
-    """Close secure tunnel — immediately revoke Qora team access."""
+    """Close secure tunnel — immediately revoke Iceberg team access."""
     telemetry.close_tunnel()
     return {"message": "Tunnel closed — access revoked"}
 
@@ -61,7 +61,7 @@ async def billing_status(user_id: str = Depends(verify_api_key)):
         "plan": plan,
         "search": status,
         "index": index_status,
-        "upgrade_url": "https://dashboard.qora.in/pricing"
+        "upgrade_url": "https://dashboard.icebergdb.io/pricing"
     }
 
 @router.get("/analytics")

@@ -1,10 +1,10 @@
-"""
+﻿"""
 No-code RAG Assistant — Upload docs, get a chatbot instantly.
 Better than Pinecone Assistant:
   - WhatsApp channel support
   - Website embed widget
   - Custom branding
-  - Any LLM (OpenAI, Gemini, future: Qora's own model)
+  - Any LLM (OpenAI, Gemini, future: Iceberg's own model)
   - India hosted
 """
 import uuid
@@ -136,7 +136,7 @@ async def chat(asst_id: str, body: ChatRequest):
             "sources": []
         }
 
-    # Call LLM — pluggable (future: replace with Qora's own model)
+    # Call LLM — pluggable (future: replace with Iceberg's own model)
     reply = await _call_llm(
         provider=asst["llm_provider"],
         api_key=asst["llm_api_key"],
@@ -155,7 +155,7 @@ async def chat(asst_id: str, body: ChatRequest):
 async def _call_llm(provider: str, api_key: str, model: str, context: str, question: str, greeting: str) -> str:
     """
     Pluggable LLM caller.
-    Future: when Qora has own AI model, add provider='qora' here.
+    Future: when Iceberg has own AI model, add provider='Iceberg' here.
     """
     system_prompt = f"""You are a helpful assistant. Answer questions based on the provided context only.
 If the answer is not in the context, say you don't know.
@@ -260,24 +260,24 @@ async def widget_js(asst_id: str):
 
   // Create chat button
   var btn = document.createElement('div');
-  btn.id = 'qora-chat-btn';
+  btn.id = 'iceberg-chat-btn';
   btn.innerHTML = '<svg width="24" height="24" fill="white" viewBox="0 0 24 24"><path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.832-1.438A9.96 9.96 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2Z"/></svg>';
   btn.style.cssText = 'position:fixed;bottom:20px;right:20px;width:56px;height:56px;background:' + color + ';border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.3);z-index:9999;';
   document.body.appendChild(btn);
 
   // Create chat window
   var win = document.createElement('div');
-  win.id = 'qora-chat-win';
+  win.id = 'iceberg-chat-win';
   win.style.cssText = 'display:none;position:fixed;bottom:90px;right:20px;width:360px;height:480px;background:#111;border:1px solid #222;border-radius:16px;flex-direction:column;z-index:9999;overflow:hidden;';
   win.innerHTML = '<div style="background:' + color + ';padding:16px;color:white;font-family:sans-serif;"><strong>' + name + '</strong></div>' +
-    '<div id="qora-msgs" style="flex:1;overflow-y:auto;padding:16px;font-family:sans-serif;font-size:14px;color:#ccc;height:350px;"></div>' +
+    '<div id="iceberg-msgs" style="flex:1;overflow-y:auto;padding:16px;font-family:sans-serif;font-size:14px;color:#ccc;height:350px;"></div>' +
     '<div style="padding:12px;border-top:1px solid #222;display:flex;gap:8px;">' +
-    '<input id="qora-input" placeholder="Ask a question..." style="flex:1;background:#1a1a1a;border:1px solid #333;border-radius:8px;padding:8px 12px;color:white;font-size:14px;outline:none;" />' +
-    '<button id="qora-send" style="background:' + color + ';color:white;border:none;border-radius:8px;padding:8px 16px;cursor:pointer;font-size:14px;">Send</button></div>';
+    '<input id="iceberg-input" placeholder="Ask a question..." style="flex:1;background:#1a1a1a;border:1px solid #333;border-radius:8px;padding:8px 12px;color:white;font-size:14px;outline:none;" />' +
+    '<button id="iceberg-send" style="background:' + color + ';color:white;border:none;border-radius:8px;padding:8px 16px;cursor:pointer;font-size:14px;">Send</button></div>';
   document.body.appendChild(win);
 
   // Add greeting
-  var msgs = document.getElementById('qora-msgs');
+  var msgs = document.getElementById('iceberg-msgs');
   msgs.innerHTML = '<div style="background:#1a1a1a;border-radius:8px;padding:10px;margin-bottom:8px;">' + greeting + '</div>';
 
   // Toggle
@@ -296,8 +296,8 @@ async def widget_js(asst_id: str):
         msgs.scrollTop = msgs.scrollHeight;
       }});
   }}
-  document.getElementById('qora-send').onclick = send;
-  document.getElementById('qora-input').onkeydown = function(e) {{ if(e.key==='Enter') send(); }};
+  document.getElementById('iceberg-send').onclick = send;
+  document.getElementById('iceberg-input').onkeydown = function(e) {{ if(e.key==='Enter') send(); }};
 }})();
 """
     return HTMLResponse(js, media_type="application/javascript")

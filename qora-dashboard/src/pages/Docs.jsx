@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { API_URL } from '../lib/config'
 
 const NAV = [
@@ -37,11 +37,11 @@ const CONTENT = {
     sections: [
       {
         heading: '1. Sign up and get your API key',
-        text: 'Create an account at dashboard.qora.in. After signup, your API key is automatically generated and saved. Find it under API Keys in the sidebar.',
+        text: 'Create an account at dashboard.icebergdb.io. After signup, your API key is automatically generated and saved. Find it under API Keys in the sidebar.',
       },
       {
         heading: '2. Install the Python SDK',
-        code: `pip install qora`,
+        code: `pip Install Iceberg`,
         lang: 'bash',
       },
       {
@@ -54,11 +54,11 @@ client = Client(api_key="qr_your_api_key")
 client.create_collection("my_docs")
 
 # Index some text
-client.index_text("my_docs", "Qora is India's vector database for AI teams.")
+client.index_text("my_docs", "Iceberg is India's vector database for AI teams.")
 client.index_text("my_docs", "Hybrid search combines semantic and keyword search.")
 
 # Search
-results = client.search("my_docs", "what is Qora?")
+results = client.search("my_docs", "what is Iceberg?")
 for r in results:
     print(f"{r.score:.2f} — {r.text}")`,
         lang: 'python',
@@ -107,7 +107,7 @@ curl -X POST .../auth/keys \\
 
   concepts: {
     title: 'Core Concepts',
-    desc: 'Key terms and how Qora works under the hood.',
+    desc: 'Key terms and how Iceberg works under the hood.',
     sections: [
       {
         heading: 'Collections',
@@ -115,11 +115,11 @@ curl -X POST .../auth/keys \\
       },
       {
         heading: 'Chunks',
-        text: 'When you index text or a file, Qora automatically splits it into smaller pieces (chunks), embeds each chunk, and stores them. This is what enables granular, accurate search.',
+        text: 'When you index text or a file, Iceberg automatically splits it into smaller pieces (chunks), embeds each chunk, and stores them. This is what enables granular, accurate search.',
       },
       {
         heading: 'Hybrid Search',
-        text: 'Qora combines two search methods: semantic (vector similarity) and keyword (BM25). The alpha parameter controls the blend — 0.0 = pure keyword, 1.0 = pure semantic, 0.5 = balanced.',
+        text: 'Iceberg combines two search methods: semantic (vector similarity) and keyword (BM25). The alpha parameter controls the blend — 0.0 = pure keyword, 1.0 = pure semantic, 0.5 = balanced.',
         code: `results = client.search(
     "my_docs",
     "return policy",
@@ -130,7 +130,7 @@ curl -X POST .../auth/keys \\
       },
       {
         heading: 'Embeddings',
-        text: 'Qora uses multilingual-e5-large (1024 dimensions) to embed text. This model handles English, Hindi, and 90+ other languages.',
+        text: 'Iceberg uses multilingual-e5-large (1024 dimensions) to embed text. This model handles English, Hindi, and 90+ other languages.',
       }
     ]
   },
@@ -193,12 +193,12 @@ DELETE /collections/{name}`,
 client.upload("my_docs", "policy.pdf")
 
 # Supported: PDF, TXT, MD
-# Qora auto-chunks and embeds the file`,
+# Iceberg auto-chunks and embeds the file`,
         lang: 'python',
       },
       {
         heading: 'JavaScript',
-        code: `import { Client } from 'qora'
+        code: `import { Client } from 'Iceberg'
 const client = new Client({ apiKey: 'qr_your_key' })
 
 // Index text
@@ -324,7 +324,7 @@ DELETE /memory/{agent_id}`,
       },
       {
         heading: 'Upload training documents',
-        text: 'Upload PDFs, text files, or markdown. Qora automatically chunks and indexes them into your assistant\'s knowledge base.',
+        text: 'Upload PDFs, text files, or markdown. Iceberg automatically chunks and indexes them into your assistant\'s knowledge base.',
       },
       {
         heading: 'Embed on your website',
@@ -343,11 +343,11 @@ https://qora-database-production.up.railway.app/assistant/{id}/whatsapp`,
 
   python: {
     title: 'Python SDK',
-    desc: 'Official Python client for Qora.',
+    desc: 'Official Python client for Iceberg.',
     sections: [
       {
         heading: 'Install',
-        code: `pip install qora`,
+        code: `pip Install Iceberg`,
         lang: 'bash',
       },
       {
@@ -391,14 +391,14 @@ memories = client.recall("agent_001", "who is the user?")`,
     sections: [
       {
         heading: 'Install',
-        code: `npm install qora
+        code: `npm Install Iceberg
 # or
 yarn add qora`,
         lang: 'bash',
       },
       {
         heading: 'Initialize',
-        code: `import { Client } from 'qora'
+        code: `import { Client } from 'Iceberg'
 
 const client = new Client({
   apiKey: process.env.QORA_API_KEY,

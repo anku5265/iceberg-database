@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+﻿import { useEffect, useState } from 'react'
 import { api } from '../lib/api'
 
 export default function Admin() {
@@ -62,7 +62,7 @@ export default function Admin() {
               <Row label="Plan" value={<Badge color="blue">{billing.plan}</Badge>} />
               <Row label="Searches today" value={`${billing.search?.remaining ?? '—'} remaining`} />
               <Row label="Index remaining" value={`${billing.index?.remaining ?? '—'} remaining`} />
-              <a href="https://dashboard.qora.in/pricing"
+              <a href="https://dashboard.icebergdb.io/pricing"
                 className="mt-3 block text-xs text-blue-400 hover:text-blue-300 transition">
                 Upgrade plan →
               </a>
@@ -73,7 +73,7 @@ export default function Admin() {
         {/* Remote Access (Tunnel) */}
         <div className="bg-[var(--card-bg)] border border-[var(--border2)] rounded-lg p-5">
           <div className="text-sm font-medium text-[var(--text-primary)] mb-1">Remote Access</div>
-          <p className="text-xs text-[var(--text-secondary)] mb-4">Allow Qora support team to access this instance for debugging</p>
+          <p className="text-xs text-[var(--text-secondary)] mb-4">Allow Iceberg support team to access this instance for debugging</p>
           {status ? (
             <div className="space-y-3">
               <Row label="Tunnel status" value={

@@ -1,4 +1,4 @@
-"""
+﻿"""
 SQLite database for users, API keys, and usage tracking.
 Uses stdlib sqlite3 — no extra dependencies.
 """
@@ -95,7 +95,7 @@ def _ensure_dev_key(conn):
     exists = conn.execute("SELECT id FROM users WHERE id = ?", (DEV_USER_ID,)).fetchone()
     if not exists:
         conn.execute("INSERT INTO users (id, email, password_hash, created_at) VALUES (?, ?, ?, ?)",
-                     (DEV_USER_ID, "dev@qora.in", "", int(time.time())))
+                     (DEV_USER_ID, "dev@icebergdb.io", "", int(time.time())))
 
     key_hash = hashlib.sha256(DEV_KEY.encode()).hexdigest()
     exists_key = conn.execute("SELECT id FROM api_keys WHERE key_hash = ?", (key_hash,)).fetchone()

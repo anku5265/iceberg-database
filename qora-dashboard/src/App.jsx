@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import Sidebar from './components/Sidebar'
 import ProfileMenu from './components/ProfileMenu'
@@ -54,7 +54,7 @@ function PublicDocsLayout() {
           <div className="w-5 h-5 rounded bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center">
             <span className="text-white text-[10px] font-black">Q</span>
           </div>
-          <span className="text-[var(--text-primary)] font-semibold text-sm">Qora</span>
+          <span className="text-[var(--text-primary)] font-semibold text-sm">Iceberg</span>
           <span className="text-[var(--text-dim)] text-xs mx-1">/</span>
           <span className="text-[var(--text-muted)] text-sm">Docs</span>
         </div>

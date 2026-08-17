@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Navbar } from '../components/Navbar'
 
@@ -14,7 +14,7 @@ export default function ProductMemory() {
       {/* Hero */}
       <section className="container mx-auto px-6 pt-24 pb-16 max-w-5xl">
         <div className="inline-flex items-center gap-2 text-xs px-3 py-1.5 rounded-full border border-[#222] text-[#666] bg-[#111] mb-6">
-          Qora Memory
+          Iceberg Memory
         </div>
         <h1 className="text-5xl md:text-6xl font-extrabold leading-tight tracking-tight mb-6">
           Agents that remember.<br />
@@ -34,7 +34,7 @@ export default function ProductMemory() {
         <div className="container mx-auto px-6 max-w-5xl">
           <p className="text-xs text-[#555] uppercase tracking-widest mb-3">Memory types</p>
           <h2 className="text-3xl font-bold mb-4">Four types. One API.</h2>
-          <p className="text-[#666] mb-12 max-w-2xl">Different information has different lifespans. Qora handles TTL automatically — you just choose the type.</p>
+          <p className="text-[#666] mb-12 max-w-2xl">Different information has different lifespans. Iceberg handles TTL automatically — you just choose the type.</p>
           <div className="grid md:grid-cols-2 gap-4">
             {[
               {
@@ -124,7 +124,7 @@ export default function ProductMemory() {
                 <div className="space-y-3 text-sm text-[#666]">
                   {[
                     'Works with any LLM — OpenAI, Gemini, or your own model',
-                    'No separate infra — memory lives in the same Qora instance',
+                    'No separate infra — memory lives in the same Iceberg instance',
                     'Scale to thousands of agents — one collection, many namespaces',
                     'Full REST API — plug into any language or framework',
                   ].map((s, i) => (
@@ -158,9 +158,9 @@ function Footer() {
   return (
     <footer className="border-t border-[#111] py-10">
       <div className="container mx-auto px-6 max-w-6xl flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-[#555]">
-        <Link to="/" className="text-white font-bold text-lg">Qora</Link>
+        <Link to="/" className="text-white font-bold text-lg">Iceberg</Link>
         <div className="flex gap-6">{['Privacy','Terms','Docs','Status'].map(l=><a key={l} href="#" className="hover:text-white transition">{l}</a>)}</div>
-        <div>© 2026 Qora</div>
+        <div>© 2026 Iceberg</div>
       </div>
     </footer>
   )

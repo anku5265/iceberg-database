@@ -46,12 +46,12 @@ function ProductDropdown() {
             <p className="text-xs text-[#555] uppercase tracking-widest mb-3 px-1">Products</p>
             <div className="grid grid-cols-2 gap-1">
               {[
-                { icon: <DBIcon/>,   name: 'Qora Database',  desc: 'Serverless, India-hosted vector DB',   to: '/product/database' },
-                { icon: <MemIcon/>,  name: 'Qora Memory',    desc: 'Persistent memory for AI agents',      to: '/product/memory' },
-                { icon: <BotIcon/>,  name: 'Qora Assistant', desc: 'No-code RAG chatbot + WhatsApp',       to: '/product/assistant' },
-                { icon: <ByocIcon/>, name: 'Qora BYOC',      desc: 'Deploy on your own server',            to: '/product/byoc' },
-                { icon: <SDKIcon/>,  name: 'Qora SDK',       desc: 'Python, JS, Go, Java, .NET, Rust',    to: '/product/sdk' },
-                { icon: <DashIcon/>, name: 'Qora Dashboard', desc: 'Manage collections, search, and keys', to: '/product/dashboard' },
+                { icon: <DBIcon/>,   name: 'Iceberg Database',  desc: 'Serverless, India-hosted vector DB',   to: '/product/database' },
+                { icon: <MemIcon/>,  name: 'Iceberg Memory',    desc: 'Persistent memory for AI agents',      to: '/product/memory' },
+                { icon: <BotIcon/>,  name: 'Iceberg Assistant', desc: 'No-code RAG chatbot + WhatsApp',       to: '/product/assistant' },
+                { icon: <ByocIcon/>, name: 'Iceberg BYOC',      desc: 'Deploy on your own server',            to: '/product/byoc' },
+                { icon: <SDKIcon/>,  name: 'Iceberg SDK',       desc: 'Python, JS, Go, Java, .NET, Rust',    to: '/product/sdk' },
+                { icon: <DashIcon/>, name: 'Iceberg Dashboard', desc: 'Manage collections, search, and keys', to: '/product/dashboard' },
               ].map(p => (
                 <Link key={p.name} to={p.to}
                   className="flex items-start gap-3 p-3 rounded-lg hover:bg-white/[0.04] transition group">
@@ -204,7 +204,7 @@ function HomePage() {
       <nav className="sticky top-0 z-50 border-b border-white/[0.04] backdrop-blur-xl bg-[#080808]/80">
         <div className="container mx-auto px-6 py-3 flex items-center justify-between max-w-6xl">
           <div className="flex items-center gap-8">
-            <span className="text-xl font-bold tracking-tight">Qora</span>
+            <span className="text-xl font-bold tracking-tight">Iceberg</span>
             <div className="hidden md:flex items-center gap-1 text-sm">
               <ProductDropdown />
               {[['Developers','#code'],['Pricing','#pricing'],['Docs',`${D}/docs`],['Blog','#']].map(([l,h]) => (
@@ -366,15 +366,15 @@ function HomePage() {
       <footer className="border-t border-white/[0.04] py-12">
         <div className="container mx-auto px-6 max-w-6xl flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-[#444]">
           <div className="flex items-center gap-3">
-            <span className="text-white font-bold text-lg tracking-tight">Qora</span>
+            <span className="text-white font-bold text-lg tracking-tight">Iceberg</span>
             <span className="text-[#222]">·</span>
             <span>Vector search for India</span>
           </div>
           <div className="flex gap-6">
             {['Privacy','Terms','Docs','Status'].map(l=><a key={l} href="#" className="hover:text-white transition">{l}</a>)}
-            <a href="mailto:hello@qora.in" className="hover:text-white transition">Contact</a>
+            <a href="mailto:hello@icebergdb.io" className="hover:text-white transition">Contact</a>
           </div>
-          <div>© 2026 Qora</div>
+          <div>© 2026 Iceberg</div>
         </div>
       </footer>
 
@@ -403,7 +403,7 @@ function CodeBlock() {
     ),
     javascript: (
       <code>
-        <span className="token-keyword">import</span><span className="token-plain"> {'{ Client }'} </span><span className="token-keyword">from</span><span className="token-string"> 'qora'</span>{'\n\n'}
+        <span className="token-keyword">import</span><span className="token-plain"> {'{ Client }'} </span><span className="token-keyword">from</span><span className="token-string"> 'Iceberg'</span>{'\n\n'}
         <span className="token-keyword">const</span><span className="token-plain"> client = </span><span className="token-keyword">new</span><span className="token-fn"> Client</span><span className="token-plain">({'{ '}</span><span className="token-key">apiKey</span><span className="token-plain">: </span><span className="token-string">'qr_your_key'</span><span className="token-plain">{' }'})</span>{'\n\n'}
         <span className="token-keyword">await</span><span className="token-plain"> client.</span><span className="token-fn">createCollection</span><span className="token-plain">(</span><span className="token-string">'my_docs'</span><span className="token-plain">)</span>{'\n'}
         <span className="token-keyword">await</span><span className="token-plain"> client.</span><span className="token-fn">indexText</span><span className="token-plain">(</span><span className="token-string">'my_docs'</span><span className="token-plain">, </span><span className="token-string">'Return policy: 30 days.'</span><span className="token-plain">)</span>{'\n\n'}
@@ -427,7 +427,7 @@ function CodeBlock() {
     ),
     curl: (
       <code>
-        <span className="token-fn">curl</span><span className="token-plain"> -X POST https://api.qora.in/search \</span>{'\n'}
+        <span className="token-fn">curl</span><span className="token-plain"> -X POST https://api.icebergdb.io/search \</span>{'\n'}
         <span className="token-plain">  -H </span><span className="token-string">"X-API-Key: qr_your_key"</span><span className="token-plain"> \</span>{'\n'}
         <span className="token-plain">  -H </span><span className="token-string">"Content-Type: application/json"</span><span className="token-plain"> \</span>{'\n'}
         <span className="token-plain">  -d </span><span className="token-string">{"'{"}</span>{'\n'}

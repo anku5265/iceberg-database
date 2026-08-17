@@ -1,8 +1,8 @@
-"""
+﻿"""
 Read Node Management — Better than Pinecone's Dedicated Read Nodes.
 
 Pinecone: Manual provisioning, extra hourly charge, fixed servers.
-Qora: Connection pooling, priority routing, auto load balancing, included in plan.
+Iceberg: Connection pooling, priority routing, auto load balancing, included in plan.
 
 Local mode: Single Qdrant instance with connection pool (multiple logical readers).
 Production mode: Multiple Qdrant server instances across machines.

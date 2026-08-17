@@ -38,7 +38,7 @@ export default function Sidebar({ open = true }) {
             <div className="w-6 h-6 rounded-md bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center">
               <span className="text-white text-xs font-black">Q</span>
             </div>
-            <span className="text-[var(--text-primary)] font-bold text-sm tracking-tight">Qora</span>
+            <span className="text-[var(--text-primary)] font-bold text-sm tracking-tight">Iceberg</span>
             <span className="text-[9px] text-[var(--text-muted)] bg-[var(--bg-hover)] px-1.5 py-0.5 rounded-md border border-[var(--border2)] font-semibold uppercase tracking-wider">beta</span>
           </div>
         ) : (

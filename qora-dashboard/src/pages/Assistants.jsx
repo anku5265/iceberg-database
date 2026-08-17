@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+﻿import { useEffect, useState } from 'react'
 import { API_URL } from '../lib/config'
 
 const KEY = () => localStorage.getItem('qora_api_key') || ''

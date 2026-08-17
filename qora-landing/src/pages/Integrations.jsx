@@ -18,7 +18,7 @@ export default function Integrations() {
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-blue-600">existing stack.</span>
         </h1>
         <p className="text-lg text-[#777] max-w-2xl mb-10 leading-relaxed">
-          Qora works with the frameworks and tools you already use. LangChain, LlamaIndex, REST API — no lock-in, no migration pain.
+          Iceberg works with the frameworks and tools you already use. LangChain, LlamaIndex, REST API — no lock-in, no migration pain.
         </p>
       </section>
 
@@ -31,7 +31,7 @@ export default function Integrations() {
             {[
               {
                 name: 'LangChain',
-                desc: 'Use Qora as a vector store in LangChain pipelines. Works with all LangChain chains — RetrievalQA, ConversationalRetrievalChain, agents.',
+                desc: 'Use Iceberg as a vector store in LangChain pipelines. Works with all LangChain chains — RetrievalQA, ConversationalRetrievalChain, agents.',
                 code: `from langchain_community.vectorstores import Qdrant
 from langchain_openai import OpenAIEmbeddings
 
@@ -44,7 +44,7 @@ vectorstore = Qdrant.from_documents(
               },
               {
                 name: 'LlamaIndex',
-                desc: 'Use Qora as the storage backend for LlamaIndex. Index any document type — PDF, HTML, Notion, Google Docs.',
+                desc: 'Use Iceberg as the storage backend for LlamaIndex. Index any document type — PDF, HTML, Notion, Google Docs.',
                 code: `from llama_index.vector_stores.qdrant import QdrantVectorStore
 import qdrant_client
 
@@ -70,7 +70,7 @@ vector_store = QdrantVectorStore(
         <div className="container mx-auto px-6 max-w-5xl">
           <p className="text-xs text-[#555] uppercase tracking-widest mb-3">REST API</p>
           <h2 className="text-3xl font-bold mb-4">Works with any language</h2>
-          <p className="text-[#666] mb-12 max-w-2xl">No SDK? No problem. Every Qora feature is available via REST API. One header, one endpoint.</p>
+          <p className="text-[#666] mb-12 max-w-2xl">No SDK? No problem. Every Iceberg feature is available via REST API. One header, one endpoint.</p>
           <div className="grid md:grid-cols-2 gap-4">
             {[
               { method: 'POST', path: '/collections', desc: 'Create a collection' },
@@ -111,9 +111,9 @@ function Footer() {
   return (
     <footer className="border-t border-[#111] py-10">
       <div className="container mx-auto px-6 max-w-6xl flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-[#555]">
-        <Link to="/" className="text-white font-bold text-lg">Qora</Link>
+        <Link to="/" className="text-white font-bold text-lg">Iceberg</Link>
         <div className="flex gap-6">{['Privacy','Terms','Docs','Status'].map(l=><a key={l} href="#" className="hover:text-white transition">{l}</a>)}</div>
-        <div>© 2026 Qora</div>
+        <div>© 2026 Iceberg</div>
       </div>
     </footer>
   )

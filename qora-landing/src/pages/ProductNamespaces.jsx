@@ -125,9 +125,9 @@ function Footer() {
   return (
     <footer className="border-t border-[#111] py-10">
       <div className="container mx-auto px-6 max-w-6xl flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-[#555]">
-        <Link to="/" className="text-white font-bold text-lg">Qora</Link>
+        <Link to="/" className="text-white font-bold text-lg">Iceberg</Link>
         <div className="flex gap-6">{['Privacy','Terms','Docs','Status'].map(l=><a key={l} href="#" className="hover:text-white transition">{l}</a>)}</div>
-        <div>© 2026 Qora</div>
+        <div>© 2026 Iceberg</div>
       </div>
     </footer>
   )

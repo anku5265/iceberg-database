@@ -4,7 +4,7 @@ from core.database import init_db
 from routers import collections, documents, search, usage, waitlist, auth, projects, nodes, admin, memory, assistant, backup, status
 
 app = FastAPI(
-    title="Qora API",
+    title="Iceberg API",
     description="Vector search infrastructure for Indian AI teams",
     version="0.1.0",
 )
@@ -14,9 +14,9 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:3000",
         "http://localhost:5173",
-        "https://dashboard.qora.in",
-        "https://qora.in",
-        "https://www.qora.in",
+        "https://dashboard.icebergdb.io",
+        "https://icebergdb.io",
+        "https://www.icebergdb.io",
         # Vercel preview URLs
         "https://*.vercel.app",
     ],
@@ -33,7 +33,7 @@ async def startup():
     node_manager.initialize()
     from core.remote_access import heartbeat_scheduler
     heartbeat_scheduler.start()
-    print("Qora API ready")
+    print("Iceberg API ready")
 
 @app.on_event("shutdown")
 async def shutdown():
@@ -59,7 +59,7 @@ app.include_router(status.router)
 def root():
     from services import storage
     return {
-        "product": "Qora",
+        "product": "Iceberg",
         "version": "0.1.0",
         "status": "running",
         "storage": "r2" if storage.is_configured() else "local"

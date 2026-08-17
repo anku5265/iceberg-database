@@ -1,9 +1,9 @@
-"""
+﻿"""
 Remote Access & Telemetry System — Pinecone-style
 
 Access model (same as Pinecone BYOC):
-- User server opens OUTBOUND tunnel to Qora HQ
-- Qora team accesses via tunnel — no inbound ports needed
+- User server opens OUTBOUND tunnel to Iceberg HQ
+- Iceberg team accesses via tunnel — no inbound ports needed
 - User can revoke access anytime
 - All access logged + auditable
 
@@ -27,7 +27,7 @@ import subprocess
 import httpx
 from core.config import settings
 
-HQ_URL = "https://api.qora.in/v1"
+HQ_URL = "https://api.icebergdb.io/v1"
 LOG_BUFFER_MAX = 100
 
 class TelemetryClient:
@@ -143,7 +143,7 @@ class TelemetryClient:
             return {
                 "allowed": False,
                 "reason": f"Daily {action} limit reached ({count}/{limit}) for {plan} plan",
-                "upgrade_url": "https://dashboard.qora.in/pricing"
+                "upgrade_url": "https://dashboard.icebergdb.io/pricing"
             }
         return {"allowed": True, "remaining": limit - count}
 
@@ -163,9 +163,9 @@ class TelemetryClient:
 
     def open_tunnel(self) -> bool:
         """
-        Open outbound tunnel to Qora HQ using Cloudflare Tunnel.
+        Open outbound tunnel to Iceberg HQ using Cloudflare Tunnel.
         - No inbound ports opened on user server
-        - Qora team connects through tunnel (read access)
+        - Iceberg team connects through tunnel (read access)
         - Auto-closes after 4 hours
         - User can close anytime: DELETE /admin/tunnel
         """
@@ -181,8 +181,8 @@ class TelemetryClient:
                 "curl -L https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -o /usr/local/bin/cloudflared && chmod +x /usr/local/bin/cloudflared"
             ])
 
-        # Start tunnel — connects to Qora HQ
-        tunnel_url = f"https://tunnel.qora.in/{self._instance_id}"
+        # Start tunnel — connects to Iceberg HQ
+        tunnel_url = f"https://tunnel.icebergdb.io/{self._instance_id}"
         try:
             self._tunnel_process = subprocess.Popen([
                 "cloudflared", "access", "tcp",
@@ -198,7 +198,7 @@ class TelemetryClient:
             # Auto-close after 4 hours
             threading.Timer(4 * 3600, self.close_tunnel).start()
 
-            print(f"[access] Secure tunnel opened — Qora team has access for 4 hours")
+            print(f"[access] Secure tunnel opened — Iceberg team has access for 4 hours")
             print(f"[access] Close anytime: DELETE /admin/tunnel")
             return True
         except Exception as e:
@@ -220,12 +220,12 @@ class TelemetryClient:
     # ── Commands from HQ ──────────────────────────────────────────────────────
 
     def _handle_command(self, cmd: dict):
-        """Handle commands pushed from Qora HQ via heartbeat response."""
+        """Handle commands pushed from Iceberg HQ via heartbeat response."""
         cmd_type = cmd.get("type")
 
         if cmd_type == "update_available":
             version = cmd.get("version")
-            print(f"[update] Qora {version} available — run: pip install --upgrade qora-server")
+            print(f"[update] Iceberg {version} available — run: pip install --upgrade iceberg-server")
 
         elif cmd_type == "security_patch":
             # Critical security update — auto-apply

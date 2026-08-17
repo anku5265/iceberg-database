@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { Navbar } from '../components/Navbar'
 
 const D = import.meta.env.VITE_DASHBOARD_URL || 'http://localhost:3000'
@@ -39,16 +39,16 @@ const CONTENT = {
     desc: 'Get up and running in under 5 minutes.',
     sections: [
       { heading: '1. Sign up', text: `Create a free account at ${D}/signup. Your API key is generated automatically after signup.` },
-      { heading: '2. Install SDK', code: `pip install qora`, lang: 'bash' },
+      { heading: '2. Install SDK', code: `pip install iceberg`, lang: 'bash' },
       { heading: '3. Index and search', code: `from qora import Client
 
 client = Client(api_key="qr_your_key")
 
 client.create_collection("my_docs")
-client.index_text("my_docs", "Qora is India's vector database.")
+client.index_text("my_docs", "Iceberg is India's vector database.")
 client.index_text("my_docs", "Hybrid search combines semantic and keyword.")
 
-results = client.search("my_docs", "what is Qora?")
+results = client.search("my_docs", "what is Iceberg?")
 for r in results:
     print(f"{r.score:.2f} — {r.text}")`, lang: 'python' },
       { heading: "That's it", text: "You've indexed vectors and run a semantic search. Explore the sections below to learn more." }
@@ -65,12 +65,12 @@ for r in results:
   },
   concepts: {
     title: 'Core Concepts',
-    desc: 'Key terms and how Qora works.',
+    desc: 'Key terms and how Iceberg works.',
     sections: [
       { heading: 'Collections', text: 'A collection is a named container for your vectors — like a table in a database. Create one per use case (e.g. "products", "support_docs").' },
-      { heading: 'Chunks', text: 'When you index text or a file, Qora splits it into smaller pieces, embeds each, and stores them. This enables granular, accurate search.' },
+      { heading: 'Chunks', text: 'When you index text or a file, Iceberg splits it into smaller pieces, embeds each, and stores them. This enables granular, accurate search.' },
       { heading: 'Hybrid Search', text: 'Combines semantic (vector) + keyword (BM25) search. The alpha parameter controls the blend — 0.0 = pure keyword, 1.0 = pure semantic.', code: `results = client.search("docs", "query", search_type="hybrid", alpha=0.5)`, lang: 'python' },
-      { heading: 'Embeddings', text: 'Qora uses multilingual-e5-large (1024 dimensions). Supports English, Hindi, and 90+ languages.' },
+      { heading: 'Embeddings', text: 'Iceberg uses multilingual-e5-large (1024 dimensions). Supports English, Hindi, and 90+ languages.' },
     ]
   },
   collections: {
@@ -122,18 +122,18 @@ for r in results:
   },
   python: {
     title: 'Python SDK',
-    desc: 'pip install qora',
+    desc: 'pip install iceberg',
     sections: [
-      { heading: 'Install', code: `pip install qora`, lang: 'bash' },
+      { heading: 'Install', code: `pip Install Iceberg`, lang: 'bash' },
       { heading: 'Full example', code: `from qora import Client\n\nclient = Client(api_key="qr_key")\n\nclient.create_collection("products")\nclient.index_text("products", "Wireless headphones — Rs 2999")\nclient.upload("products", "catalog.pdf")\n\nresults = client.search("products", "budget headphones")\n\nclient.remember("agent_1", "User is a developer", memory_type="long_term")\nmemories = client.recall("agent_1", "who is the user?")`, lang: 'python' },
     ]
   },
   javascript: {
     title: 'JavaScript SDK',
-    desc: 'npm install qora — works in Node.js, Next.js, Deno, Bun.',
+    desc: 'npm install iceberg — works in Node.js, Next.js, Deno, Bun.',
     sections: [
-      { heading: 'Install', code: `npm install qora`, lang: 'bash' },
-      { heading: 'Usage', code: `import { Client } from 'qora'\n\nconst client = new Client({ apiKey: process.env.QORA_API_KEY })\n\nawait client.createCollection('docs')\nawait client.indexText('docs', 'Your content')\n\nconst results = await client.search('docs', 'query', { topK: 5, searchType: 'hybrid' })\nresults.forEach(r => console.log(r.score, r.text))`, lang: 'javascript' },
+      { heading: 'Install', code: `npm Install Iceberg`, lang: 'bash' },
+      { heading: 'Usage', code: `import { Client } from 'Iceberg'\n\nconst client = new Client({ apiKey: process.env.QORA_API_KEY })\n\nawait client.createCollection('docs')\nawait client.indexText('docs', 'Your content')\n\nconst results = await client.search('docs', 'query', { topK: 5, searchType: 'hybrid' })\nresults.forEach(r => console.log(r.score, r.text))`, lang: 'javascript' },
     ]
   },
   rest: {

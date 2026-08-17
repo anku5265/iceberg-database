@@ -1,4 +1,4 @@
-"""
+﻿"""
 Quick test — run this after server is running:
   python test_api.py
 """
@@ -9,7 +9,7 @@ KEY = "qr_dev_test123"
 HEADERS = {"X-API-Key": KEY}
 
 def test():
-    print("\n=== Qora API Test ===\n")
+    print("\n=== Iceberg API Test ===\n")
 
     # 1. Health check
     r = httpx.get(f"{BASE}/health")
@@ -22,7 +22,7 @@ def test():
     # 3. Index some text
     r = httpx.post(f"{BASE}/documents/text", data={
         "collection": "test_docs",
-        "text": "Qora is a vector database built for Indian AI teams. It supports Hindi and English search.",
+        "text": "Iceberg is a vector database built for Indian AI teams. It supports Hindi and English search.",
         "source": "test"
     }, headers=HEADERS)
     print(f"[3] Index text: {r.json()}")

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Navbar } from '../components/Navbar'
 
@@ -29,7 +29,7 @@ export default function ProductBackup() {
           <h2 className="text-3xl font-bold mb-12">Backup in one API call</h2>
           <div className="grid md:grid-cols-3 gap-6">
             {[
-              { step: '01', title: 'Trigger backup', desc: 'Call POST /backup/{collection}. Qora exports all vectors, payloads, and metadata to JSON.', code: 'POST /backup/my_docs' },
+              { step: '01', title: 'Trigger backup', desc: 'Call POST /backup/{collection}. Iceberg exports all vectors, payloads, and metadata to JSON.', code: 'POST /backup/my_docs' },
               { step: '02', title: 'Stored safely', desc: 'Backup saved to Cloudflare R2 (if configured) or local disk. Versioned by timestamp.', code: 'backups/user/my_docs/1234567890.json' },
               { step: '03', title: 'Restore anytime', desc: 'Call POST /backup/{collection}/restore/{id}. Collection is recreated exactly as it was.', code: 'POST /backup/my_docs/restore/my_docs_123' },
             ].map((s, i) => (
@@ -63,7 +63,7 @@ export default function ProductBackup() {
               </ul>
             </div>
             <div className="rounded-xl border border-[#1a1a1a] bg-[#0d0d0d] p-6">
-              <h3 className="font-semibold mb-3 text-white">With Qora backup</h3>
+              <h3 className="font-semibold mb-3 text-white">With Iceberg backup</h3>
               <ul className="space-y-2 text-sm text-[#666]">
                 {['One API call to backup any collection', 'Restore to exact previous state instantly', 'Export full data — migrate anywhere', 'Cloudflare R2 or local disk storage'].map((item) => (
                   <li key={item} className="flex gap-2 items-start">
@@ -80,7 +80,7 @@ export default function ProductBackup() {
       <section className="py-20">
         <div className="container mx-auto px-6 max-w-2xl text-center">
           <h2 className="text-3xl font-bold mb-4">Never lose your data</h2>
-          <p className="text-[#666] mb-8">Backup included in all Qora plans — even free.</p>
+          <p className="text-[#666] mb-8">Backup included in all Iceberg plans — even free.</p>
           <a href={`${D}/signup`} className="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-8 py-3 rounded-md transition">Start for free</a>
         </div>
       </section>
@@ -93,9 +93,9 @@ function Footer() {
   return (
     <footer className="border-t border-[#111] py-10">
       <div className="container mx-auto px-6 max-w-6xl flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-[#555]">
-        <Link to="/" className="text-white font-bold text-lg">Qora</Link>
+        <Link to="/" className="text-white font-bold text-lg">Iceberg</Link>
         <div className="flex gap-6">{['Privacy','Terms','Docs','Status'].map(l=><a key={l} href="#" className="hover:text-white transition">{l}</a>)}</div>
-        <div>© 2026 Qora</div>
+        <div>© 2026 Iceberg</div>
       </div>
     </footer>
   )

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { api } from '../lib/api'
 
 const SAMPLE_DATA = [
@@ -75,7 +75,7 @@ export default function OnboardingModal({ onDone }) {
         <div className="px-6 pt-6 pb-4 border-b border-[var(--border)]">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <div className="text-[var(--text-primary)] font-semibold text-lg">Get started with Qora</div>
+              <div className="text-[var(--text-primary)] font-semibold text-lg">Get started with Iceberg</div>
               <div className="text-[var(--text-secondary)] text-xs mt-0.5">Takes less than 2 minutes</div>
             </div>
             <button onClick={finish} className="text-[var(--text-dim)] hover:text-[var(--text-secondary)] text-xs transition">Skip</button>
@@ -169,7 +169,7 @@ export default function OnboardingModal({ onDone }) {
           {step === 3 && (
             <div>
               <div className="text-[var(--text-secondary)] text-sm mb-4">
-                Your collection is ready. Try a search — type anything, Qora uses hybrid search automatically.
+                Your collection is ready. Try a search — type anything, Iceberg uses hybrid search automatically.
               </div>
               <form onSubmit={handleSearch} className="flex gap-2 mb-4">
                 <input

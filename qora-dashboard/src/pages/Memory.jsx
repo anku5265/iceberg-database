@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 
 const KEY = () => localStorage.getItem('qora_api_key') || 'qr_dev_test123'
 const H = () => ({ 'X-API-Key': KEY(), 'Content-Type': 'application/json' })

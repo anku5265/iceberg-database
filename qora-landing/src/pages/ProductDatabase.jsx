@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Navbar } from '../components/Navbar'
 
@@ -14,7 +14,7 @@ export default function ProductDatabase() {
       {/* Hero */}
       <section className="container mx-auto px-6 pt-24 pb-16 max-w-5xl">
         <div className="inline-flex items-center gap-2 text-xs px-3 py-1.5 rounded-full border border-[#222] text-[#666] bg-[#111] mb-6">
-          Qora Database
+          Iceberg Database
         </div>
         <h1 className="text-5xl md:text-6xl font-extrabold leading-tight tracking-tight mb-6">
           Vector search.<br />
@@ -53,8 +53,8 @@ export default function ProductDatabase() {
           <h2 className="text-3xl font-bold mb-12">Three steps. Zero DevOps.</h2>
           <div className="grid md:grid-cols-3 gap-6">
             {[
-              { step: '01', title: 'Create a collection', desc: 'One API call to create a collection. No schema, no config, no cluster sizing. Qora handles everything.', code: `client.create_collection("my_docs")` },
-              { step: '02', title: 'Index your data', desc: 'Upload PDFs, paste text, or stream data. Qora chunks, embeds using MiniLM, and stores — automatically.', code: `client.upload("my_docs", "handbook.pdf")\nclient.index_text("my_docs", "Return policy...")` },
+              { step: '01', title: 'Create a collection', desc: 'One API call to create a collection. No schema, no config, no cluster sizing. Iceberg handles everything.', code: `client.create_collection("my_docs")` },
+              { step: '02', title: 'Index your data', desc: 'Upload PDFs, paste text, or stream data. Iceberg chunks, embeds using MiniLM, and stores — automatically.', code: `client.upload("my_docs", "handbook.pdf")\nclient.index_text("my_docs", "Return policy...")` },
               { step: '03', title: 'Search', desc: 'Hybrid search — dense vectors + BM25 combined. Configurable alpha per query. Filter by metadata or namespace.', code: `results = client.search("my_docs",\n  "can I return my order?")` },
             ].map((s, i) => (
               <div key={i} className="rounded-xl border border-[#1a1a1a] bg-[#0d0d0d] p-6">
@@ -73,7 +73,7 @@ export default function ProductDatabase() {
         <div className="container mx-auto px-6 max-w-5xl">
           <p className="text-xs text-[#555] uppercase tracking-widest mb-3">Search modes</p>
           <h2 className="text-3xl font-bold mb-4">Hybrid search — better recall</h2>
-          <p className="text-[#666] mb-12 max-w-2xl">Pure vector search misses exact keyword matches. Pure keyword search misses semantically similar results. Qora combines both via RRF (Reciprocal Rank Fusion).</p>
+          <p className="text-[#666] mb-12 max-w-2xl">Pure vector search misses exact keyword matches. Pure keyword search misses semantically similar results. Iceberg combines both via RRF (Reciprocal Rank Fusion).</p>
           <div className="grid md:grid-cols-3 gap-4">
             {[
               { mode: 'Semantic', alpha: '1.0', desc: 'Pure dense vector search. Best for conceptual queries — "affordable phones" matches "budget smartphones".', tag: 'alpha=1.0' },
@@ -135,11 +135,11 @@ function Footer() {
   return (
     <footer className="border-t border-[#111] py-10">
       <div className="container mx-auto px-6 max-w-6xl flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-[#555]">
-        <Link to="/" className="text-white font-bold text-lg">Qora</Link>
+        <Link to="/" className="text-white font-bold text-lg">Iceberg</Link>
         <div className="flex gap-6">
           {['Privacy','Terms','Docs','Status'].map(l=><a key={l} href="#" className="hover:text-white transition">{l}</a>)}
         </div>
-        <div>© 2026 Qora</div>
+        <div>© 2026 Iceberg</div>
       </div>
     </footer>
   )

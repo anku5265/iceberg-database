@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Navbar } from '../components/Navbar'
 
@@ -6,7 +6,7 @@ const D = import.meta.env.VITE_DASHBOARD_URL || 'http://localhost:3000'
 
 const LANGS = [
   {
-    key: 'python', label: 'Python', install: 'pip install qora',
+    key: 'python', label: 'Python', install: 'pip Install Iceberg',
     code: `from qora import Client
 
 client = Client(api_key="qr_your_key")
@@ -29,8 +29,8 @@ memories = client.recall("agent_001", "what does user prefer?")`,
     links: [{ label: 'PyPI', url: 'https://pypi.org/project/qora' }, { label: 'GitHub', url: '#' }],
   },
   {
-    key: 'javascript', label: 'JavaScript', install: 'npm install qora',
-    code: `import { Client } from 'qora'
+    key: 'javascript', label: 'JavaScript', install: 'npm Install Iceberg',
+    code: `import { Client } from 'Iceberg'
 
 const client = new Client({ apiKey: 'qr_your_key' })
 
@@ -113,10 +113,10 @@ async fn main() {
     links: [{ label: 'crates.io', url: '#' }, { label: 'GitHub', url: '#' }],
   },
   {
-    key: 'dotnet', label: '.NET', install: 'dotnet add package Qora',
-    code: `using Qora;
+    key: 'dotnet', label: '.NET', install: 'dotnet add package Iceberg',
+    code: `using Iceberg;
 
-var client = new QoraClient("qr_your_key");
+var client = new IcebergClient("qr_your_key");
 
 // Create & index
 await client.CreateCollectionAsync("my_docs");
@@ -142,7 +142,7 @@ export default function ProductSDK() {
       <Navbar dark={dark} />
 
       <section className="container mx-auto px-6 pt-24 pb-16 max-w-5xl">
-        <div className="inline-flex items-center gap-2 text-xs px-3 py-1.5 rounded-full border border-[#222] text-[#666] bg-[#111] mb-6">Qora SDK</div>
+        <div className="inline-flex items-center gap-2 text-xs px-3 py-1.5 rounded-full border border-[#222] text-[#666] bg-[#111] mb-6">Iceberg SDK</div>
         <h1 className="text-5xl md:text-6xl font-extrabold leading-tight tracking-tight mb-6">
           Your language.<br />
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-blue-600">Your stack.</span>
@@ -228,9 +228,9 @@ function Footer() {
   return (
     <footer className="border-t border-[#111] py-10">
       <div className="container mx-auto px-6 max-w-6xl flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-[#555]">
-        <Link to="/" className="text-white font-bold text-lg">Qora</Link>
+        <Link to="/" className="text-white font-bold text-lg">Iceberg</Link>
         <div className="flex gap-6">{['Privacy','Terms','Docs','Status'].map(l=><a key={l} href="#" className="hover:text-white transition">{l}</a>)}</div>
-        <div>© 2026 Qora</div>
+        <div>© 2026 Iceberg</div>
       </div>
     </footer>
   )

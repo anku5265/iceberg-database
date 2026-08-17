@@ -17,7 +17,7 @@ async def status():
         "uptime_hours": round(uptime_seconds / 3600, 2),
         "sla": {
             "target": "99.9%",
-            "description": "Qora targets 99.9% monthly uptime",
+            "description": "Iceberg targets 99.9% monthly uptime",
             "maintenance_window": "Sundays 2-4 AM IST",
         },
         "regions": ["ap-south-1 (Mumbai)"],

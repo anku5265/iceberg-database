@@ -8,7 +8,7 @@ export function Navbar({ dark, setDark }) {
     <nav className={`sticky top-0 z-50 border-b ${dark ? 'border-white/[0.06] bg-[#0a0a0a]/90' : 'border-black/[0.06] bg-white/90'} backdrop-blur-md`}>
       <div className="container mx-auto px-6 py-3 flex items-center justify-between max-w-6xl">
         <div className="flex items-center gap-8">
-          <Link to="/" className="text-xl font-bold text-white">Qora</Link>
+          <Link to="/" className="text-xl font-bold text-white">Iceberg</Link>
           <div className="hidden md:flex items-center gap-1 text-sm">
             <ProductDropdown dark={dark} />
             {[['Developers','#code'],['Pricing','/#pricing'],['Docs','/docs'],['Blog','#']].map(([l,h]) => (
@@ -44,12 +44,12 @@ function ProductDropdown({ dark }) {
   }, [])
 
   const products = [
-    { icon: <DBIcon/>,     name: 'Qora Database',  desc: 'Serverless, India-hosted vector DB', to: '/product/database' },
-    { icon: <MemIcon/>,    name: 'Qora Memory',     desc: 'Persistent memory for AI agents',    to: '/product/memory' },
-    { icon: <BotIcon/>,    name: 'Qora Assistant',  desc: 'No-code RAG chatbot + WhatsApp',     to: '/product/assistant' },
-    { icon: <ByocIcon/>,   name: 'Qora BYOC',       desc: 'Deploy on your own server',          to: '/product/byoc' },
-    { icon: <SDKIcon/>,    name: 'Qora SDK',         desc: 'Python, JS, Go, Java, .NET, Rust',  to: '/product/sdk' },
-    { icon: <DashIcon/>,   name: 'Qora Dashboard',  desc: 'Manage collections, search, keys',   to: '/product/dashboard' },
+    { icon: <DBIcon/>,     name: 'Iceberg Database',  desc: 'Serverless, India-hosted vector DB', to: '/product/database' },
+    { icon: <MemIcon/>,    name: 'Iceberg Memory',     desc: 'Persistent memory for AI agents',    to: '/product/memory' },
+    { icon: <BotIcon/>,    name: 'Iceberg Assistant',  desc: 'No-code RAG chatbot + WhatsApp',     to: '/product/assistant' },
+    { icon: <ByocIcon/>,   name: 'Iceberg BYOC',       desc: 'Deploy on your own server',          to: '/product/byoc' },
+    { icon: <SDKIcon/>,    name: 'Iceberg SDK',         desc: 'Python, JS, Go, Java, .NET, Rust',  to: '/product/sdk' },
+    { icon: <DashIcon/>,   name: 'Iceberg Dashboard',  desc: 'Manage collections, search, keys',   to: '/product/dashboard' },
   ]
   const caps = [
     { icon: <SecIcon/>,    name: 'Security',         desc: 'DPDP compliant, India data residency', to: '/security' },

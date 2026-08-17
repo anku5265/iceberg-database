@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+﻿import { useEffect, useState } from 'react'
 import { api } from '../lib/api'
 import { API_URL } from '../lib/config'
 import { Link } from 'react-router-dom'
@@ -73,7 +73,7 @@ export default function Overview() {
         <div>
           <p className="text-[var(--text-muted)] text-xs font-medium mb-1">{greeting}, {firstName}</p>
           <h1 className="page-title">Overview</h1>
-          <p className="page-desc">Your Qora workspace at a glance</p>
+          <p className="page-desc">Your Iceberg workspace at a glance</p>
         </div>
         <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-medium ${
           status === 'online'
