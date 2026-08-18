@@ -1,9 +1,9 @@
-# Market Analysis — Qora, Overlay AI, Voice Call Agent
+﻿# Market Analysis — Iceberg, Overlay AI, Voice Call Agent
 ## Last Updated: July 2026
 
 ---
 
-## 1. VECTOR DB / QORA
+## 1. VECTOR DB / Iceberg
 
 ### Market Size
 - 2025: $2.58B
@@ -31,7 +31,7 @@
 | Weaviate | $500+/mo | Complex, no Hindi support |
 | pgvector | Free | No UI, full DevOps yourself |
 
-### Qora Advantages
+### Iceberg Advantages
 - Hybrid search free (Pinecone charges extra)
 - Built-in embeddings (no OpenAI extra cost)
 - India data residency (DPDP compliance)
@@ -123,7 +123,7 @@ Customer calls → AI picks up → Understands Hindi/English
 - Whisper (OpenAI) — speech to text
 - GPT-4o / Claude — understanding + response
 - ElevenLabs / Google TTS — voice output
-- Qora — memory/knowledge base (tera own product!)
+- Iceberg — memory/knowledge base (tera own product!)
 - WhatsApp API — summary to owner
 
 ### Pricing Model
@@ -157,8 +157,8 @@ Customer calls → AI picks up → Understands Hindi/English
 4. Close: ₹2,000/month, no setup fee first month
 5. 3 clients = break-even
 
-### Connection to Qora
-Voice agent needs memory → Qora provides it
+### Connection to Iceberg
+Voice agent needs memory → Iceberg provides it
 = tera own product ka first real use case
 = proof of concept for investors
 
@@ -166,7 +166,7 @@ Voice agent needs memory → Qora provides it
 ✅ VALIDATED DEMAND (3 Reddit responses)
 ✅ No Indian competitor
 ✅ Fast revenue (direct sales, 1 week build)
-✅ Feeds into Qora ecosystem
+✅ Feeds into Iceberg ecosystem
 ✅ Hindi support = moat
 
 ---
@@ -176,7 +176,7 @@ Voice agent needs memory → Qora provides it
 | # | Product | Time to Money | Effort | Do When |
 |---|---|---|---|---|
 | 1 | Voice Call Agent | 1-2 weeks | 1 week build | NOW |
-| 2 | Qora Live | 1 day (deploy) | Already built | This week |
+| 2 | Iceberg Live | 1 day (deploy) | Already built | This week |
 | 3 | Overlay AI | 1-2 months | 20% pending | After voice agent |
 
 ---
@@ -185,7 +185,7 @@ Voice agent needs memory → Qora provides it
 
 **Week 1:** Voice call agent MVP — Hindi + English, appointment booking
 **Week 2:** Close 3 clients locally (clinic/restaurant/coaching)
-**Week 3:** Qora live on Oracle + connect voice agent to Qora memory
+**Week 3:** Iceberg live on Oracle + connect voice agent to Iceberg memory
 **Week 4:** Overlay AI finish + Play Store
 
-Voice agent revenue → fund Qora marketing + Oracle costs → build portfolio
+Voice agent revenue → fund Iceberg marketing + Oracle costs → build portfolio

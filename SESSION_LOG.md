@@ -1,4 +1,4 @@
-# Qora Session Log — Complete Work Done
+﻿# Iceberg Session Log — Complete Work Done
 
 All changes, fixes, and decisions made across all conversations.
 
@@ -8,14 +8,14 @@ All changes, fixes, and decisions made across all conversations.
 
 ### 1. auth.py — Duplicate Routes (CRITICAL)
 - Problem: `signup` and `login` routes defined twice — FastAPI silently ignores second definition
-- Fix: Rewrote `qora-backend/routers/auth.py` — single clean definitions
+- Fix: Rewrote `iceberg-backend/routers/auth.py` — single clean definitions
 - Added: `GET /auth/keys` endpoint to list all keys for logged-in user
 - Added: `Depends(verify_api_key)` on create/revoke key endpoints (was missing)
 - Added: Auto-fetches user's project_id if none provided on key creation
 
 ### 2. Sidebar.jsx — Syntax Error (CRITICAL)
 - Problem: `LogoutIcon` function was defined OUTSIDE the module (dangling code after last export)
-- Fix: Rewrote `qora-dashboard/src/components/Sidebar.jsx` — all icon functions properly inside module
+- Fix: Rewrote `iceberg-dashboard/src/components/Sidebar.jsx` — all icon functions properly inside module
 
 ### 3. Login.jsx — API Key Not Saved (CRITICAL)
 - Problem: On login, stored `data.api_keys[0].key_prefix + '...'` (just prefix, not real key)
@@ -25,14 +25,14 @@ All changes, fixes, and decisions made across all conversations.
 - Reason: Login API only returns prefix (security), full key shown only at signup
 
 ### 4. ApiKeys.jsx — Not Loading from API
-- Problem: Was reading keys only from localStorage `qora_user`, not from API
+- Problem: Was reading keys only from localStorage `iceberg_user`, not from API
 - Problem 2: Create key endpoint missing auth header
 - Fix: Rewrote — now calls `GET /api/auth/keys` to load live keys
 - Fix: Create key uses `H()` helper with proper auth headers
 
 ### 5. Hardcoded localhost:8000 URLs (ALL PAGES)
 - Files fixed: Overview.jsx, Docs.jsx, Assistants.jsx, ApiKeys.jsx, Memory.jsx, Admin.jsx
-- Fix: Created `qora-dashboard/src/lib/config.js` with `export const API_URL`
+- Fix: Created `iceberg-dashboard/src/lib/config.js` with `export const API_URL`
 - All pages now import `API_URL` from config instead of hardcoding
 
 ### 6. Assistants.jsx — API calls using /api proxy instead of direct URL
@@ -49,24 +49,24 @@ All changes, fixes, and decisions made across all conversations.
 
 ### 9. CORS — Only localhost allowed
 - Problem: Production domains blocked
-- Fix: Added `dashboard.qora.in`, `qora.in`, `*.vercel.app` to allowed origins
+- Fix: Added `dashboard.icebergdb.io`, `icebergdb.io`, `*.vercel.app` to allowed origins
 
 ---
 
 ## NEW FILES CREATED
 
 ### Deployment Config
-- `qora-backend/Dockerfile` — Updated: added g++, pre-downloads embedding model
-- `qora-backend/railway.toml` — Railway deployment config
-- `qora-backend/.env.example` — Clean template
-- `qora-dashboard/vercel.json` — SPA rewrite rules
-- `qora-landing/vercel.json` — SPA rewrite rules
-- `qora-dashboard/.env.example` — Template
-- `qora-landing/.env.example` — Template
+- `iceberg-backend/Dockerfile` — Updated: added g++, pre-downloads embedding model
+- `iceberg-backend/railway.toml` — Railway deployment config
+- `iceberg-backend/.env.example` — Clean template
+- `iceberg-dashboard/vercel.json` — SPA rewrite rules
+- `iceberg-landing/vercel.json` — SPA rewrite rules
+- `iceberg-dashboard/.env.example` — Template
+- `iceberg-landing/.env.example` — Template
 - `.gitignore` — Excludes .env, venv, qdrant data, SQLite DB, node_modules
 
 ### Config
-- `qora-dashboard/src/lib/config.js` — Central `API_URL` export
+- `iceberg-dashboard/src/lib/config.js` — Central `API_URL` export
 
 ### Documentation
 - `DEPLOYMENT_GUIDE.md` — Step by step Railway + Vercel deploy
@@ -74,19 +74,19 @@ All changes, fixes, and decisions made across all conversations.
 - `SESSION_LOG.md` — This file
 
 ### SDKs (New)
-- `qora-sdk-java/` — Full Java SDK (Java 11+, Maven, Spring Boot ready)
+- `iceberg-sdk-java/` — Full Java SDK (Java 11+, Maven, Spring Boot ready)
   - `pom.xml`
-  - `src/main/java/in/qora/Client.java`
-  - `src/main/java/in/qora/SearchResult.java`
-  - `src/main/java/in/qora/QoraError.java`
+  - `src/main/java/in/iceberg/Client.java`
+  - `src/main/java/in/iceberg/SearchResult.java`
+  - `src/main/java/in/iceberg/IcebergError.java`
   - `README.md`
-- `qora-sdk-dotnet/` — Full .NET SDK (.NET 6+, NuGet, async/await)
-  - `QoraSdk.csproj`
+- `iceberg-sdk-dotnet/` — Full .NET SDK (.NET 6+, NuGet, async/await)
+  - `IcebergSdk.csproj`
   - `src/Client.cs`
   - `src/Models.cs`
-  - `src/QoraError.cs`
+  - `src/IcebergError.cs`
   - `README.md`
-- `qora-sdk-rust/` — Full Rust SDK (tokio, reqwest, thiserror)
+- `iceberg-sdk-rust/` — Full Rust SDK (tokio, reqwest, thiserror)
   - `Cargo.toml`
   - `src/lib.rs`
   - `README.md`
@@ -95,7 +95,7 @@ All changes, fixes, and decisions made across all conversations.
 
 ## FEATURES ADDED / UPDATED
 
-### Landing Page (qora-landing/src/App.jsx)
+### Landing Page (iceberg-landing/src/App.jsx)
 - Added `const API = import.meta.env.VITE_API_URL || 'http://localhost:8000'`
 - Added `const D = import.meta.env.VITE_DASHBOARD_URL || 'http://localhost:3000'`
 - Waitlist form uses `${API}/waitlist` instead of hardcoded URL
@@ -103,7 +103,7 @@ All changes, fixes, and decisions made across all conversations.
 - Updated SDK description: "Python, JS, Go, Java, .NET, Rust"
 - Updated Features: "SDKs for Every Stack" with all 6 languages
 
-### Backend (qora-backend/routers/auth.py)
+### Backend (iceberg-backend/routers/auth.py)
 - Complete rewrite — removed duplicate routes
 - `POST /auth/signup` — single clean version
 - `POST /auth/login` — returns keys with role field
@@ -140,10 +140,10 @@ All 6 SDKs implement the same interface:
 
 | Component | Platform | URL |
 |-----------|----------|-----|
-| Backend (FastAPI) | Railway | `https://qora-api.up.railway.app` |
-| Dashboard (React) | Vercel | `https://dashboard.qora.in` |
-| Landing (React) | Vercel | `https://qora.in` |
-| Storage (files) | Cloudflare R2 | (bucket: qora-storage) |
+| Backend (FastAPI) | Railway | `https://Iceberg-api.up.railway.app` |
+| Dashboard (React) | Vercel | `https://dashboard.icebergdb.io` |
+| Landing (React) | Vercel | `https://icebergdb.io` |
+| Storage (files) | Cloudflare R2 | (bucket: iceberg-storage) |
 | DB (vectors) | Qdrant embedded | (local in Railway container) |
 | DB (users/keys) | SQLite | (local in Railway container) |
 
@@ -158,7 +158,7 @@ All 6 SDKs implement the same interface:
 ## CURRENT FILE STATE (Key Files)
 
 ```
-qora-backend/
+iceberg-backend/
   main.py                    ✅ CORS updated for production
   requirements.txt           ✅ fastembed added
   Dockerfile                 ✅ Updated with g++
@@ -182,7 +182,7 @@ qora-backend/
   services/embeddings.py     ✅ fastembed
   services/read_nodes.py     ✅ Connection pool
 
-qora-dashboard/
+iceberg-dashboard/
   src/App.jsx                ✅ Protected routes
   src/lib/api.js             ✅ VITE_API_URL aware
   src/lib/config.js          ✅ New — central API_URL
@@ -201,7 +201,7 @@ qora-dashboard/
   vite.config.js             ✅ VITE_API_URL aware
   vercel.json                ✅ New
 
-qora-landing/
+iceberg-landing/
   src/App.jsx                ✅ Env vars, Java tab added
   vercel.json                ✅ New
   .env.example               ✅ New
@@ -216,7 +216,7 @@ qora-landing/
 - [ ] Railway pe backend deploy karna
 - [ ] Vercel pe dashboard deploy karna
 - [ ] Vercel pe landing deploy karna
-- [ ] Domain lena — qora.in
+- [ ] Domain lena — icebergdb.io
 - [ ] End-to-end test: signup → create collection → index → search
 
 ### Post Launch
@@ -228,7 +228,7 @@ qora-landing/
 - [ ] Product Hunt launch preparation
 
 ### Marketing
-- [ ] Twitter/X account setup (@qora_db)
+- [ ] Twitter/X account setup (@iceberg_db)
 - [ ] First tweet — "building in public"
 - [ ] IndieHackers post
 - [ ] Dev.to tutorial article
@@ -241,7 +241,7 @@ qora-landing/
 - Pinecone: expensive ($20-50+/mo), US only, reportedly exploring sale
 - Weaviate: complex, no India region
 - Gap: No affordable India-hosted managed vector DB
-- Qora positioning: "Pinecone at ₹799/mo, India hosted, DPDP compliant"
+- Iceberg positioning: "Pinecone at ₹799/mo, India hosted, DPDP compliant"
 - Target: Indian AI developers, early stage startups, dev agencies
 
 ---

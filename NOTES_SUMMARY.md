@@ -1,11 +1,11 @@
-# Qora — Complete Session Notes
+﻿# Iceberg — Complete Session Notes
 ## Saari important baatein ek jagah
 
 ---
 
 ## Startups Jo Build Kar Rahe Hain
 
-### 1. Qora Vector DB
+### 1. Iceberg Vector DB
 - India-first Vector DB as a Service
 - Qdrant engine use karenge (open source)
 - Python + FastAPI backend
@@ -16,7 +16,7 @@
 - Target: Indian AI startups jo RAG chatbot bana rahe hain
 - Break-even: 3-4 paying customers
 
-### 2. Overlay AI App (Qora AI)
+### 2. Overlay AI App (Iceberg AI)
 - Flutter mein already 80% code ready hai (`overlay-ai/ai_companion/`)
 - Transparent floating overlay on Android
 - Groq API (free) + Gemini API (video analysis)
@@ -85,7 +85,7 @@
 
 ## Tech Stack Decisions
 
-### Qora Vector DB
+### Iceberg Vector DB
 - Backend: Python + FastAPI
 - Vector Engine: Qdrant (open source, Rust)
 - Embedding: multilingual-e5-large (Hindi support)

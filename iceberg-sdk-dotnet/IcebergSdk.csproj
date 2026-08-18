@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>Iceberg</AssemblyName>
+    <RootNamespace>Iceberg</RootNamespace>
+    <PackageId>Iceberg</PackageId>
+    <Version>0.1.0</Version>
+    <Authors>Iceberg</Authors>
+    <Description>Official .NET client for Iceberg Vector Database</Description>
+    <PackageProjectUrl>https://icebergdb.io</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/iceberg-db/iceberg-sdk-dotnet</RepositoryUrl>
+    <PackageTags>vector;search;ai;embeddings;rag</PackageTags>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Text.Json" Version="8.0.0" />
+  </ItemGroup>
+
+</Project>

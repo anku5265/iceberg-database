@@ -11,9 +11,9 @@ venv/
 .env.production
 
 # Data — local Qdrant data, SQLite DB
-qora-backend/data/qdrant/
-qora-backend/data/qora.db
-qora-backend/data/backups/
+iceberg-backend/data/qdrant/
+iceberg-backend/data/iceberg.db
+iceberg-backend/data/backups/
 
 # Node
 node_modules/

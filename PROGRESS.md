@@ -1,4 +1,4 @@
-# Qora Progress — July 10, 2026
+﻿# Iceberg Progress — July 10, 2026
 
 ## Aaj ka kaam (Landing Page Hero Demo)
 
@@ -81,8 +81,8 @@ Bar bar PowerShell `$newDemo.Split()` replacement karte waqt file truncate hoti 
 ---
 
 ## Files changed
-- `qora-landing/src/HomePageNew.jsx` — main file (broken)
-- `qora-landing/src/index.css` — dark/light CSS classes added
+- `iceberg-landing/src/HomePageNew.jsx` — main file (broken)
+- `iceberg-landing/src/index.css` — dark/light CSS classes added
 
 ## Next session mein karna hai
 1. HomePageNew.jsx fix karo — ya clean rewrite ya missing tail append
