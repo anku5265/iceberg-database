@@ -33,12 +33,24 @@ export default function ProductBYOC() {
           <h2 className="text-3xl font-bold mb-12">Built for data-sensitive organizations</h2>
           <div className="grid md:grid-cols-3 gap-6">
             {[
-              { icon: '🏦', title: 'Banks & NBFCs', desc: 'RBI mandates data localization. Deploy Iceberg inside your datacenter. No customer data leaves your network — ever.' },
-              { icon: '🏥', title: 'Hospitals & Health-tech', desc: 'Patient records are sensitive. Run Iceberg on-premise. HIPAA-style data isolation with full AI search capabilities.' },
-              { icon: '🏛️', title: 'Government & Defence', desc: 'Air-gapped deployments supported. No internet required once installed. Full vector search on classified data.' },
+              {
+                icon: <svg width="28" height="28" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0 0 12 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75Z"/></svg>,
+                title: 'Banks & NBFCs',
+                desc: 'RBI mandates data localization. Deploy Iceberg inside your datacenter. No customer data leaves your network — ever.'
+              },
+              {
+                icon: <svg width="28" height="28" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 1 5.513 7.5h12.974c.576 0 1.059.435 1.119 1.007ZM8.625 10.5a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm7.5 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"/></svg>,
+                title: 'Hospitals & Health-tech',
+                desc: 'Patient records are sensitive. Run Iceberg on-premise. HIPAA-style data isolation with full AI search capabilities.'
+              },
+              {
+                icon: <svg width="28" height="28" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z"/></svg>,
+                title: 'Government & Defence',
+                desc: 'Air-gapped deployments supported. No internet required once installed. Full vector search on classified data.'
+              },
             ].map((u, i) => (
               <div key={i} className="rounded-xl border border-[#1a1a1a] bg-[#0d0d0d] p-6">
-                <div className="text-3xl mb-4">{u.icon}</div>
+                <div className="w-12 h-12 rounded-xl bg-blue-600/10 border border-blue-500/20 flex items-center justify-center text-blue-400 mb-5">{u.icon}</div>
                 <h3 className="font-semibold mb-2">{u.title}</h3>
                 <p className="text-sm text-[#666] leading-relaxed">{u.desc}</p>
               </div>
