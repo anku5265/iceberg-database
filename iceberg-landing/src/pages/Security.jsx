@@ -31,21 +31,21 @@ export default function Security() {
               {
                 title: 'DPDP Act 2023',
                 desc: 'Digital Personal Data Protection Act compliant. Data stays within India. No cross-border transfer of personal data without consent.',
-                icon: '🇮🇳',
+                icon: <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 0 0 8.716-6.747M12 21a9.004 9.004 0 0 1-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 0 1 7.843 4.582M12 3a8.997 8.997 0 0 0-7.843 4.582m15.686 0A11.953 11.953 0 0 1 12 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0 1 21 12c0 .778-.099 1.533-.284 2.253M3.157 7.582A8.959 8.959 0 0 0 3 12c0 .778.099 1.533.284 2.253"/></svg>,
               },
               {
                 title: 'Data Residency',
                 desc: 'All data stored on servers in Mumbai. Your vectors, documents, and metadata never leave Indian soil — guaranteed by infrastructure, not just policy.',
-                icon: '📍',
+                icon: <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z"/></svg>,
               },
               {
                 title: 'RBI Compliance',
                 desc: 'BYOC option for banks and NBFCs requiring on-premise deployment as per RBI data localization guidelines.',
-                icon: '🏦',
+                icon: <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0 0 12 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75Z"/></svg>,
               },
             ].map((c, i) => (
               <div key={i} className="rounded-xl border border-[#1a1a1a] bg-[#0d0d0d] p-6">
-                <div className="text-3xl mb-4">{c.icon}</div>
+                <div className="w-12 h-12 rounded-xl bg-blue-600/10 border border-blue-500/20 flex items-center justify-center text-blue-400 mb-5">{c.icon}</div>
                 <h3 className="font-semibold mb-2">{c.title}</h3>
                 <p className="text-sm text-[#666] leading-relaxed">{c.desc}</p>
               </div>
