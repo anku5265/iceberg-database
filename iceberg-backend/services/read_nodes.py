@@ -1,4 +1,4 @@
-﻿"""
+"""
 Read Node Management — Better than Pinecone's Dedicated Read Nodes.
 
 Pinecone: Manual provisioning, extra hourly charge, fixed servers.
@@ -65,12 +65,12 @@ class ReadNodeManager:
             kwargs = {"url": settings.qdrant_url}
             if settings.qdrant_api_key:
                 kwargs["api_key"] = settings.qdrant_api_key
-            print(f"[qdrant] Server mode → {settings.qdrant_url}")
+            print(f"[qdrant] Server mode -> {settings.qdrant_url}")
             return QdrantClient(**kwargs)
         else:
             self._mode = "local"
             DATA_DIR.mkdir(parents=True, exist_ok=True)
-            print(f"[qdrant] Local file mode → {DATA_DIR}")
+            print(f"[qdrant] Local file mode -> {DATA_DIR}")
             return QdrantClient(path=str(DATA_DIR))
 
     def initialize(self):
