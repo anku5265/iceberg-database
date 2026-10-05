@@ -10,10 +10,10 @@ services:
     healthCheckPath: /health
     envVars:
       - key: QDRANT_URL
-        value: https://65ad5c99-43a3-4de8-b9cb-6a1425ed843a.eu-central-1-0.aws.cloud.qdrant.io
+        sync: false
       - key: QDRANT_API_KEY
-        value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3MiOiJtIiwic3ViamVjdCI6ImFwaS1rZXk6Yjk3MzA3MzgtNjI2ZS00ZDM5LTllOWItYjRlNTE2MzdhZjcwIn0.GTvP7VVwnsDUw3N-MYpqEVuS2aH2nZ6GoMNvACmILqs
+        sync: false
       - key: MASTER_API_KEY
-        value: qr_dev_test123
+        sync: false
       - key: PORT
         value: "8000"
