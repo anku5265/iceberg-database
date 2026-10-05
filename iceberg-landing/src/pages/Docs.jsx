@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { Navbar } from '../components/Navbar'
 
-const D = import.meta.env.VITE_DASHBOARD_URL || 'http://localhost:3000'
-const API = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+const D = import.meta.env.VITE_DASHBOARD_URL || 'https://iceberg-dashboard.vercel.app'
+const API = import.meta.env.VITE_API_URL || 'https://iceberg-backend-hrg9.onrender.com'
 
 const NAV = [
   {

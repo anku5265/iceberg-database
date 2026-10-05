@@ -1,8 +1,8 @@
-﻿import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 
-const D = import.meta.env.VITE_DASHBOARD_URL || 'http://localhost:3000'
-const API = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+const D = import.meta.env.VITE_DASHBOARD_URL || 'https://iceberg-dashboard.vercel.app'
+const API = import.meta.env.VITE_API_URL || 'https://iceberg-backend-hrg9.onrender.com'
 
 const DEMO_QUERIES = [
   { text: 'return policy for damaged items', key: 'return' },
