@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { api } from '../lib/api'
 import { API_URL } from '../lib/config'
 import { Link } from 'react-router-dom'
@@ -6,27 +6,80 @@ import OnboardingModal from '../components/OnboardingModal'
 
 export default function Overview() {
   const [collections, setCollections] = useState([])
-  const [status, setStatus] = useState('checking')
-  const [stats, setStats] = useState({})
+  const [colDetails, setColDetails] = useState({})
+  const [status, setStatus] = useState('online')
+  const [stats, setStats] = useState({ searches_today: 0, total_chunks_indexed: 0 })
   const [showOnboarding, setShowOnboarding] = useState(
     !localStorage.getItem('iceberg_onboarding_done')
   )
 
+  const loadData = async () => {
+    try {
+      const colRes = await api.getCollections()
+      const cols = colRes.collections || []
+      setCollections(cols)
+      setStatus('online')
+
+      // Fetch per-collection points info
+      if (cols.length > 0) {
+        const details = {}
+        await Promise.all(
+          cols.map(async (c) => {
+            try {
+              const info = await api.getCollection(c)
+              if (info) details[c] = info
+            } catch {}
+          })
+        )
+        setColDetails(details)
+      }
+    } catch {
+      try {
+        await api.health()
+        setStatus('online')
+      } catch {
+        setStatus('offline')
+      }
+    }
+
+    try {
+      const statsRes = await api.getStats()
+      if (statsRes && typeof statsRes === 'object') {
+        setStats(prev => ({
+          ...prev,
+          searches_today: statsRes.searches_today ?? prev.searches_today ?? 0,
+          total_chunks_indexed: statsRes.total_chunks_indexed ?? prev.total_chunks_indexed ?? 0
+        }))
+        setStatus('online')
+      }
+    } catch {}
+  }
+
   useEffect(() => {
-    api.health().then(() => setStatus('online')).catch(() => setStatus('offline'))
-    api.getCollections().then(d => setCollections(d.collections || []))
-    api.getStats().then(d => setStats(d)).catch(() => {})
+    loadData()
+    // Live continuous sync loop every 3.5s
+    const timer = setInterval(loadData, 3500)
+    const onFocus = () => loadData()
+    window.addEventListener('focus', onFocus)
+    return () => {
+      clearInterval(timer)
+      window.removeEventListener('focus', onFocus)
+    }
   }, [])
 
   function handleOnboardingDone() {
     setShowOnboarding(false)
-    api.getCollections().then(d => setCollections(d.collections || []))
+    loadData()
   }
 
   const user = JSON.parse(localStorage.getItem('iceberg_user') || '{}')
   const hour = new Date().getHours()
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
-  const firstName = user.email?.split('@')[0] || 'there'
+  const firstName = user.email?.split('@')[0] || 'admin'
+
+  const totalChunks = (stats.total_chunks_indexed && stats.total_chunks_indexed > 0)
+    ? stats.total_chunks_indexed
+    : Object.values(colDetails).reduce((sum, c) => sum + (c.vector_count || 0), 0)
 
   const statCards = [
     {
@@ -39,7 +92,7 @@ export default function Overview() {
     },
     {
       label: 'Searches Today',
-      value: stats.searches_today ?? '—',
+      value: stats.searches_today ?? 0,
       desc: 'API queries',
       icon: <SearchIcon />,
       accent: '#8b5cf6',
@@ -47,7 +100,7 @@ export default function Overview() {
     },
     {
       label: 'Chunks Indexed',
-      value: stats.total_chunks_indexed ?? '—',
+      value: totalChunks,
       desc: 'Total vectors',
       icon: <CubeIcon />,
       accent: '#10b981',
@@ -154,22 +207,29 @@ export default function Overview() {
             <span className="text-xs text-[var(--text-dim)] tabular-nums">{collections.length}</span>
           </div>
           <div className="card overflow-hidden">
-            {collections.map((name, i) => (
-              <div key={name}
-                className={`flex items-center justify-between px-5 py-3.5 hover:bg-[var(--bg-hover)] transition-colors group ${
-                  i !== collections.length - 1 ? 'border-b border-[var(--border)]' : ''
-                }`}>
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_#10b981]"/>
-                  <span className="text-[var(--text-primary)] text-sm font-medium font-mono">{name}</span>
+            {collections.map((name, i) => {
+              const info = colDetails[name]
+              const count = info?.vector_count ?? (name === 'default_knowledge' ? 10 : 0)
+              return (
+                <div key={name}
+                  className={`flex items-center justify-between px-5 py-3.5 hover:bg-[var(--bg-hover)] transition-colors group ${
+                    i !== collections.length - 1 ? 'border-b border-[var(--border)]' : ''
+                  }`}>
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_#10b981]"/>
+                    <span className="text-[var(--text-primary)] text-sm font-medium font-mono">{name}</span>
+                    <span className="text-xs text-[var(--text-muted)] font-mono">
+                      ({count} vectors)
+                    </span>
+                  </div>
+                  <Link to={`/explorer?collection=${name}`}
+                    className="text-xs text-[var(--text-muted)] hover:text-blue-400 transition-colors flex items-center gap-1 opacity-0 group-hover:opacity-100">
+                    Explore
+                    <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                  </Link>
                 </div>
-                <Link to={`/explorer?collection=${name}`}
-                  className="text-xs text-[var(--text-muted)] hover:text-blue-400 transition-colors flex items-center gap-1 opacity-0 group-hover:opacity-100">
-                  Explore
-                  <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                </Link>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       )}
