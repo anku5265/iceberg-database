@@ -1,4 +1,5 @@
 import io
+from pydantic import BaseModel
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from services import qdrant as qdrant_svc
 from services.embeddings import embed, chunk_text
@@ -71,3 +72,29 @@ async def index_text(
     log_usage(user_id, "index", collection, str(count))
 
     return {"message": "Indexed successfully", "collection": collection, "chunks_indexed": count, "namespace": namespace}
+
+class BatchIndexRequest(BaseModel):
+    collection: str
+    items: list[str]
+    source: str = "sample_knowledge_base"
+    namespace: str = ""
+
+@router.post("/batch")
+async def index_batch(body: BatchIndexRequest, user_id: str = Depends(verify_api_key)):
+    if not body.items:
+        raise HTTPException(status_code=400, detail="Items cannot be empty")
+    all_chunks = []
+    all_metadata = []
+    for idx, item in enumerate(body.items):
+        if not item.strip():
+            continue
+        chunks = chunk_text(item)
+        for i, c in enumerate(chunks):
+            all_chunks.append(c)
+            all_metadata.append({"source": body.source, "item_index": idx, "chunk_index": i})
+    if not all_chunks:
+        raise HTTPException(status_code=400, detail="No valid text found")
+    vectors = embed(all_chunks)
+    count = qdrant_svc.upsert_vectors(body.collection, all_chunks, vectors, all_metadata, namespace=body.namespace)
+    log_usage(user_id, "index", body.collection, str(count))
+    return {"message": "Batch indexed successfully", "collection": body.collection, "chunks_indexed": count}

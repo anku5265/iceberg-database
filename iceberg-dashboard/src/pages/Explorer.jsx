@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { api } from '../lib/api'
+import { REAL_KNOWLEDGE_BASE, SUGGESTED_QUERIES } from '../lib/starterData'
 
 export default function Explorer() {
   const [searchParams] = useSearchParams()
@@ -16,6 +17,8 @@ export default function Explorer() {
   const [file, setFile] = useState(null)
   const [indexing, setIndexing] = useState(false)
   const [indexResult, setIndexResult] = useState(null)
+  const [loadingKb, setLoadingKb] = useState(false)
+  const [kbLoaded, setKbLoaded] = useState(false)
 
   useEffect(() => { api.getCollections().then(d => setCollections(d.collections || [])) }, [])
 
@@ -41,6 +44,23 @@ export default function Explorer() {
     setIndexing(true); setIndexResult(null)
     const res = await api.uploadFile(collection, file)
     setIndexResult(res); setIndexing(false); setFile(null)
+  }
+
+  const handleLoadStarterKb = async () => {
+    if (!collection) return
+    setLoadingKb(true)
+    try {
+      await api.indexBatch(collection, REAL_KNOWLEDGE_BASE.map(d => d.text), 'starter_kb')
+      setKbLoaded(true)
+      setQuery('what is java')
+      setLoading(true)
+      const res = await api.search(collection, 'what is java', 5, searchType, alpha)
+      setResults(res)
+      setLoading(false)
+    } catch (err) {
+      console.error(err)
+    }
+    setLoadingKb(false)
   }
 
   return (
@@ -110,7 +130,50 @@ export default function Explorer() {
                 </div>
               )}
             </div>
+
+            {/* Suggested Queries Chips */}
+            <div className="flex flex-wrap items-center gap-1.5 pt-1 text-xs">
+              <span className="text-[var(--text-dim)]">Try:</span>
+              {SUGGESTED_QUERIES.map(q => (
+                <button
+                  key={q}
+                  type="button"
+                  onClick={async () => {
+                    setQuery(q)
+                    if (collection) {
+                      setLoading(true); setResults(null)
+                      const res = await api.search(collection, q, 5, searchType, alpha)
+                      setResults(res); setLoading(false)
+                    }
+                  }}
+                  className="px-2.5 py-1 rounded-full bg-[var(--card-bg)] hover:bg-blue-600/20 hover:text-blue-400 text-[var(--text-muted)] border border-[var(--border)] hover:border-blue-500/30 transition text-xs font-medium"
+                >
+                  "{q}"
+                </button>
+              ))}
+            </div>
           </form>
+
+          {/* Quick Starter Pack Banner */}
+          {collection && !kbLoaded && (!results || results.results?.length === 0) && (
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-blue-950/20 border border-blue-900/30 rounded-xl mb-6 text-xs">
+              <div className="flex items-center gap-2.5 text-[var(--text-secondary)]">
+                <span className="text-blue-400 text-base">⚡</span>
+                <div>
+                  <div className="font-semibold text-[var(--text-primary)]">Collection empty or want to test with real data?</div>
+                  <div className="text-[var(--text-dim)] mt-0.5">Load 15 comprehensive articles (Java, Python, React, Tesla, Cloud, Vector DB, Security).</div>
+                </div>
+              </div>
+              <button
+                type="button"
+                disabled={loadingKb}
+                onClick={handleLoadStarterKb}
+                className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white px-3.5 py-2 rounded-lg font-medium transition shrink-0 whitespace-nowrap"
+              >
+                {loadingKb ? 'Indexing 15 articles...' : '⚡ Load 15 Real Tech Docs'}
+              </button>
+            </div>
+          )}
 
           {loading && (
             <div className="flex items-center gap-3 text-[var(--text-muted)] text-sm py-8 justify-center">

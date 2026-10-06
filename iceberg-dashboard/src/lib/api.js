@@ -55,6 +55,13 @@ export const api = {
     })
     return r.json()
   },
+  async indexBatch(collection, items, source = 'sample_knowledge_base') {
+    return request(`${BASE}/documents/batch`, {
+      method: 'POST',
+      headers: headers(),
+      body: JSON.stringify({ collection, items, source })
+    })
+  },
   async uploadFile(collection, file) {
     const form = new FormData()
     form.append('collection', collection)
