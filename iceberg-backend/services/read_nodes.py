@@ -54,9 +54,7 @@ class ReadNodeManager:
     def _is_server_mode(self) -> bool:
         """True if QDRANT_URL points to a real server (not localhost default in prod)."""
         url = settings.qdrant_url
-        # If env var explicitly set to a non-localhost URL → server mode
-        import os
-        return bool(os.environ.get("QDRANT_URL")) and "localhost" not in url
+        return bool(url) and "localhost" not in url
 
     def _make_client(self) -> QdrantClient:
         """Create a Qdrant client — server or local depending on config."""

@@ -101,18 +101,19 @@ async def recall(
     """Search memories — returns most relevant memories for a query."""
     col = _get_collection(agent_id)
 
-    filters = {"agent_id": agent_id}
-    if body.memory_type:
-        filters["memory_type"] = body.memory_type
-
     query_vec = embed_query(body.query)
-    results = qdrant_svc.search_vectors(
-        collection=col,
-        query_vector=query_vec,
-        top_k=body.top_k,
-        score_threshold=0.3,
-        filters=filters,
-    )
+    try:
+        results = qdrant_svc.search_vectors(
+            collection=col,
+            query_vector=query_vec,
+            top_k=body.top_k,
+            score_threshold=0.2,
+        )
+    except Exception as e:
+        results = []
+
+    if body.memory_type:
+        results = [r for r in results if r["metadata"].get("memory_type") == body.memory_type]
 
     # Filter expired memories
     now = int(time.time())
