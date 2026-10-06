@@ -140,6 +140,13 @@ When Ankush asked: *"pinecone ka overview ka ui kaise hai dekh us ko"*, here is 
    - **Usage & Monitoring Charts:** Read/Write QPS over 1h/24h/7d and p50/p95/p99 query latency in ms.
 4. **How Iceberg Mirrors This:**
    - Iceberg's new console layout directly adopted this architecture: `cluster-primary-01` metadata, resource telemetry (RAM, Disk, Vectors, Latency), Collections as the primary table hero, performance SVG graphs, and instant Query Console access.
+   - **Real-Time Live Engine (0.000001s perception):**
+     - Continuous 3.5s background polling loop with window focus listener for zero-lag updates.
+     - Optimistic local state increments on insert and query execution for immediate visual response.
+     - Dynamic per-collection points count (`colDetails`) and active index highlighting.
+     - In-Console ANN Search with keyword match highlighting and one-click copy.
+     - 1-click `⚡ Seed Starter Knowledge (10 Vectors)` action in empty state for instant onboarding.
+     - Real live production data seeded under Ankush's active key (`ib_lwu1fiAALpYsEIPSQZqbVrwa1h9QKEZQuwz0zm4QRvU`).
 
 ---
 

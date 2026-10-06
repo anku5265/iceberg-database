@@ -35,8 +35,11 @@ def delete_collection(name: str) -> bool:
 
 def get_collection_info(name: str) -> dict:
     info = _primary().get_collection(name)
+    pts = getattr(info, "points_count", None)
+    if pts is None:
+        pts = getattr(info, "vectors_count", 0)
     return {
-        "vector_count": info.vectors_count or 0,
+        "vector_count": pts or 0,
         "status": str(info.status),
     }
 

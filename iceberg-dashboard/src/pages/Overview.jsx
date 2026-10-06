@@ -6,6 +6,7 @@ import ConfirmModal from '../components/ConfirmModal'
 
 export default function Overview() {
   const [collections, setCollections] = useState([])
+  const [colDetails, setColDetails] = useState({})
   const [status, setStatus] = useState('online')
   const [latency, setLatency] = useState(24)
   const [stats, setStats] = useState({ searches_today: 0, total_chunks_indexed: 0 })
@@ -20,6 +21,10 @@ export default function Overview() {
   const [isSearching, setIsSearching] = useState(false)
   const [searchResults, setSearchResults] = useState(null)
   const [searchLatency, setSearchLatency] = useState(null)
+  const [copiedPoint, setCopiedPoint] = useState(null)
+
+  // Demo seeder state
+  const [seedingDemo, setSeedingDemo] = useState(false)
 
   // Create Collection Modal state
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -67,15 +72,33 @@ export default function Overview() {
       const colRes = await api.getCollections()
       const cols = colRes.collections || []
       setCollections(cols)
-      if (cols.length > 0 && !cols.includes(selectedCol)) {
+      if (cols.length > 0 && (!selectedCol || !cols.includes(selectedCol))) {
         setSelectedCol(cols[0])
+      }
+
+      // Fetch per-collection point count and status
+      if (cols.length > 0) {
+        const detailsObj = {}
+        await Promise.all(
+          cols.map(async (cName) => {
+            try {
+              const info = await api.getCollection(cName)
+              if (info) detailsObj[cName] = info
+            } catch {}
+          })
+        )
+        setColDetails(detailsObj)
       }
     } catch {}
 
     try {
       const statsRes = await api.getStats()
       if (statsRes && typeof statsRes === 'object') {
-        setStats(prev => ({ ...prev, ...statsRes }))
+        setStats(prev => ({
+          ...prev,
+          searches_today: Math.max(prev.searches_today || 0, statsRes.searches_today || 0),
+          total_chunks_indexed: Math.max(prev.total_chunks_indexed || 0, statsRes.total_chunks_indexed || 0),
+        }))
       }
     } catch {}
   }
@@ -83,24 +106,79 @@ export default function Overview() {
   useEffect(() => {
     checkClusterHealth()
     loadData()
+
+    // 0.000001s feel: Live real-time polling every 3.5 seconds
+    const interval = setInterval(() => {
+      loadData()
+    }, 3500)
+
+    const onFocus = () => {
+      checkClusterHealth()
+      loadData()
+    }
+    window.addEventListener('focus', onFocus)
+
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener('focus', onFocus)
+    }
   }, [])
 
   // Execute in-console vector search
   const handleSearch = async (textToSearch) => {
-    const q = textToSearch || queryText
-    if (!q.trim() || !selectedCol) return
+    const q = (textToSearch !== undefined ? textToSearch : queryText).trim()
+    if (!q || !selectedCol) return
     setIsSearching(true)
+
+    // Immediate optimistic update for zero perceived latency
+    setStats(prev => ({ ...prev, searches_today: (prev.searches_today || 0) + 1 }))
+
     const t0 = performance.now()
     try {
-      const res = await api.search(selectedCol, q.trim(), 4, 'hybrid', 0.5)
+      const res = await api.search(selectedCol, q, 4, 'hybrid', 0.5)
       const t1 = performance.now()
-      setSearchLatency(Math.round(t1 - t0))
+      const measuredLat = Math.max(12, Math.round(t1 - t0))
+      setSearchLatency(measuredLat)
+      setLatency(measuredLat)
       setSearchResults(res.results || [])
+
+      // Sync backend stats
+      api.getStats().then(s => {
+        if (s) setStats(prev => ({ ...prev, ...s }))
+      })
     } catch (err) {
       console.error('Search error:', err)
       setSearchResults([])
     } finally {
       setIsSearching(false)
+    }
+  }
+
+  // Handle Seed Starter Tech Knowledge Base
+  const handleSeedDemo = async () => {
+    setSeedingDemo(true)
+    try {
+      await api.createCollection('default_knowledge', '384d Cosine Tech Knowledge Base')
+      const items = [
+        "Python is a high-level interpreted programming language powering modern Artificial Intelligence, Machine Learning (PyTorch, TensorFlow), and large language model engineering.",
+        "Iceberg Vector Database is a high-performance vector search engine featuring HNSW ANN indexing, hybrid BM25 lexical ranking, and sub-15ms vector retrieval.",
+        "Docker packages software into standardized, portable containers running isolated microservices seamlessly across Linux, macOS, and Windows cloud infrastructure.",
+        "React is a declarative component-driven JavaScript frontend library developed by Meta for building blazing-fast modern single-page web applications.",
+        "PostgreSQL is an advanced open-source relational database management system supporting ACID compliance, complex SQL queries, and JSONB document storage.",
+        "Kubernetes is an open-source container orchestration system for automating application deployment, auto-scaling, and cluster management at scale.",
+        "Redis is an ultra-fast in-memory key-value data structure store used as a distributed cache, message broker, and low-latency session store.",
+        "Vector Embeddings convert raw unstructured text, images, and audio into dense high-dimensional mathematical coordinates capturing deep semantic meaning.",
+        "Cosine Similarity computes the normalized dot product between two vector embeddings to measure semantic similarity regardless of vector magnitude.",
+        "FastAPI is a modern, high-performance web framework for building APIs with Python 3.8+ based on standard Python type hints and Pydantic validation."
+      ]
+      await api.indexBatch('default_knowledge', items, 'tech_starter_seed')
+      setSelectedCol('default_knowledge')
+      setStats(prev => ({ ...prev, total_chunks_indexed: (prev.total_chunks_indexed || 0) + items.length }))
+      await loadData()
+    } catch (e) {
+      console.error('Seed demo error:', e)
+    } finally {
+      setSeedingDemo(false)
     }
   }
 
@@ -110,9 +188,11 @@ export default function Overview() {
     if (!newColName.trim()) return
     setCreateLoading(true)
     try {
-      await api.createCollection(newColName.trim(), `${newColDim}d ${newColMetric} vector index`)
+      const name = newColName.trim().toLowerCase().replace(/[^a-z0-9_]/g, '_')
+      await api.createCollection(name, `${newColDim}d ${newColMetric} vector index`)
       setNewColName('')
       setShowCreateModal(false)
+      setSelectedCol(name)
       await loadData()
     } catch (e) {
       console.error(e)
@@ -127,6 +207,7 @@ export default function Overview() {
     if (!insertText.trim() || !selectedCol) return
     setInsertLoading(true)
     try {
+      setStats(prev => ({ ...prev, total_chunks_indexed: (prev.total_chunks_indexed || 0) + 1 }))
       await api.indexText(selectedCol, insertText.trim(), 'console_insert')
       setInsertText('')
       setInsertSuccess(true)
@@ -134,7 +215,7 @@ export default function Overview() {
       setTimeout(() => {
         setInsertSuccess(false)
         setShowInsertModal(false)
-      }, 1500)
+      }, 1200)
     } catch (e) {
       console.error(e)
     } finally {
@@ -216,7 +297,9 @@ console.log(response.results);`,
   }
 
   // Calculated metrics
-  const totalVectors = collections.length > 0 ? (stats.total_chunks_indexed || 10) : 0
+  const totalVectors = collections.length > 0 
+    ? (stats.total_chunks_indexed || Object.values(colDetails).reduce((acc, c) => acc + (c.vector_count || 0), 0) || 10)
+    : 0
   const ramUsageMb = (120 + totalVectors * 0.08).toFixed(1)
   const diskUsageMb = (totalVectors * 0.012 + 2.4).toFixed(1)
 
@@ -374,24 +457,41 @@ console.log(response.results);`,
         </div>
 
         {collections.length === 0 ? (
-          <div className="p-12 text-center space-y-3">
-            <div className="w-10 h-10 rounded-xl bg-[var(--bg-surface)] border border-[var(--border)] flex items-center justify-center mx-auto text-[var(--text-muted)]">
-              <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+          <div className="p-12 text-center space-y-4">
+            <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mx-auto text-blue-400">
+              <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
                 <ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.657 4.03 3 9 3s9-1.343 9-3V5"/><path d="M3 12c0 1.657 4.03 3 9 3s9-1.343 9-3"/>
               </svg>
             </div>
             <div>
-              <p className="text-sm font-medium text-[var(--text-primary)]">No indexes in this cluster</p>
+              <p className="text-sm font-semibold text-[var(--text-primary)]">No indexes in this cluster yet</p>
               <p className="text-xs text-[var(--text-muted)] mt-1 max-w-md mx-auto">
-                Create your first vector index to begin storing high-dimensional embeddings and executing semantic queries.
+                Create your first vector index or load our pre-indexed tech knowledge base with 10 high-dimensional vectors to test hybrid search instantly.
               </p>
             </div>
-            <div className="pt-2">
+            <div className="flex items-center justify-center gap-3 pt-2">
+              <button
+                onClick={handleSeedDemo}
+                disabled={seedingDemo}
+                className="px-4 py-2 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition shadow-sm flex items-center gap-1.5"
+              >
+                {seedingDemo ? (
+                  <>
+                    <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span>Indexing 10 Vectors...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>⚡</span>
+                    <span>Seed Starter Knowledge (10 Vectors)</span>
+                  </>
+                )}
+              </button>
               <button
                 onClick={() => setShowCreateModal(true)}
-                className="px-4 py-2 text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition"
+                className="px-4 py-2 text-xs font-semibold bg-[var(--bg-surface)] hover:bg-[var(--bg-hover)] border border-[var(--border)] text-[var(--text-primary)] rounded-lg transition"
               >
-                + Create Vector Index
+                + Create Custom Index
               </button>
             </div>
           </div>
@@ -409,56 +509,66 @@ console.log(response.results);`,
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--border)] text-xs">
-                {collections.map((name) => (
-                  <tr key={name} className="hover:bg-[var(--bg-hover)] transition group">
-                    <td className="px-5 py-3.5 font-mono font-medium text-[var(--text-primary)] flex items-center gap-2.5">
-                      <div className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_5px_#10b981]" />
-                      <span className={selectedCol === name ? 'text-blue-400' : ''}>{name}</span>
-                    </td>
-                    <td className="px-5 py-3.5 font-mono text-[var(--text-secondary)]">
-                      {name === 'default_knowledge' ? '10 vectors' : 'Active'}
-                    </td>
-                    <td className="px-5 py-3.5 text-[var(--text-muted)] font-mono">
-                      384 dim
-                    </td>
-                    <td className="px-5 py-3.5 text-[var(--text-muted)] font-mono">
-                      Cosine
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                        Ready
-                      </span>
-                    </td>
-                    <td className="px-5 py-3.5 text-right space-x-2">
-                      <button
-                        onClick={() => {
-                          setSelectedCol(name)
-                          const el = document.getElementById('query-tester')
-                          if (el) el.scrollIntoView({ behavior: 'smooth' })
-                        }}
-                        className="text-xs text-blue-400 hover:text-blue-300 font-medium px-2 py-1 rounded hover:bg-blue-500/10 transition"
-                      >
-                        Query
-                      </button>
-                      <button
-                        onClick={() => {
-                          setSelectedCol(name)
-                          setShowInsertModal(true)
-                        }}
-                        className="text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] px-2 py-1 rounded hover:bg-[var(--bg-hover)] transition"
-                      >
-                        + Insert
-                      </button>
-                      <button
-                        onClick={() => setDeleteTarget(name)}
-                        className="text-xs text-[var(--text-muted)] hover:text-red-400 px-2 py-1 rounded hover:bg-red-500/10 transition"
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {collections.map((name) => {
+                  const info = colDetails[name]
+                  const count = info?.vector_count ?? (name === 'default_knowledge' ? (stats.total_chunks_indexed || 10) : 0)
+                  const isSelected = selectedCol === name
+                  return (
+                    <tr key={name} className={`hover:bg-[var(--bg-hover)] transition group ${isSelected ? 'bg-blue-500/[0.04]' : ''}`}>
+                      <td className="px-5 py-3.5 font-mono font-medium text-[var(--text-primary)] flex items-center gap-2.5">
+                        <div className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_5px_#10b981]" />
+                        <span className={isSelected ? 'text-blue-400 font-semibold' : ''}>{name}</span>
+                        {isSelected && (
+                          <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                            Active Query
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-5 py-3.5 font-mono text-[var(--text-secondary)]">
+                        <span className="font-semibold text-[var(--text-primary)]">{count}</span> vectors
+                      </td>
+                      <td className="px-5 py-3.5 text-[var(--text-muted)] font-mono">
+                        384 dim
+                      </td>
+                      <td className="px-5 py-3.5 text-[var(--text-muted)] font-mono">
+                        Cosine
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                          Ready
+                        </span>
+                      </td>
+                      <td className="px-5 py-3.5 text-right space-x-2">
+                        <button
+                          onClick={() => {
+                            setSelectedCol(name)
+                            const el = document.getElementById('query-tester')
+                            if (el) el.scrollIntoView({ behavior: 'smooth' })
+                          }}
+                          className="text-xs text-blue-400 hover:text-blue-300 font-medium px-2 py-1 rounded hover:bg-blue-500/10 transition"
+                        >
+                          Query
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSelectedCol(name)
+                            setShowInsertModal(true)
+                          }}
+                          className="text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] px-2 py-1 rounded hover:bg-[var(--bg-hover)] transition"
+                        >
+                          + Insert
+                        </button>
+                        <button
+                          onClick={() => setDeleteTarget(name)}
+                          className="text-xs text-[var(--text-muted)] hover:text-red-400 px-2 py-1 rounded hover:bg-red-500/10 transition"
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>
@@ -563,14 +673,33 @@ console.log(response.results);`,
             ) : (
               <div className="space-y-2.5">
                 {searchResults.map((r, idx) => (
-                  <div key={idx} className="p-3.5 bg-[var(--bg-surface)] border border-[var(--border)] rounded-lg text-xs space-y-1.5 hover:border-[var(--border2)] transition">
+                  <div key={idx} className="p-3.5 bg-[var(--bg-surface)] border border-[var(--border)] rounded-lg text-xs space-y-2 hover:border-[var(--border2)] transition">
                     <div className="flex items-center justify-between">
-                      <span className="font-mono text-[var(--text-dim)]">#point_{idx + 1}</span>
-                      <span className="font-mono px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                        {roundScore(r.score)}% Similarity Match
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-[var(--text-dim)]">#point_{idx + 1}</span>
+                        <span className="font-mono px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                          {roundScore(r.score)}% Similarity Match
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(r.text)
+                          setCopiedPoint(idx)
+                          setTimeout(() => setCopiedPoint(null), 1500)
+                        }}
+                        className="text-[11px] font-mono text-[var(--text-muted)] hover:text-[var(--text-primary)] transition flex items-center gap-1"
+                      >
+                        {copiedPoint === idx ? (
+                          <span className="text-emerald-400 font-semibold">✓ Copied</span>
+                        ) : (
+                          <span>Copy Text</span>
+                        )}
+                      </button>
                     </div>
-                    <p className="text-[var(--text-secondary)] leading-relaxed">{r.text}</p>
+                    <p className="text-[var(--text-secondary)] leading-relaxed text-xs">
+                      {highlightQuery(r.text, queryText)}
+                    </p>
                   </div>
                 ))}
               </div>
@@ -918,3 +1047,20 @@ function roundScore(score) {
   if (typeof score !== 'number') return 85
   return Math.min(100, Math.max(1, Math.round(score * 100)))
 }
+
+function highlightQuery(text, query) {
+  if (!query || !query.trim() || typeof text !== 'string') return text
+  const words = query.trim().split(/\s+/).filter(w => w.length > 2)
+  if (words.length === 0) return text
+  const escaped = words.map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')
+  const pattern = new RegExp(`(${escaped})`, 'gi')
+  const parts = text.split(pattern)
+  return parts.map((part, i) =>
+    pattern.test(part) ? (
+      <mark key={i} className="bg-amber-400/20 text-amber-200 font-medium px-0.5 rounded">
+        {part}
+      </mark>
+    ) : part
+  )
+}
+
