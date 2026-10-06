@@ -165,16 +165,15 @@ def hybrid_search_vectors(
 
     latency_ms = (time.time() - t0) * 1000
     node_manager.record_query(stats, latency_ms)
-
     return [
         {
             "text": texts[idx],
-            "score": round(score, 4),
+            "score": round(float(semantic_scores[idx]), 4),
             "metadata": {k: v for k, v in payloads[idx].items() if k != "text"},
             "_latency_ms": round(latency_ms, 2),
             "_search_type": "hybrid",
         }
-        for idx, score in ranked
+        for idx, _ in ranked
         if idx < len(texts)
     ]
 

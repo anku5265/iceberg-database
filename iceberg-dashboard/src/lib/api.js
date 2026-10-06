@@ -1,8 +1,6 @@
-﻿// In dev: requests go to /api → proxied to localhost:8000
-// In prod: requests go directly to VITE_API_URL (the Railway backend)
-const BASE = import.meta.env.VITE_API_URL
-  ? import.meta.env.VITE_API_URL
-  : '/api'
+import { API_URL } from './config'
+
+const BASE = API_URL
 
 function getKey() {
   return localStorage.getItem('iceberg_api_key') || ''

@@ -1,59 +1,85 @@
-# Iceberg Python SDK
+<p align="center">
+  <h1 align="center">⚡ Iceberg Database</h1>
+  <p align="center"><strong>High-performance serverless vector database built for AI agents and real-time RAG.</strong></p>
+</p>
 
-Vector search infrastructure for Indian AI teams.
+<p align="center">
+  <a href="https://icebergdb.in"><img src="https://img.shields.io/badge/Status-Active-22c55e?style=flat-square" alt="Status"></a>
+  <a href="https://pypi.org/project/icebergdb/"><img src="https://img.shields.io/badge/pypi-v0.1.0-38bdf8?style=flat-square" alt="PyPI"></a>
+  <a href="https://python.org"><img src="https://img.shields.io/badge/python-3.9+-blue?style=flat-square" alt="Python"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-purple?style=flat-square" alt="License"></a>
+</p>
 
-## Install
+---
+
+## 🚀 Quick Install
 
 ```bash
-pip install iceberg-db
+pip install icebergdb
 ```
 
-## Quickstart
+---
+
+## ⚡ 30-Second Quickstart
 
 ```python
-from iceberg import Client
+import iceberg
 
-client = Client(api_key="your_api_key")
+# 1. Connect to Iceberg (reads ICEBERG_API_KEY from environment by default)
+db = iceberg.connect(api_key="your_api_key")
 
-# Create collection
-client.create_collection("my_docs")
+# 2. Create an isolated vector collection
+db.create_collection("ai_agent_memory", description="Real-time context memory")
 
-# Index text (Hindi + English both work)
-client.index_text("my_docs", "Iceberg is a vector database for Indian AI teams.")
-client.index_text("my_docs", "भारत में AI स्टार्टअप के लिए सेमांटिक सर्च।")
+# 3. Index text documents or chunks (supports English, Hindi, and multilingual text)
+db.index_text("ai_agent_memory", "Iceberg delivers sub-5ms vector queries with zero cold starts.")
+db.index_text("ai_agent_memory", "Autonomous AI agents require persistent, low-latency recall memory.")
 
-# Upload PDF
-client.upload("my_docs", "document.pdf")
+# 4. Perform hybrid semantic search
+results = db.search("ai_agent_memory", query="low-latency agent recall", top_k=3)
 
-# Search
-results = client.search("my_docs", "Indian AI database")
-for r in results:
-    print(f"{r.score:.2f} — {r.text[:80]}")
-
-# Search with filters
-results = client.search("my_docs", "AI teams", filters={"source": "document.pdf"})
-
-# Usage stats
-print(client.usage_stats())
+for match in results:
+    print(f"[{match.score:.3f}] {match.text}")
 ```
 
-## API Reference
+---
 
-### `Client(api_key, base_url, timeout)`
-Initialize the client.
+## 📁 Uploading Documents Directly (PDF, TXT, Markdown)
 
-### Collections
-- `create_collection(name, description)` — Create a new collection
-- `list_collections()` — List all collections
-- `delete_collection(name)` — Delete a collection
-- `collection_info(name)` — Get vector count and status
+```python
+# Upload and auto-chunk entire documents in one line
+db.upload("ai_agent_memory", "product_spec.pdf")
+```
 
-### Indexing
-- `index_text(collection, text, source)` — Index plain text
-- `upload(collection, file_path)` — Upload PDF/TXT/MD file
+---
 
-### Search
-- `search(collection, query, top_k, score_threshold, filters)` — Semantic search
+## 🔍 Filtered & Scoped Search
 
-### Usage
-- `usage_stats()` — Get searches/day and chunks indexed
+```python
+results = db.search(
+    "ai_agent_memory",
+    query="vector benchmarks",
+    top_k=5,
+    score_threshold=0.4,
+    filters={"source": "product_spec.pdf"}
+)
+```
+
+---
+
+## 🌐 Cloud & Self-Hosted Endpoints
+
+To connect to your local dev engine or dedicated cluster:
+
+```python
+db = iceberg.connect(
+    api_key="iceberg_secret_key",
+    base_url="http://localhost:8000"  # or https://api.icebergdb.in
+)
+```
+
+---
+
+## 🛡️ License
+
+MIT License © 2026 Iceberg Data Technologies.

@@ -140,12 +140,19 @@ export default function Explorer() {
                           {r.metadata?.source && (
                             <span className="text-xs text-[var(--text-muted)] bg-[var(--bg-hover)] px-2 py-0.5 rounded-full border border-[var(--border2)]">{r.metadata.source}</span>
                           )}
-                          <span className={`text-xs font-mono font-semibold px-2.5 py-0.5 rounded-full border
-                            ${r.score > 0.7 ? 'text-emerald-400 border-emerald-500/20 bg-emerald-500/10'
-                            : r.score > 0.5 ? 'text-amber-400 border-amber-500/20 bg-amber-500/10'
-                            : 'text-[var(--text-muted)] border-[var(--border2)] bg-[var(--bg-hover)]'}`}>
-                            {(r.score * 100).toFixed(1)}%
-                          </span>
+                          {(() => {
+                            const raw = r.score || 0
+                            const scoreVal = raw < 0.05 ? Math.min(0.99, raw * 61) : raw
+                            const pct = (scoreVal * 100).toFixed(1)
+                            return (
+                              <span className={`text-xs font-mono font-semibold px-2.5 py-0.5 rounded-full border
+                                ${scoreVal > 0.7 ? 'text-emerald-400 border-emerald-500/20 bg-emerald-500/10'
+                                : scoreVal > 0.4 ? 'text-amber-400 border-amber-500/20 bg-amber-500/10'
+                                : 'text-[var(--text-muted)] border-[var(--border2)] bg-[var(--bg-hover)]'}`}>
+                                {pct}%
+                              </span>
+                            )
+                          })()}
                         </div>
                       </div>
                       <p className="text-[var(--text-secondary)] text-sm leading-relaxed">{r.text}</p>

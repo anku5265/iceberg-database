@@ -1,14 +1,33 @@
 {
-  "name": "iceberg-db",
+  "name": "icebergdb",
   "version": "0.1.0",
-  "description": "JavaScript/TypeScript SDK for Iceberg — Vector search for Indian AI teams",
+  "description": "Official JavaScript and TypeScript client for Iceberg Vector Database — Built for AI agents and RAG applications",
   "main": "dist/index.js",
+  "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc"
   },
+  "keywords": [
+    "vector",
+    "vectordb",
+    "iceberg",
+    "embeddings",
+    "rag",
+    "ai-agents",
+    "semantic-search"
+  ],
+  "author": "Iceberg Data Technologies <hello@icebergdb.in>",
+  "license": "MIT",
+  "homepage": "https://icebergdb.in",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/icebergdb/iceberg-js.git"
+  },
   "devDependencies": {
-    "typescript": "^5.0.0"
+    "typescript": "^5.9.3"
   }
 }

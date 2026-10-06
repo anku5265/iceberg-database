@@ -1,12 +1,13 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { api } from '../lib/api'
 
 const SAMPLE_DATA = [
-  { text: "Inception (2010) — A thief who steals corporate secrets through dream-sharing technology is given the inverse task of planting an idea.", label: "Inception" },
-  { text: "Interstellar (2014) — A team of explorers travel through a wormhole in space in an attempt to ensure humanity's survival.", label: "Interstellar" },
-  { text: "The Dark Knight (2008) — Batman raises the stakes in his war on crime with the Joker wreaking havoc and chaos.", label: "The Dark Knight" },
-  { text: "Avatar (2009) — A paraplegic Marine dispatched to the moon Pandora on a unique mission becomes torn between following orders and protecting the alien civilization.", label: "Avatar" },
-  { text: "Avengers: Endgame (2019) — After the devastating events of Infinity War, the Avengers assemble once more to reverse Thanos's actions.", label: "Avengers: Endgame" },
+  { text: "Tesla, Inc. (TSLA) — American clean energy and electric vehicle company led by Elon Musk, pioneering electric cars (Model S, 3, X, Y, Cybertruck), autonomous Full Self-Driving, and solar battery storage.", label: "Tesla & Electric Vehicles" },
+  { text: "Artificial Intelligence & LLMs — Neural network architectures and large language models like GPT and Claude that understand natural language, reason, and generate code.", label: "Artificial Intelligence (AI)" },
+  { text: "SpaceX & Interstellar Travel — Space exploration venture developing reusable rockets (Falcon 9, Starship) to drastically reduce launch costs and establish a permanent colony on Mars.", label: "SpaceX & Mars" },
+  { text: "Inception (2010) — Christopher Nolan sci-fi thriller about a master thief who infiltrates corporate secrets through dream-sharing subconscious technology.", label: "Inception (Movie)" },
+  { text: "The Dark Knight (2008) — Batman confronts the Joker in Gotham City in an epic psychological battle between heroic order and criminal chaos.", label: "The Dark Knight (Movie)" },
+  { text: "Apple Inc. — Global technology pioneer founded by Steve Jobs, creating consumer hardware and software including iPhone, Mac computers, Apple Silicon, and iOS.", label: "Apple & iPhone" },
 ]
 
 const STEP_LABELS = ['Create Collection', 'Load Sample Data', 'Try Search']
@@ -168,15 +169,20 @@ export default function OnboardingModal({ onDone }) {
           {/* STEP 3 */}
           {step === 3 && (
             <div>
-              <div className="text-[var(--text-secondary)] text-sm mb-4">
-                Your collection is ready. Try a search — type anything, Iceberg uses hybrid search automatically.
+              <div className="text-[var(--text-secondary)] text-sm mb-3">
+                Your collection is ready. Type anything or click a sample query below:
               </div>
-              <form onSubmit={handleSearch} className="flex gap-2 mb-4">
+
+              <div className="text-[var(--text-dim)] text-xs mb-3 p-2.5 rounded-lg bg-[var(--input-bg)] border border-[var(--border)] leading-relaxed">
+                🎬 <strong className="text-[var(--text-secondary)] font-medium">Sample dataset has 5 movies:</strong> Inception, Interstellar, Batman, Avatar, Endgame. Try searching for themes from these movies!
+              </div>
+
+              <form onSubmit={handleSearch} className="flex gap-2 mb-2">
                 <input
                   autoFocus
                   value={query}
                   onChange={e => setQuery(e.target.value)}
-                  placeholder="e.g. space travel, superhero, dream..."
+                  placeholder="e.g. space exploration, dreams, superhero..."
                   className="flex-1 bg-[var(--input-bg)] border border-[var(--input-border)] rounded-md px-3 py-2.5 text-[var(--text-primary)] text-sm focus:outline-none focus:border-blue-600 placeholder-[var(--text-dim)]"
                 />
                 <button type="submit" disabled={searching || !query.trim()}
@@ -185,22 +191,49 @@ export default function OnboardingModal({ onDone }) {
                 </button>
               </form>
 
+              <div className="flex flex-wrap items-center gap-1.5 mb-4 text-xs">
+                <span className="text-[var(--text-dim)]">Try:</span>
+                {['space exploration', 'superhero war', 'dreams and ideas', 'alien planet'].map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => {
+                      setQuery(s)
+                      setSearching(true)
+                      api.search(collection, s, 3, 'hybrid', 0.5)
+                        .then(r => setResults(r.results || []))
+                        .catch(() => setResults([]))
+                        .finally(() => setSearching(false))
+                    }}
+                    className="px-2 py-0.5 rounded-full bg-[var(--border)] hover:bg-blue-600/20 hover:text-blue-400 text-[var(--text-secondary)] transition text-xs border border-transparent hover:border-blue-500/30"
+                  >
+                    "{s}"
+                  </button>
+                ))}
+              </div>
+
               {results.length > 0 && (
                 <div className="space-y-2 mb-4">
-                  {results.map((r, i) => (
-                    <div key={i} className="bg-[var(--input-bg)] border border-[var(--border)] rounded-lg px-3 py-2.5">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-[var(--text-secondary)] text-xs">#{i + 1}</span>
-                        <span className="text-blue-400 text-xs font-mono">{(r.score * 100).toFixed(0)}% match</span>
+                  {results.map((r, i) => {
+                    const pct = r.score < 0.05 ? Math.min(99, Math.round(r.score * 61 * 100)) : Math.round(r.score * 100)
+                    const isHigh = pct >= 60
+                    return (
+                      <div key={i} className="bg-[var(--input-bg)] border border-[var(--border)] rounded-lg px-3 py-2.5">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-[var(--text-secondary)] text-xs font-mono">#{i + 1}</span>
+                          <span className={`text-xs font-mono px-1.5 py-0.5 rounded ${isHigh ? 'text-emerald-400 bg-emerald-500/10 border border-emerald-500/20' : 'text-amber-400 bg-amber-500/10 border border-amber-500/20'}`}>
+                            {pct}% match
+                          </span>
+                        </div>
+                        <p className="text-[var(--text-primary)] text-xs leading-relaxed line-clamp-2">{r.text}</p>
                       </div>
-                      <p className="text-[var(--text-primary)] text-xs leading-relaxed line-clamp-2">{r.text}</p>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               )}
 
               {results.length === 0 && query && !searching && (
-                <div className="text-[var(--text-dim)] text-xs mb-4">No results — try "space" or "hero"</div>
+                <div className="text-[var(--text-dim)] text-xs mb-4">No results — try "space exploration" or "superhero"</div>
               )}
 
               <button onClick={finish}

@@ -1,7 +1,6 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-
-const BASE = import.meta.env.VITE_API_URL || '/api'
+const BASE = import.meta.env.VITE_API_URL || 'https://iceberg-backend-hrg9.onrender.com'
 
 export default function Signup() {
   const [email, setEmail] = useState('')

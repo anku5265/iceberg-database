@@ -1,7 +1,6 @@
-﻿import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { API_URL } from '../lib/config'
-
-const BASE = import.meta.env.VITE_API_URL || '/api'
+const BASE = API_URL
 const KEY = () => localStorage.getItem('iceberg_api_key') || ''
 const H = () => ({ 'X-API-Key': KEY(), 'Content-Type': 'application/json' })
 
