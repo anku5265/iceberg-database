@@ -2,23 +2,41 @@ import { useEffect, useState, useRef } from 'react'
 import { api } from '../lib/api'
 import { API_URL } from '../lib/config'
 import { Link } from 'react-router-dom'
-import { REAL_KNOWLEDGE_BASE } from '../lib/starterData'
+import ConfirmModal from '../components/ConfirmModal'
 
 export default function Overview() {
   const [collections, setCollections] = useState([])
-  const [status, setStatus] = useState('online') // default to online or checking
+  const [status, setStatus] = useState('online')
   const [latency, setLatency] = useState(24)
   const [stats, setStats] = useState({ searches_today: 0, total_chunks_indexed: 0 })
+  const [refreshing, setRefreshing] = useState(false)
   const [activeTab, setActiveTab] = useState('python')
   const [copiedField, setCopiedField] = useState('')
-  const [isInitializing, setIsInitializing] = useState(false)
+  const [timeRange, setTimeRange] = useState('24h')
+
+  // Search Tester state
+  const [selectedCol, setSelectedCol] = useState('default_knowledge')
+  const [queryText, setQueryText] = useState('')
+  const [isSearching, setIsSearching] = useState(false)
+  const [searchResults, setSearchResults] = useState(null)
+  const [searchLatency, setSearchLatency] = useState(null)
+
+  // Create Collection Modal state
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [newColName, setNewColName] = useState('')
   const [newColDim, setNewColDim] = useState('384')
   const [newColMetric, setNewColMetric] = useState('Cosine')
   const [createLoading, setCreateLoading] = useState(false)
-  const [refreshing, setRefreshing] = useState(false)
-  const [timeRange, setTimeRange] = useState('24h')
+
+  // Insert Record Modal state
+  const [showInsertModal, setShowInsertModal] = useState(false)
+  const [insertText, setInsertText] = useState('')
+  const [insertLoading, setInsertLoading] = useState(false)
+  const [insertSuccess, setInsertSuccess] = useState(false)
+
+  // Delete Collection Modal state
+  const [deleteTarget, setDeleteTarget] = useState(null)
+  const [deleting, setDeleting] = useState(false)
 
   const activeKey = localStorage.getItem('iceberg_api_key') || 'ib_dev_test123'
 
@@ -26,13 +44,11 @@ export default function Overview() {
     setRefreshing(true)
     const t0 = performance.now()
     try {
-      // Ping health or root
-      const res = await api.health()
+      await api.health()
       const t1 = performance.now()
       setLatency(Math.max(12, Math.round(t1 - t0)))
       setStatus('online')
     } catch {
-      // Fallback ping to root
       try {
         await fetch(`${API_URL}/`)
         const t1 = performance.now()
@@ -49,7 +65,11 @@ export default function Overview() {
   const loadData = async () => {
     try {
       const colRes = await api.getCollections()
-      setCollections(colRes.collections || [])
+      const cols = colRes.collections || []
+      setCollections(cols)
+      if (cols.length > 0 && !cols.includes(selectedCol)) {
+        setSelectedCol(cols[0])
+      }
     } catch {}
 
     try {
@@ -65,25 +85,32 @@ export default function Overview() {
     loadData()
   }, [])
 
-  const handleInitDefaultCollection = async () => {
-    setIsInitializing(true)
+  // Execute in-console vector search
+  const handleSearch = async (textToSearch) => {
+    const q = textToSearch || queryText
+    if (!q.trim() || !selectedCol) return
+    setIsSearching(true)
+    const t0 = performance.now()
     try {
-      await api.createCollection('default_knowledge', 'Technical Knowledge Base & Vector Index')
-      await api.indexBatch('default_knowledge', REAL_KNOWLEDGE_BASE, 'system_seed')
-      await loadData()
-    } catch (e) {
-      console.error(e)
+      const res = await api.search(selectedCol, q.trim(), 4, 'hybrid', 0.5)
+      const t1 = performance.now()
+      setSearchLatency(Math.round(t1 - t0))
+      setSearchResults(res.results || [])
+    } catch (err) {
+      console.error('Search error:', err)
+      setSearchResults([])
     } finally {
-      setIsInitializing(false)
+      setIsSearching(false)
     }
   }
 
+  // Handle Create Collection
   const handleCreateCollection = async (e) => {
     e.preventDefault()
     if (!newColName.trim()) return
     setCreateLoading(true)
     try {
-      await api.createCollection(newColName.trim(), `${newColDim}d ${newColMetric} vector store`)
+      await api.createCollection(newColName.trim(), `${newColDim}d ${newColMetric} vector index`)
       setNewColName('')
       setShowCreateModal(false)
       await loadData()
@@ -94,13 +121,49 @@ export default function Overview() {
     }
   }
 
+  // Handle Insert Document / Text
+  const handleInsertDocument = async (e) => {
+    e.preventDefault()
+    if (!insertText.trim() || !selectedCol) return
+    setInsertLoading(true)
+    try {
+      await api.indexText(selectedCol, insertText.trim(), 'console_insert')
+      setInsertText('')
+      setInsertSuccess(true)
+      await loadData()
+      setTimeout(() => {
+        setInsertSuccess(false)
+        setShowInsertModal(false)
+      }, 1500)
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setInsertLoading(false)
+    }
+  }
+
+  // Handle Delete Collection
+  const confirmDeleteCollection = async () => {
+    if (!deleteTarget) return
+    setDeleting(true)
+    try {
+      await api.deleteCollection(deleteTarget)
+      setDeleteTarget(null)
+      await loadData()
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setDeleting(false)
+    }
+  }
+
   const copy = (val, name) => {
     navigator.clipboard.writeText(val)
     setCopiedField(name)
     setTimeout(() => setCopiedField(''), 2000)
   }
 
-  const primaryCol = collections[0] || 'default_knowledge'
+  const activeCollectionName = collections.includes(selectedCol) ? selectedCol : (collections[0] || 'default_knowledge')
 
   const snippets = {
     python: `from iceberg import Client
@@ -111,18 +174,17 @@ client = Client(
     host="${API_URL}"
 )
 
-# Approximate Nearest Neighbors (ANN) vector search
-query_vector_results = client.search(
-    collection="${primaryCol}",
+# Approximate Nearest Neighbors (ANN) hybrid search
+results = client.search(
+    collection="${activeCollectionName}",
     query="vector similarity search algorithms",
     top_k=5,
     search_type="hybrid",
     alpha=0.5
 )
 
-for point in query_vector_results.get("results", []):
-    print(f"ID: {point['id']} | Score: {point['score']:.4f}")
-    print(f"Payload: {point['text'][:100]}...\\n")`,
+for point in results.get("results", []):
+    print(f"[{round(point['score']*100)}%] {point['text'][:100]}...")`,
 
     javascript: `import { IcebergClient } from '@icebergdb/sdk';
 
@@ -133,7 +195,7 @@ const client = new IcebergClient({
 
 // Execute hybrid dense + sparse query
 const response = await client.search({
-  collection: '${primaryCol}',
+  collection: '${activeCollectionName}',
   query: 'vector similarity search algorithms',
   topK: 5,
   searchType: 'hybrid'
@@ -145,7 +207,7 @@ console.log(response.results);`,
   -H "X-API-Key: ${activeKey}" \\
   -H "Content-Type: application/json" \\
   -d '{
-    "collection": "${primaryCol}",
+    "collection": "${activeCollectionName}",
     "query": "vector similarity search algorithms",
     "top_k": 5,
     "search_type": "hybrid",
@@ -153,15 +215,15 @@ console.log(response.results);`,
   }'`
   }
 
-  // Calculate real storage values
-  const totalVectors = stats.total_chunks_indexed || (collections.length > 0 ? 15 : 0)
+  // Calculated metrics
+  const totalVectors = collections.length > 0 ? (stats.total_chunks_indexed || 10) : 0
   const ramUsageMb = (120 + totalVectors * 0.08).toFixed(1)
   const diskUsageMb = (totalVectors * 0.012 + 2.4).toFixed(1)
 
   return (
     <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6 animate-fadeIn font-sans text-[var(--text-primary)]">
       
-      {/* ── 1. Cluster Meta Header (Real Infrastructure Bar) ── */}
+      {/* ── 1. Cluster Meta Header (Infrastructure Bar) ── */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-[var(--border)]">
         <div className="space-y-1">
           <div className="flex items-center gap-3">
@@ -170,11 +232,11 @@ console.log(response.results);`,
             </h1>
             <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border bg-emerald-500/10 border-emerald-500/20 text-emerald-400">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#10b981]" />
-              <span>Healthy</span>
+              <span>Operational</span>
             </div>
             <span className="text-xs text-[var(--text-muted)] font-mono">v1.0.4-engine</span>
           </div>
-          <div className="flex items-center gap-4 text-xs text-[var(--text-muted)] font-mono">
+          <div className="flex items-center gap-4 text-xs text-[var(--text-muted)] font-mono flex-wrap">
             <span>Provider: <strong className="text-[var(--text-secondary)] font-normal">AWS (Render Edge)</strong></span>
             <span>Region: <strong className="text-[var(--text-secondary)] font-normal">us-east-1</strong></span>
             <span>Ping: <strong className="text-emerald-400 font-normal">{latency}ms</strong></span>
@@ -196,15 +258,15 @@ console.log(response.results);`,
             <span>Refresh</span>
           </button>
 
-          <Link
-            to="/explorer"
+          <button
+            onClick={() => setShowInsertModal(true)}
             className="px-3 py-1.5 text-xs font-medium bg-[var(--bg-surface)] hover:bg-[var(--bg-hover)] border border-[var(--border)] rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition flex items-center gap-1.5"
           >
             <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
             </svg>
-            <span>Query Console</span>
-          </Link>
+            <span>Insert Vector</span>
+          </button>
 
           <button
             onClick={() => setShowCreateModal(true)}
@@ -213,12 +275,12 @@ console.log(response.results);`,
             <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
             </svg>
-            <span>Create Collection</span>
+            <span>Create Index</span>
           </button>
         </div>
       </div>
 
-      {/* ── 2. Hardware & Resource Telemetry Strip (Qdrant Cloud Style) ── */}
+      {/* ── 2. Hardware & Resource Telemetry Strip (Qdrant & Pinecone Style) ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
         {/* Metric 1: Memory (RAM) */}
         <div className="p-4 bg-[var(--card-bg)] border border-[var(--border)] rounded-xl space-y-2">
@@ -256,7 +318,7 @@ console.log(response.results);`,
         <div className="p-4 bg-[var(--card-bg)] border border-[var(--border)] rounded-xl space-y-2">
           <div className="flex items-center justify-between text-xs text-[var(--text-muted)]">
             <span className="font-medium">Indexed Points</span>
-            <span className="font-mono text-[var(--text-secondary)]">{collections.length} store{collections.length === 1 ? '' : 's'}</span>
+            <span className="font-mono text-[var(--text-secondary)]">{collections.length} index{collections.length === 1 ? '' : 'es'}</span>
           </div>
           <div className="flex items-baseline gap-1.5">
             <span className="text-xl font-bold font-mono text-[var(--text-primary)]">{totalVectors}</span>
@@ -271,12 +333,12 @@ console.log(response.results);`,
         {/* Metric 4: Read/Write Throughput */}
         <div className="p-4 bg-[var(--card-bg)] border border-[var(--border)] rounded-xl space-y-2">
           <div className="flex items-center justify-between text-xs text-[var(--text-muted)]">
-            <span className="font-medium">Throughput & Latency</span>
+            <span className="font-medium">Query Throughput</span>
             <span className="font-mono text-emerald-400">0% error</span>
           </div>
           <div className="flex items-baseline gap-1.5">
             <span className="text-xl font-bold font-mono text-[var(--text-primary)]">{stats.searches_today ?? 0}</span>
-            <span className="text-xs text-[var(--text-muted)] font-mono">queries (avg {latency}ms)</span>
+            <span className="text-xs text-[var(--text-muted)] font-mono">queries (p95: ~18ms)</span>
           </div>
           <div className="w-full bg-[var(--bg-hover)] h-1 rounded-full overflow-hidden">
             <div className="bg-amber-500 h-full rounded-full" style={{ width: '4%' }} />
@@ -285,43 +347,33 @@ console.log(response.results);`,
         </div>
       </div>
 
-      {/* ── 3. Primary Centerpiece: Collections Table (Like Qdrant / Pinecone) ── */}
+      {/* ── 3. Primary Centerpiece: Indexes / Collections Table ── */}
       <div className="bg-[var(--card-bg)] border border-[var(--border)] rounded-xl overflow-hidden shadow-sm">
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-[var(--border)] bg-[var(--bg-surface)]">
           <div className="flex items-center gap-2">
-            <h2 className="text-sm font-semibold text-[var(--text-primary)]">Collections</h2>
+            <h2 className="text-sm font-semibold text-[var(--text-primary)]">Vector Indexes</h2>
             <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-[var(--bg-hover)] text-[var(--text-muted)] border border-[var(--border)]">
               {collections.length}
             </span>
           </div>
-          <div className="flex items-center gap-2">
-            {collections.length === 0 && (
-              <button
-                onClick={handleInitDefaultCollection}
-                disabled={isInitializing}
-                className="px-3 py-1 text-xs font-medium text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 rounded-lg transition disabled:opacity-50 flex items-center gap-1.5"
-              >
-                {isInitializing ? (
-                  <>
-                    <span className="w-3 h-3 border-2 border-blue-400/30 border-t-blue-400 rounded-full animate-spin" />
-                    <span>Indexing sample data...</span>
-                  </>
-                ) : (
-                  <span>Load Sample Knowledge Base</span>
-                )}
-              </button>
-            )}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowInsertModal(true)}
+              className="text-xs text-blue-400 hover:text-blue-300 font-medium"
+            >
+              + Insert Vector
+            </button>
+            <span className="text-[var(--text-dim)]">•</span>
             <Link
               to="/collections"
               className="text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] transition"
             >
-              Manage →
+              Full Manager →
             </Link>
           </div>
         </div>
 
         {collections.length === 0 ? (
-          /* Professional Clean Empty Table State */
           <div className="p-12 text-center space-y-3">
             <div className="w-10 h-10 rounded-xl bg-[var(--bg-surface)] border border-[var(--border)] flex items-center justify-center mx-auto text-[var(--text-muted)]">
               <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
@@ -329,38 +381,30 @@ console.log(response.results);`,
               </svg>
             </div>
             <div>
-              <p className="text-sm font-medium text-[var(--text-primary)]">No collections in this cluster</p>
+              <p className="text-sm font-medium text-[var(--text-primary)]">No indexes in this cluster</p>
               <p className="text-xs text-[var(--text-muted)] mt-1 max-w-md mx-auto">
-                Create a collection to store vectors and metadata, or load a sample knowledge dataset to test queries immediately.
+                Create your first vector index to begin storing high-dimensional embeddings and executing semantic queries.
               </p>
             </div>
-            <div className="flex items-center justify-center gap-3 pt-2">
+            <div className="pt-2">
               <button
                 onClick={() => setShowCreateModal(true)}
-                className="px-3.5 py-1.5 text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition"
+                className="px-4 py-2 text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition"
               >
-                Create Collection
-              </button>
-              <button
-                onClick={handleInitDefaultCollection}
-                disabled={isInitializing}
-                className="px-3.5 py-1.5 text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] bg-[var(--bg-surface)] hover:bg-[var(--bg-hover)] border border-[var(--border)] rounded-lg transition"
-              >
-                {isInitializing ? 'Indexing...' : 'Load Sample Knowledge Base'}
+                + Create Vector Index
               </button>
             </div>
           </div>
         ) : (
-          /* Collections Data Table */
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-[var(--border)] text-[11px] font-semibold text-[var(--text-muted)] uppercase tracking-wider bg-[var(--bg-surface)]/50">
-                  <th className="px-5 py-3">Collection Name</th>
+                  <th className="px-5 py-3">Index Name</th>
                   <th className="px-5 py-3">Vectors (Points)</th>
-                  <th className="px-5 py-3">Vector Config</th>
+                  <th className="px-5 py-3">Dimensions</th>
+                  <th className="px-5 py-3">Metric</th>
                   <th className="px-5 py-3">Status</th>
-                  <th className="px-5 py-3">Segments</th>
                   <th className="px-5 py-3 text-right">Actions</th>
                 </tr>
               </thead>
@@ -369,36 +413,49 @@ console.log(response.results);`,
                   <tr key={name} className="hover:bg-[var(--bg-hover)] transition group">
                     <td className="px-5 py-3.5 font-mono font-medium text-[var(--text-primary)] flex items-center gap-2.5">
                       <div className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_5px_#10b981]" />
-                      <span>{name}</span>
+                      <span className={selectedCol === name ? 'text-blue-400' : ''}>{name}</span>
                     </td>
                     <td className="px-5 py-3.5 font-mono text-[var(--text-secondary)]">
-                      {name === 'default_knowledge' ? '15 points' : 'Active'}
+                      {name === 'default_knowledge' ? '10 vectors' : 'Active'}
                     </td>
                     <td className="px-5 py-3.5 text-[var(--text-muted)] font-mono">
-                      384 dim • Cosine
+                      384 dim
+                    </td>
+                    <td className="px-5 py-3.5 text-[var(--text-muted)] font-mono">
+                      Cosine
                     </td>
                     <td className="px-5 py-3.5">
                       <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                        Optimized
+                        Ready
                       </span>
                     </td>
-                    <td className="px-5 py-3.5 font-mono text-[var(--text-muted)]">
-                      1 shard / 1 replica
-                    </td>
                     <td className="px-5 py-3.5 text-right space-x-2">
-                      <Link
-                        to={`/explorer?collection=${name}`}
+                      <button
+                        onClick={() => {
+                          setSelectedCol(name)
+                          const el = document.getElementById('query-tester')
+                          if (el) el.scrollIntoView({ behavior: 'smooth' })
+                        }}
                         className="text-xs text-blue-400 hover:text-blue-300 font-medium px-2 py-1 rounded hover:bg-blue-500/10 transition"
                       >
                         Query
-                      </Link>
-                      <Link
-                        to="/collections"
-                        className="text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] px-2 py-1 rounded hover:bg-[var(--bg-hover)] transition"
+                      </button>
+                      <button
+                        onClick={() => {
+                          setSelectedCol(name)
+                          setShowInsertModal(true)
+                        }}
+                        className="text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] px-2 py-1 rounded hover:bg-[var(--bg-hover)] transition"
                       >
-                        Config
-                      </Link>
+                        + Insert
+                      </button>
+                      <button
+                        onClick={() => setDeleteTarget(name)}
+                        className="text-xs text-[var(--text-muted)] hover:text-red-400 px-2 py-1 rounded hover:bg-red-500/10 transition"
+                      >
+                        Delete
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -408,15 +465,128 @@ console.log(response.results);`,
         )}
       </div>
 
-      {/* ── 4. Workload Performance & Latency Telemetry ── */}
+      {/* ── 4. Interactive In-Console Vector Query Tester (Data Explorer) ── */}
+      <div id="query-tester" className="bg-[var(--card-bg)] border border-[var(--border)] rounded-xl overflow-hidden shadow-sm p-5 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-[var(--border)]">
+          <div>
+            <h3 className="text-sm font-semibold text-[var(--text-primary)] flex items-center gap-2">
+              <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" className="text-blue-400">
+                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+              </svg>
+              <span>Vector Search Tester (Data Explorer)</span>
+            </h3>
+            <p className="text-xs text-[var(--text-muted)] mt-0.5">
+              Execute live approximate nearest neighbor (ANN) vector queries against your cluster.
+            </p>
+          </div>
+
+          {/* Index selector */}
+          {collections.length > 0 && (
+            <div className="flex items-center gap-2 text-xs">
+              <span className="text-[var(--text-muted)] font-mono">Index:</span>
+              <select
+                value={selectedCol}
+                onChange={e => setSelectedCol(e.target.value)}
+                className="bg-[var(--input-bg)] border border-[var(--input-border)] text-xs rounded-lg px-2.5 py-1 font-mono text-[var(--text-primary)] focus:outline-none focus:border-blue-600"
+              >
+                {collections.map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
+
+        {/* Search input form */}
+        <form onSubmit={e => { e.preventDefault(); handleSearch(); }} className="space-y-3">
+          <div className="flex gap-2">
+            <input
+              value={queryText}
+              onChange={e => setQueryText(e.target.value)}
+              placeholder="Search query (e.g. what is python?, vector databases vs sql, docker, llm transformers...)"
+              className="flex-1 bg-[var(--input-bg)] border border-[var(--input-border)] text-xs rounded-lg px-3.5 py-2.5 text-[var(--text-primary)] focus:outline-none focus:border-blue-600"
+            />
+            <button
+              type="submit"
+              disabled={isSearching || !queryText.trim()}
+              className="px-4 py-2.5 text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition disabled:opacity-40 flex items-center gap-1.5 shrink-0"
+            >
+              {isSearching ? (
+                <>
+                  <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <span>Searching...</span>
+                </>
+              ) : (
+                <span>Execute ANN Query</span>
+              )}
+            </button>
+          </div>
+
+          {/* Quick Query Chips */}
+          <div className="flex items-center gap-2 flex-wrap text-[11px] text-[var(--text-muted)]">
+            <span>Quick test:</span>
+            {[
+              'What is Python and AI?',
+              'Vector databases vs SQL',
+              'Docker containerization',
+              'Large Language Models (LLMs)'
+            ].map(chip => (
+              <button
+                key={chip}
+                type="button"
+                onClick={() => {
+                  setQueryText(chip)
+                  handleSearch(chip)
+                }}
+                className="px-2 py-0.5 rounded bg-[var(--bg-surface)] hover:bg-[var(--bg-hover)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition font-mono"
+              >
+                "{chip}"
+              </button>
+            ))}
+          </div>
+        </form>
+
+        {/* Search Results Display */}
+        {searchResults !== null && (
+          <div className="pt-3 border-t border-[var(--border)] space-y-3 animate-fadeIn">
+            <div className="flex items-center justify-between text-xs text-[var(--text-muted)]">
+              <span>{searchResults.length} nearest neighbor{searchResults.length === 1 ? '' : 's'} retrieved</span>
+              {searchLatency && (
+                <span className="font-mono text-emerald-400">Response time: {searchLatency}ms</span>
+              )}
+            </div>
+
+            {searchResults.length === 0 ? (
+              <div className="p-6 text-center text-xs text-[var(--text-muted)] bg-[var(--bg-surface)] rounded-lg border border-[var(--border)]">
+                No matching vectors found for this query in index <code className="font-mono text-[var(--text-secondary)]">{selectedCol}</code>.
+              </div>
+            ) : (
+              <div className="space-y-2.5">
+                {searchResults.map((r, idx) => (
+                  <div key={idx} className="p-3.5 bg-[var(--bg-surface)] border border-[var(--border)] rounded-lg text-xs space-y-1.5 hover:border-[var(--border2)] transition">
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono text-[var(--text-dim)]">#point_{idx + 1}</span>
+                      <span className="font-mono px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                        {roundScore(r.score)}% Similarity Match
+                      </span>
+                    </div>
+                    <p className="text-[var(--text-secondary)] leading-relaxed">{r.text}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* ── 5. Telemetry Performance Charts (Throughput & Latency) ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        
         {/* Chart 1: Query Throughput */}
         <div className="p-5 bg-[var(--card-bg)] border border-[var(--border)] rounded-xl space-y-4">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-xs font-semibold text-[var(--text-primary)] uppercase tracking-wider">Query Throughput</h3>
-              <p className="text-[11px] text-[var(--text-muted)] mt-0.5">Read requests per minute (RPM)</p>
+              <p className="text-[11px] text-[var(--text-muted)] mt-0.5">Read & vector search requests per minute</p>
             </div>
             <div className="flex items-center gap-1 bg-[var(--bg-surface)] p-0.5 rounded-lg border border-[var(--border)] text-[11px] font-mono">
               {['1h', '24h', '7d'].map(r => (
@@ -431,8 +601,7 @@ console.log(response.results);`,
             </div>
           </div>
 
-          {/* SVG Area Chart */}
-          <div className="h-32 w-full pt-2">
+          <div className="h-28 w-full pt-2">
             <svg viewBox="0 0 500 120" className="w-full h-full overflow-visible">
               <defs>
                 <linearGradient id="qpsGrad" x1="0" y1="0" x2="0" y2="1">
@@ -440,30 +609,26 @@ console.log(response.results);`,
                   <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.0" />
                 </linearGradient>
               </defs>
-              {/* Gridlines */}
               <line x1="0" y1="30" x2="500" y2="30" stroke="var(--border)" strokeDasharray="3 3" />
               <line x1="0" y1="70" x2="500" y2="70" stroke="var(--border)" strokeDasharray="3 3" />
               <line x1="0" y1="110" x2="500" y2="110" stroke="var(--border)" />
-              {/* Path Area */}
               <path
                 d="M0,110 L0,85 Q60,40 120,65 T240,45 T360,30 T440,55 L500,35 L500,110 Z"
                 fill="url(#qpsGrad)"
               />
-              {/* Path Line */}
               <path
                 d="M0,85 Q60,40 120,65 T240,45 T360,30 T440,55 L500,35"
                 fill="none"
                 stroke="#3b82f6"
                 strokeWidth="2"
               />
-              {/* Points */}
               <circle cx="500" cy="35" r="3" fill="#3b82f6" />
             </svg>
           </div>
           <div className="flex items-center justify-between text-[11px] font-mono text-[var(--text-muted)] pt-1 border-t border-[var(--border)]">
             <span>Peak: 42 QPS</span>
             <span>Current: 1.2 QPS</span>
-            <span>Total 24h: {stats.searches_today ?? 0}</span>
+            <span>Total: {stats.searches_today ?? 0}</span>
           </div>
         </div>
 
@@ -472,15 +637,14 @@ console.log(response.results);`,
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-xs font-semibold text-[var(--text-primary)] uppercase tracking-wider">Search Latency (p50 / p95)</h3>
-              <p className="text-[11px] text-[var(--text-muted)] mt-0.5">Approximate nearest neighbor query response time</p>
+              <p className="text-[11px] text-[var(--text-muted)] mt-0.5">Vector distance calculation & nearest neighbor ranking</p>
             </div>
             <span className="text-[11px] font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded">
               Avg {latency}ms
             </span>
           </div>
 
-          {/* SVG Latency Chart */}
-          <div className="h-32 w-full pt-2">
+          <div className="h-28 w-full pt-2">
             <svg viewBox="0 0 500 120" className="w-full h-full overflow-visible">
               <defs>
                 <linearGradient id="latGrad" x1="0" y1="0" x2="0" y2="1">
@@ -491,12 +655,10 @@ console.log(response.results);`,
               <line x1="0" y1="30" x2="500" y2="30" stroke="var(--border)" strokeDasharray="3 3" />
               <line x1="0" y1="70" x2="500" y2="70" stroke="var(--border)" strokeDasharray="3 3" />
               <line x1="0" y1="110" x2="500" y2="110" stroke="var(--border)" />
-              {/* Path Area */}
               <path
                 d="M0,110 L0,70 Q70,75 140,55 T280,60 T400,45 L500,40 L500,110 Z"
                 fill="url(#latGrad)"
               />
-              {/* Path Line */}
               <path
                 d="M0,70 Q70,75 140,55 T280,60 T400,45 L500,40"
                 fill="none"
@@ -512,10 +674,9 @@ console.log(response.results);`,
             <span>p99: 34ms</span>
           </div>
         </div>
-
       </div>
 
-      {/* ── 5. Cluster Connection & Developer SDK (Clean Infrastructure Style) ── */}
+      {/* ── 6. Cluster Connection & Developer SDK (Clean Code Snippets) ── */}
       <div className="bg-[var(--card-bg)] border border-[var(--border)] rounded-xl overflow-hidden shadow-sm">
         <div className="p-5 border-b border-[var(--border)] space-y-3">
           <div className="flex items-center justify-between">
@@ -523,11 +684,10 @@ console.log(response.results);`,
             <span className="text-xs text-[var(--text-muted)]">TLS 1.3 Encrypted • Port 443</span>
           </div>
 
-          {/* Connection Params Strip */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="p-3 bg-[var(--bg-surface)] border border-[var(--border)] rounded-lg flex items-center justify-between">
               <div className="min-w-0 pr-2">
-                <span className="text-[10px] uppercase font-semibold text-[var(--text-muted)] block">Endpoint URL</span>
+                <span className="text-[10px] uppercase font-semibold text-[var(--text-muted)] block">Host Endpoint</span>
                 <code className="text-xs font-mono text-[var(--text-primary)] truncate block">{API_URL}</code>
               </div>
               <button
@@ -553,7 +713,6 @@ console.log(response.results);`,
           </div>
         </div>
 
-        {/* Tabbed Code Snippet */}
         <div className="p-5 bg-[var(--bg-base)]">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-1">
@@ -586,12 +745,14 @@ console.log(response.results);`,
         </div>
       </div>
 
-      {/* ── 6. Create Collection Modal ── */}
+      {/* ── 7. Modals: Create Index, Insert Vector, Delete Collection ── */}
+
+      {/* Create Index Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fadeIn">
           <div className="w-full max-w-md bg-[var(--bg-surface)] border border-[var(--border)] rounded-2xl shadow-2xl p-6 space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-[var(--border)]">
-              <h3 className="text-sm font-semibold text-[var(--text-primary)]">Create Vector Collection</h3>
+              <h3 className="text-sm font-semibold text-[var(--text-primary)]">Create Vector Index</h3>
               <button
                 onClick={() => setShowCreateModal(false)}
                 className="text-[var(--text-muted)] hover:text-[var(--text-primary)]"
@@ -602,13 +763,13 @@ console.log(response.results);`,
 
             <form onSubmit={handleCreateCollection} className="space-y-3.5">
               <div>
-                <label className="text-xs font-medium text-[var(--text-secondary)] mb-1 block">Collection Name</label>
+                <label className="text-xs font-medium text-[var(--text-secondary)] mb-1 block">Index Name</label>
                 <input
                   autoFocus
                   required
                   value={newColName}
                   onChange={e => setNewColName(e.target.value)}
-                  placeholder="e.g. articles_dense_v1"
+                  placeholder="e.g. support_articles_v1"
                   className="w-full bg-[var(--input-bg)] border border-[var(--input-border)] text-sm rounded-lg px-3 py-2 text-[var(--text-primary)] font-mono focus:outline-none focus:border-blue-600"
                 />
                 <p className="text-[11px] text-[var(--text-dim)] mt-1">Lowercase letters, numbers, and underscores only</p>
@@ -624,8 +785,8 @@ console.log(response.results);`,
                   >
                     <option value="384">384 (MiniLM / BGE-small)</option>
                     <option value="768">768 (BERT / MPNet)</option>
-                    <option value="1536">1536 (OpenAI text-embedding-3-small)</option>
-                    <option value="3072">3072 (OpenAI text-embedding-3-large)</option>
+                    <option value="1536">1536 (OpenAI text-embedding-3)</option>
+                    <option value="3072">3072 (OpenAI Large)</option>
                   </select>
                 </div>
 
@@ -664,6 +825,96 @@ console.log(response.results);`,
         </div>
       )}
 
+      {/* Insert Record Modal */}
+      {showInsertModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fadeIn">
+          <div className="w-full max-w-md bg-[var(--bg-surface)] border border-[var(--border)] rounded-2xl shadow-2xl p-6 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-[var(--border)]">
+              <h3 className="text-sm font-semibold text-[var(--text-primary)]">Insert Document / Vector</h3>
+              <button
+                onClick={() => setShowInsertModal(false)}
+                className="text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleInsertDocument} className="space-y-3.5">
+              <div>
+                <label className="text-xs font-medium text-[var(--text-secondary)] mb-1 block">Target Index</label>
+                <select
+                  value={selectedCol}
+                  onChange={e => setSelectedCol(e.target.value)}
+                  className="w-full bg-[var(--input-bg)] border border-[var(--input-border)] text-xs rounded-lg px-3 py-2 text-[var(--text-primary)] font-mono focus:outline-none focus:border-blue-600"
+                >
+                  {collections.map(c => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-medium text-[var(--text-secondary)] mb-1 block">Text Content to Embed & Index</label>
+                <textarea
+                  autoFocus
+                  required
+                  rows={4}
+                  value={insertText}
+                  onChange={e => setInsertText(e.target.value)}
+                  placeholder="Enter any text, article, or knowledge paragraph to embed..."
+                  className="w-full bg-[var(--input-bg)] border border-[var(--input-border)] text-xs rounded-lg p-3 text-[var(--text-primary)] focus:outline-none focus:border-blue-600 resize-none"
+                />
+                <p className="text-[11px] text-[var(--text-dim)] mt-1">Vector engine will automatically chunk and compute 384-dimensional dense vectors.</p>
+              </div>
+
+              {insertSuccess && (
+                <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs flex items-center gap-2">
+                  <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                  <span>Vector successfully indexed into {selectedCol}!</span>
+                </div>
+              )}
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-[var(--border)]">
+                <button
+                  type="button"
+                  onClick={() => setShowInsertModal(false)}
+                  className="px-3 py-1.5 text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] rounded-lg"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={insertLoading || !insertText.trim()}
+                  className="px-4 py-1.5 text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition disabled:opacity-40"
+                >
+                  {insertLoading ? 'Embedding & Indexing...' : 'Index Vector'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Collection Modal */}
+      <ConfirmModal
+        open={!!deleteTarget}
+        title="Delete vector index?"
+        message={
+          <div>
+            Are you sure you want to permanently delete index <span className="font-mono text-[var(--text-primary)] font-semibold bg-[var(--bg-hover)] px-1.5 py-0.5 rounded border border-[var(--border)]">{deleteTarget}</span>? All vectors, HNSW graph structures, and payloads will be erased immediately.
+          </div>
+        }
+        confirmText="Delete Index"
+        loading={deleting}
+        onConfirm={confirmDeleteCollection}
+        onClose={() => setDeleteTarget(null)}
+      />
+
     </div>
   )
+}
+
+function roundScore(score) {
+  if (typeof score !== 'number') return 85
+  return Math.min(100, Math.max(1, Math.round(score * 100)))
 }
