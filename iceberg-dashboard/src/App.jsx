@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import Sidebar from './components/Sidebar'
 import ProfileMenu from './components/ProfileMenu'
@@ -23,11 +23,11 @@ function ProtectedLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   if (!isLoggedIn()) return <Navigate to="/login" replace />
   return (
-    <div className="flex min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)]">
+    <div className="flex h-screen w-screen overflow-hidden bg-[var(--bg-base)] text-[var(--text-primary)]">
       <Sidebar open={sidebarOpen} />
-      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+      <div className="flex-1 flex flex-col h-full overflow-hidden min-w-0">
         {/* Top bar */}
-        <header className="h-12 bg-[var(--bg-surface)] border-b border-[var(--border)] flex items-center justify-between px-4 shrink-0">
+        <header className="h-12 bg-[var(--bg-surface)] border-b border-[var(--border)] flex items-center justify-between px-4 shrink-0 z-20">
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
             className="p-1.5 rounded-md text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition"
@@ -39,7 +39,7 @@ function ProtectedLayout({ children }) {
           </button>
           <ProfileMenu />
         </header>
-        <main className="flex-1 overflow-auto bg-[var(--bg-base)]">{children}</main>
+        <main className="flex-1 overflow-y-auto bg-[var(--bg-base)]">{children}</main>
       </div>
     </div>
   )

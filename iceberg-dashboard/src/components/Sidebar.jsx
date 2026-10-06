@@ -28,7 +28,7 @@ const groups = [
 
 export default function Sidebar({ open = true }) {
   return (
-    <aside className={`${open ? 'w-56' : 'w-[52px]'} shrink-0 min-h-screen bg-[var(--bg-surface)] border-r border-[var(--border)] flex flex-col overflow-hidden transition-all duration-200`}
+    <aside className={`${open ? 'w-56' : 'w-[52px]'} shrink-0 h-full bg-[var(--bg-surface)] border-r border-[var(--border)] flex flex-col overflow-hidden transition-all duration-200`}
       style={{ boxShadow: 'inset -1px 0 0 var(--border)' }}>
 
       {/* Logo */}
@@ -49,7 +49,7 @@ export default function Sidebar({ open = true }) {
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-2 py-3 overflow-hidden">
+      <nav className="flex-1 px-2 py-3 overflow-y-auto">
         {groups.map((group, gi) => (
           <div key={gi} className={gi > 0 ? 'mt-4' : ''}>
             {group.label && open && (
