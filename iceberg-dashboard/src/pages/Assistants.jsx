@@ -1,5 +1,6 @@
-﻿import { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { API_URL } from '../lib/config'
+import ConfirmModal from '../components/ConfirmModal'
 
 const KEY = () => localStorage.getItem('iceberg_api_key') || ''
 const H = () => ({ 'X-API-Key': KEY(), 'Content-Type': 'application/json' })
@@ -10,6 +11,9 @@ export default function Assistants() {
   const [form, setForm] = useState({ name: '', greeting: 'Hi! How can I help you?', llm_provider: 'openai', llm_api_key: '', llm_model: 'gpt-3.5-turbo', color: '#2563eb' })
   const [selected, setSelected] = useState(null)
   const [uploading, setUploading] = useState(false)
+  const [uploadSuccess, setUploadSuccess] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState(null)
+  const [deleting, setDeleting] = useState(false)
   const [copied, setCopied] = useState('')
 
   const load = () =>
@@ -26,20 +30,33 @@ export default function Assistants() {
     load()
   }
 
-  const del = async (id) => {
-    if (!confirm('Delete this assistant?')) return
-    await fetch(`${API_URL}/assistant/${id}`, { method: 'DELETE', headers: H() })
-    setSelected(null)
-    load()
+  const confirmDelete = async () => {
+    if (!deleteTarget) return
+    setDeleting(true)
+    try {
+      await fetch(`${API_URL}/assistant/${deleteTarget.id}`, { method: 'DELETE', headers: H() })
+      if (selected?.id === deleteTarget.id) setSelected(null)
+      setDeleteTarget(null)
+      load()
+    } catch (err) {
+      console.error(err)
+    }
+    setDeleting(false)
   }
 
   const upload = async (id, file) => {
     setUploading(true)
-    const form = new FormData()
-    form.append('file', file)
-    await fetch(`${API_URL}/assistant/${id}/upload`, { method: 'POST', headers: { 'X-API-Key': KEY() }, body: form })
+    setUploadSuccess(false)
+    try {
+      const form = new FormData()
+      form.append('file', file)
+      await fetch(`${API_URL}/assistant/${id}/upload`, { method: 'POST', headers: { 'X-API-Key': KEY() }, body: form })
+      setUploadSuccess(true)
+      setTimeout(() => setUploadSuccess(false), 3000)
+    } catch (err) {
+      console.error(err)
+    }
     setUploading(false)
-    alert('Document indexed!')
   }
 
   const copy = (text, key) => {
@@ -123,19 +140,25 @@ export default function Assistants() {
           <div className="md:col-span-2 bg-[var(--card-bg)] border border-[var(--border2)] rounded-lg p-5 space-y-5">
             <div className="flex items-center justify-between">
               <div className="text-[var(--text-primary)] font-medium">{selected.name}</div>
-              <button onClick={() => del(selected.id)} className="text-xs text-[var(--text-secondary)] hover:text-red-400 transition">Delete</button>
+              <button onClick={() => setDeleteTarget(selected)} className="text-xs text-[var(--text-secondary)] hover:text-red-400 px-2 py-1 rounded hover:bg-red-500/10 transition">Delete</button>
             </div>
 
             {/* Upload */}
-            <div>
-              <div className="text-[var(--text-secondary)] text-xs mb-2">Upload document to train</div>
-              <label className="cursor-pointer">
+            <div className="space-y-2">
+              <div className="text-[var(--text-secondary)] text-xs">Upload document to train</div>
+              <label className="cursor-pointer block">
                 <input type="file" accept=".pdf,.txt,.md" className="hidden"
                   onChange={e => e.target.files[0] && upload(selected.id, e.target.files[0])} />
                 <div className="border border-dashed border-[#333] hover:border-blue-600 rounded-lg p-4 text-center text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition">
-                  {uploading ? 'Uploading...' : 'Click to upload PDF, TXT, or MD'}
+                  {uploading ? 'Uploading and indexing...' : 'Click to upload PDF, TXT, or MD'}
                 </div>
               </label>
+              {uploadSuccess && (
+                <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs px-3 py-2 rounded-lg flex items-center gap-2">
+                  <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                  <span>Document indexed successfully! Assistant is ready.</span>
+                </div>
+              )}
             </div>
 
             {/* Chat URL */}
@@ -183,6 +206,21 @@ export default function Assistants() {
           </div>
         )}
       </div>
+
+      {/* Modern In-App Confirmation Modal */}
+      <ConfirmModal
+        open={!!deleteTarget}
+        title="Delete assistant?"
+        message={
+          <div>
+            Are you sure you want to delete <span className="font-semibold text-[var(--text-primary)]">{deleteTarget?.name}</span>? This assistant's index and chat endpoint will be permanently removed.
+          </div>
+        }
+        confirmText="Delete Assistant"
+        loading={deleting}
+        onConfirm={confirmDelete}
+        onClose={() => setDeleteTarget(null)}
+      />
     </div>
   )
 }

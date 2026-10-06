@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '../lib/api'
 import { Link } from 'react-router-dom'
+import ConfirmModal from '../components/ConfirmModal'
 
 export default function Collections() {
   const [collections, setCollections] = useState([])
@@ -9,6 +10,8 @@ export default function Collections() {
   const [desc, setDesc] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [deleteTarget, setDeleteTarget] = useState(null)
+  const [deleting, setDeleting] = useState(false)
 
   const load = () => api.getCollections().then(d => setCollections(d.collections || []))
   useEffect(() => { load() }, [])
@@ -23,9 +26,17 @@ export default function Collections() {
     else setError(res.detail || 'Failed')
   }
 
-  const del = async (n) => {
-    if (!confirm(`Delete "${n}"? This cannot be undone.`)) return
-    await api.deleteCollection(n); load()
+  const confirmDelete = async () => {
+    if (!deleteTarget) return
+    setDeleting(true)
+    try {
+      await api.deleteCollection(deleteTarget)
+      setDeleteTarget(null)
+      load()
+    } catch (err) {
+      console.error(err)
+    }
+    setDeleting(false)
   }
 
   return (
@@ -109,13 +120,28 @@ export default function Collections() {
               <div className="col-span-3 flex justify-end items-center gap-1 opacity-0 group-hover:opacity-100 transition">
                 <Link to={`/explorer?collection=${n}`}
                   className="text-xs text-[var(--text-muted)] hover:text-blue-400 px-2.5 py-1.5 rounded-md hover:bg-[var(--bg-hover)] transition">Explore</Link>
-                <button onClick={() => del(n)}
-                  className="text-xs text-[var(--text-muted)] hover:text-red-400 px-2.5 py-1.5 rounded-md hover:bg-[var(--bg-hover)] transition">Delete</button>
+                <button onClick={() => setDeleteTarget(n)}
+                  className="text-xs text-[var(--text-muted)] hover:text-red-400 px-2.5 py-1.5 rounded-md hover:bg-red-500/10 transition">Delete</button>
               </div>
             </div>
           ))}
         </div>
       )}
+
+      {/* Modern In-App Confirmation Modal */}
+      <ConfirmModal
+        open={!!deleteTarget}
+        title="Delete collection?"
+        message={
+          <div>
+            Are you sure you want to delete <span className="font-mono text-[var(--text-primary)] font-semibold bg-[var(--bg-hover)] px-1.5 py-0.5 rounded border border-[var(--border)]">{deleteTarget}</span>? All vectors, metadata, and documents in this collection will be permanently destroyed.
+          </div>
+        }
+        confirmText="Delete Collection"
+        loading={deleting}
+        onConfirm={confirmDelete}
+        onClose={() => setDeleteTarget(null)}
+      />
     </div>
   )
 }

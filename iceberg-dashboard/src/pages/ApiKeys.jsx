@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { API_URL } from '../lib/config'
+import ConfirmModal from '../components/ConfirmModal'
 const BASE = API_URL
 const KEY = () => localStorage.getItem('iceberg_api_key') || ''
 const H = () => ({ 'X-API-Key': KEY(), 'Content-Type': 'application/json' })
@@ -18,6 +19,8 @@ export default function ApiKeys() {
   const [createdKey, setCreatedKey] = useState(null)
   const [copied, setCopied] = useState('')
   const [loading, setLoading] = useState(false)
+  const [revokeTarget, setRevokeTarget] = useState(null)
+  const [revoking, setRevoking] = useState(false)
   const activeKey = KEY()
 
   const loadKeys = async () => {
@@ -41,10 +44,17 @@ export default function ApiKeys() {
     if (data.api_key) { setCreatedKey(data); setShowCreate(false); setNewKeyName(''); loadKeys() }
   }
 
-  const revokeKey = async (prefix) => {
-    if (!confirm(`Revoke key ${prefix}...?`)) return
-    await fetch(`${BASE}/auth/keys/${prefix}`, { method: 'DELETE', headers: H() })
-    setKeys(keys.filter(k => k.key_prefix !== prefix))
+  const confirmRevoke = async () => {
+    if (!revokeTarget) return
+    setRevoking(true)
+    try {
+      await fetch(`${BASE}/auth/keys/${revokeTarget}`, { method: 'DELETE', headers: H() })
+      setKeys(keys.filter(k => k.key_prefix !== revokeTarget))
+      setRevokeTarget(null)
+    } catch (err) {
+      console.error(err)
+    }
+    setRevoking(false)
   }
 
   const copy = (text, id) => {
@@ -155,8 +165,8 @@ export default function ApiKeys() {
                 </div>
                 <div className="col-span-3 font-mono text-xs text-[var(--text-muted)]">{k.key_prefix}...</div>
                 <div className="col-span-2 text-right opacity-0 group-hover:opacity-100 transition">
-                  <button onClick={() => revokeKey(k.key_prefix)}
-                    className="text-xs text-[var(--text-muted)] hover:text-red-400 px-2.5 py-1.5 rounded-md hover:bg-[var(--bg-hover)] transition">Revoke</button>
+                  <button onClick={() => setRevokeTarget(k.key_prefix)}
+                    className="text-xs text-[var(--text-muted)] hover:text-red-400 px-2.5 py-1.5 rounded-md hover:bg-red-500/10 transition">Revoke</button>
                 </div>
               </div>
             )
@@ -188,6 +198,21 @@ export default function ApiKeys() {
           ))}
         </div>
       </div>
+
+      {/* Modern In-App Confirmation Modal */}
+      <ConfirmModal
+        open={!!revokeTarget}
+        title="Revoke API key?"
+        message={
+          <div>
+            Are you sure you want to revoke key prefix <span className="font-mono text-[var(--text-primary)] font-semibold bg-[var(--bg-hover)] px-1.5 py-0.5 rounded border border-[var(--border)]">{revokeTarget}...</span>? Any application or script using this key will immediately be denied access.
+          </div>
+        }
+        confirmText="Revoke Key"
+        loading={revoking}
+        onConfirm={confirmRevoke}
+        onClose={() => setRevokeTarget(null)}
+      />
     </div>
   )
 }

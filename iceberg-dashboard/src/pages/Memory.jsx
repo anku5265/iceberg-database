@@ -1,5 +1,6 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { API_URL } from '../lib/config'
+import ConfirmModal from '../components/ConfirmModal'
 
 const KEY = () => localStorage.getItem('iceberg_api_key') || ''
 const H = () => ({ 'X-API-Key': KEY(), 'Content-Type': 'application/json' })
@@ -13,6 +14,9 @@ export default function Memory() {
   const [storing, setStoring] = useState(false)
   const [recalling, setRecalling] = useState(false)
   const [stored, setStored] = useState(false)
+  const [showClearModal, setShowClearModal] = useState(false)
+  const [clearing, setClearing] = useState(false)
+  const [clearedNotice, setClearedNotice] = useState(false)
 
   const remember = async (e) => {
     e.preventDefault()
@@ -41,11 +45,19 @@ export default function Memory() {
     setRecalling(false)
   }
 
-  const clear = async () => {
-    if (!agentId || !confirm(`Clear all memories for agent "${agentId}"?`)) return
-    await fetch(`${API_URL}/memory/${agentId}`, { method: 'DELETE', headers: H() })
-    setResults(null)
-    alert('Cleared.')
+  const confirmClear = async () => {
+    if (!agentId) return
+    setClearing(true)
+    try {
+      await fetch(`${API_URL}/memory/${agentId}`, { method: 'DELETE', headers: H() })
+      setResults(null)
+      setShowClearModal(false)
+      setClearedNotice(true)
+      setTimeout(() => setClearedNotice(false), 3000)
+    } catch (err) {
+      console.error(err)
+    }
+    setClearing(false)
   }
 
   return (
@@ -107,10 +119,16 @@ export default function Memory() {
               {recalling ? 'Searching...' : 'Recall'}
             </button>
             {agentId && (
-              <button type="button" onClick={clear}
+              <button type="button" onClick={() => setShowClearModal(true)}
                 className="w-full py-2.5 rounded-md border border-[var(--border2)] hover:border-red-900/50 text-[var(--text-muted)] hover:text-red-400 text-sm transition">
                 Clear all memories
               </button>
+            )}
+            {clearedNotice && (
+              <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs px-3 py-2 rounded-lg flex items-center gap-2">
+                <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                <span>All memories cleared for agent "{agentId}".</span>
+              </div>
             )}
           </form>
         </div>
@@ -141,6 +159,21 @@ export default function Memory() {
           )}
         </div>
       )}
+
+      {/* Modern In-App Confirmation Modal */}
+      <ConfirmModal
+        open={showClearModal}
+        title="Clear agent memories?"
+        message={
+          <div>
+            Are you sure you want to clear all stored memories for agent <span className="font-mono text-[var(--text-primary)] font-semibold bg-[var(--bg-hover)] px-1.5 py-0.5 rounded border border-[var(--border)]">{agentId}</span>? This action cannot be reversed.
+          </div>
+        }
+        confirmText="Clear Memories"
+        loading={clearing}
+        onConfirm={confirmClear}
+        onClose={() => setShowClearModal(false)}
+      />
     </div>
   )
 }
