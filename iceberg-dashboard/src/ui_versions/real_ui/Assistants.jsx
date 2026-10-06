@@ -1,0 +1,226 @@
+import { useEffect, useState } from 'react'
+import { API_URL } from '../lib/config'
+import ConfirmModal from '../components/ConfirmModal'
+
+const KEY = () => localStorage.getItem('iceberg_api_key') || ''
+const H = () => ({ 'X-API-Key': KEY(), 'Content-Type': 'application/json' })
+
+export default function Assistants() {
+  const [assistants, setAssistants] = useState([])
+  const [creating, setCreating] = useState(false)
+  const [form, setForm] = useState({ name: '', greeting: 'Hi! How can I help you?', llm_provider: 'openai', llm_api_key: '', llm_model: 'gpt-3.5-turbo', color: '#2563eb' })
+  const [selected, setSelected] = useState(null)
+  const [uploading, setUploading] = useState(false)
+  const [uploadSuccess, setUploadSuccess] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState(null)
+  const [deleting, setDeleting] = useState(false)
+  const [copied, setCopied] = useState('')
+
+  const load = () =>
+    fetch(`${API_URL}/assistant`, { headers: H() }).then(r => r.json()).then(d => setAssistants(d.assistants || []))
+
+  useEffect(() => { load() }, [])
+
+  const create = async (e) => {
+    e.preventDefault()
+    const r = await fetch(`${API_URL}/assistant`, { method: 'POST', headers: H(), body: JSON.stringify(form) })
+    const data = await r.json()
+    setCreating(false)
+    setSelected(data)
+    load()
+  }
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return
+    setDeleting(true)
+    try {
+      await fetch(`${API_URL}/assistant/${deleteTarget.id}`, { method: 'DELETE', headers: H() })
+      if (selected?.id === deleteTarget.id) setSelected(null)
+      setDeleteTarget(null)
+      load()
+    } catch (err) {
+      console.error(err)
+    }
+    setDeleting(false)
+  }
+
+  const upload = async (id, file) => {
+    setUploading(true)
+    setUploadSuccess(false)
+    try {
+      const form = new FormData()
+      form.append('file', file)
+      await fetch(`${API_URL}/assistant/${id}/upload`, { method: 'POST', headers: { 'X-API-Key': KEY() }, body: form })
+      setUploadSuccess(true)
+      setTimeout(() => setUploadSuccess(false), 3000)
+    } catch (err) {
+      console.error(err)
+    }
+    setUploading(false)
+  }
+
+  const copy = (text, key) => {
+    navigator.clipboard.writeText(text)
+    setCopied(key)
+    setTimeout(() => setCopied(''), 2000)
+  }
+
+  return (
+    <div className="p-8 max-w-6xl">
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-2xl font-semibold text-[var(--text-primary)] mb-1">Assistants</h1>
+          <p className="text-[var(--text-muted)] text-sm">No-code RAG chatbots — upload docs, get a chatbot</p>
+        </div>
+        <button onClick={() => setCreating(true)}
+          className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium px-4 py-2 rounded-md transition">
+          New assistant
+        </button>
+      </div>
+
+      {/* Create form */}
+      {creating && (
+        <form onSubmit={create} className="bg-[var(--card-bg)] border border-[var(--border2)] rounded-lg p-5 mb-6 space-y-3">
+          <h3 className="text-[var(--text-primary)] font-medium">Create assistant</h3>
+          <div className="grid md:grid-cols-2 gap-3">
+            <div>
+              <label className="text-[var(--text-secondary)] text-xs mb-1 block">Name</label>
+              <input value={form.name} onChange={e => setForm({...form, name: e.target.value})} required placeholder="My Support Bot"
+                className="w-full bg-[var(--input-bg)] border border-[var(--input-border)] rounded-md px-3 py-2 text-[var(--text-primary)] text-sm focus:outline-none focus:border-blue-600 placeholder-[var(--text-dim)]" />
+            </div>
+            <div>
+              <label className="text-[var(--text-secondary)] text-xs mb-1 block">Greeting message</label>
+              <input value={form.greeting} onChange={e => setForm({...form, greeting: e.target.value})}
+                className="w-full bg-[var(--input-bg)] border border-[var(--input-border)] rounded-md px-3 py-2 text-[var(--text-primary)] text-sm focus:outline-none focus:border-blue-600" />
+            </div>
+            <div>
+              <label className="text-[var(--text-secondary)] text-xs mb-1 block">LLM Provider</label>
+              <select value={form.llm_provider} onChange={e => setForm({...form, llm_provider: e.target.value})}
+                className="w-full bg-[var(--input-bg)] border border-[var(--input-border)] rounded-md px-3 py-2 text-[var(--text-primary)] text-sm focus:outline-none focus:border-blue-600">
+                <option value="openai">OpenAI (GPT)</option>
+                <option value="gemini">Google Gemini</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-[var(--text-secondary)] text-xs mb-1 block">LLM API Key</label>
+              <input type="password" value={form.llm_api_key} onChange={e => setForm({...form, llm_api_key: e.target.value})} placeholder="sk-..."
+                className="w-full bg-[var(--input-bg)] border border-[var(--input-border)] rounded-md px-3 py-2 text-[var(--text-primary)] text-sm focus:outline-none focus:border-blue-600 placeholder-[var(--text-dim)]" />
+            </div>
+          </div>
+          <div className="flex gap-2 pt-1">
+            <button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium px-4 py-2 rounded-md transition">Create</button>
+            <button type="button" onClick={() => setCreating(false)} className="text-[var(--text-muted)] hover:text-[var(--text-primary)] text-sm px-4 py-2 transition">Cancel</button>
+          </div>
+        </form>
+      )}
+
+      <div className="grid md:grid-cols-3 gap-4">
+        {/* List */}
+        <div className="space-y-2">
+          {assistants.length === 0 && !creating && (
+            <div className="bg-[var(--card-bg)] border border-[var(--border2)] rounded-lg p-8 text-center">
+              <p className="text-[var(--text-secondary)] text-sm mb-3">No assistants yet</p>
+              <button onClick={() => setCreating(true)} className="text-blue-400 text-sm hover:text-blue-300 transition">Create your first →</button>
+            </div>
+          )}
+          {assistants.map(a => (
+            <div key={a.id} onClick={() => setSelected(a)}
+              className={`bg-[var(--card-bg)] border rounded-lg p-4 cursor-pointer transition ${selected?.id === a.id ? 'border-blue-600' : 'border-[var(--border2)] hover:border-[#333]'}`}>
+              <div className="flex items-center justify-between">
+                <div className="text-[var(--text-primary)] text-sm font-medium">{a.name}</div>
+                <div className="w-2 h-2 rounded-full bg-green-400"></div>
+              </div>
+              <div className="text-[var(--text-secondary)] text-xs mt-1 font-mono">#{a.id}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Detail */}
+        {selected && (
+          <div className="md:col-span-2 bg-[var(--card-bg)] border border-[var(--border2)] rounded-lg p-5 space-y-5">
+            <div className="flex items-center justify-between">
+              <div className="text-[var(--text-primary)] font-medium">{selected.name}</div>
+              <button onClick={() => setDeleteTarget(selected)} className="text-xs text-[var(--text-secondary)] hover:text-red-400 px-2 py-1 rounded hover:bg-red-500/10 transition">Delete</button>
+            </div>
+
+            {/* Upload */}
+            <div className="space-y-2">
+              <div className="text-[var(--text-secondary)] text-xs">Upload document to train</div>
+              <label className="cursor-pointer block">
+                <input type="file" accept=".pdf,.txt,.md" className="hidden"
+                  onChange={e => e.target.files[0] && upload(selected.id, e.target.files[0])} />
+                <div className="border border-dashed border-[#333] hover:border-blue-600 rounded-lg p-4 text-center text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition">
+                  {uploading ? 'Uploading and indexing...' : 'Click to upload PDF, TXT, or MD'}
+                </div>
+              </label>
+              {uploadSuccess && (
+                <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs px-3 py-2 rounded-lg flex items-center gap-2">
+                  <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                  <span>Document indexed successfully! Assistant is ready.</span>
+                </div>
+              )}
+            </div>
+
+            {/* Chat URL */}
+            <div>
+              <div className="text-[var(--text-secondary)] text-xs mb-2">Chat URL — share with users</div>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 bg-[var(--input-bg)] border border-[var(--border)] rounded px-3 py-2 text-xs text-[var(--text-secondary)] truncate">
+                  {selected.chat_url || `${API_URL}/assistant/${selected.id}/chat`}
+                </code>
+                <button onClick={() => copy(selected.chat_url || `${API_URL}/assistant/${selected.id}/chat`, 'chat')}
+                  className="text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] px-2 py-1 border border-[var(--border2)] rounded transition">
+                  {copied === 'chat' ? 'Copied!' : 'Copy'}
+                </button>
+              </div>
+            </div>
+
+            {/* Embed */}
+            <div>
+              <div className="text-[var(--text-secondary)] text-xs mb-2">Website embed — paste in your HTML</div>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 bg-[var(--input-bg)] border border-[var(--border)] rounded px-3 py-2 text-xs text-[var(--text-secondary)] truncate">
+                  {selected.embed_code || `<script src="${API_URL}/assistant/${selected.id}/widget.js"></script>`}
+                </code>
+                <button onClick={() => copy(selected.embed_code || '', 'embed')}
+                  className="text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] px-2 py-1 border border-[var(--border2)] rounded transition">
+                  {copied === 'embed' ? 'Copied!' : 'Copy'}
+                </button>
+              </div>
+            </div>
+
+            {/* WhatsApp */}
+            <div>
+              <div className="text-[var(--text-secondary)] text-xs mb-2">WhatsApp webhook URL</div>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 bg-[var(--input-bg)] border border-[var(--border)] rounded px-3 py-2 text-xs text-[var(--text-secondary)] truncate">
+                  {selected.whatsapp_webhook || `${API_URL}/assistant/${selected.id}/whatsapp`}
+                </code>
+                <button onClick={() => copy(selected.whatsapp_webhook || '', 'wa')}
+                  className="text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] px-2 py-1 border border-[var(--border2)] rounded transition">
+                  {copied === 'wa' ? 'Copied!' : 'Copy'}
+                </button>
+              </div>
+              <p className="text-xs text-[var(--text-dim)] mt-1">Point your WhatsApp Business webhook here</p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Modern In-App Confirmation Modal */}
+      <ConfirmModal
+        open={!!deleteTarget}
+        title="Delete assistant?"
+        message={
+          <div>
+            Are you sure you want to delete <span className="font-semibold text-[var(--text-primary)]">{deleteTarget?.name}</span>? This assistant's index and chat endpoint will be permanently removed.
+          </div>
+        }
+        confirmText="Delete Assistant"
+        loading={deleting}
+        onConfirm={confirmDelete}
+        onClose={() => setDeleteTarget(null)}
+      />
+    </div>
+  )
+}
