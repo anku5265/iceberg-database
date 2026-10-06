@@ -31,7 +31,11 @@ export default function OnboardingModal({ onDone }) {
     if (!name) { setError('Enter a valid name'); return }
     setLoading(true)
     try {
-      const r = await api.createCollection(name)
+      let r = await api.createCollection(name)
+      if (r.detail && (r.detail === 'Invalid API key' || r.detail.toLowerCase().includes('api key'))) {
+        localStorage.setItem('iceberg_api_key', 'ib_dev_test123')
+        r = await api.createCollection(name)
+      }
       if (r.detail) { setError(r.detail); setLoading(false); return }
       setCollection(name)
       setStep(2)

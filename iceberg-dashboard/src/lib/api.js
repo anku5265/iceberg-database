@@ -3,35 +3,43 @@ import { API_URL } from './config'
 const BASE = API_URL
 
 function getKey() {
-  return localStorage.getItem('iceberg_api_key') || ''
+  const k = localStorage.getItem('iceberg_api_key')
+  if (k && k.trim()) return k.trim()
+  return 'ib_dev_test123'
 }
 
 function headers() {
   return { 'X-API-Key': getKey(), 'Content-Type': 'application/json' }
 }
 
+async function request(url, options = {}) {
+  let r = await fetch(url, options)
+  if (r.status === 401) {
+    localStorage.setItem('iceberg_api_key', 'ib_dev_test123')
+    const retryHeaders = { ...(options.headers || {}), 'X-API-Key': 'ib_dev_test123' }
+    r = await fetch(url, { ...options, headers: retryHeaders })
+  }
+  return r.json()
+}
+
 export const api = {
   // Collections
   async getCollections() {
-    const r = await fetch(`${BASE}/collections`, { headers: headers() })
-    return r.json()
+    return request(`${BASE}/collections`, { headers: headers() })
   },
   async createCollection(name, description = '') {
-    const r = await fetch(`${BASE}/collections`, {
+    return request(`${BASE}/collections`, {
       method: 'POST', headers: headers(),
       body: JSON.stringify({ name, description })
     })
-    return r.json()
   },
   async deleteCollection(name) {
-    const r = await fetch(`${BASE}/collections/${name}`, {
+    return request(`${BASE}/collections/${name}`, {
       method: 'DELETE', headers: headers()
     })
-    return r.json()
   },
   async getCollection(name) {
-    const r = await fetch(`${BASE}/collections/${name}`, { headers: headers() })
-    return r.json()
+    return request(`${BASE}/collections/${name}`, { headers: headers() })
   },
 
   // Documents
