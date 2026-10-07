@@ -23,3 +23,17 @@ dist/
 # IDE
 .vscode/settings.json
 .idea/
+
+# Secrets & local credentials
+get_pypi_2fa.py
+.npmrc
+
+# Media & Videos
+*.mp4
+*.mp3
+*.wav
+video_build/
+screen_studio_build/
+tools/
+.vercel/
+

@@ -38,7 +38,7 @@ export class Client {
    * Iceberg JavaScript/TypeScript SDK
    *
    * @example
-   * import { Client } from 'iceberg-db'
+   * import { Client } from 'icebergdb'
    * const client = new Client({ apiKey: 'your_api_key' })
    *
    * await client.createCollection('my_docs')
