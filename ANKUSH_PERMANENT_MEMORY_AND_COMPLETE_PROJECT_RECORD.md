@@ -153,7 +153,7 @@ When Ankush asked: *"pinecone ka overview ka ui kaise hai dekh us ko"*, here is 
 ## 🔑 SECTION 5: MASTER CONFIGURATION & CREDENTIALS VAULT
 
 - **Git Repository:**
-  - Remote: `https://github.com/anku5265/qora-database-.git`
+  - Remote: `https://github.com/anku5265/iceberg-database.git`
   - Active Branch: `main`
 - **Render Backend:**
   - Live Service: `https://iceberg-backend-hrg9.onrender.com`
