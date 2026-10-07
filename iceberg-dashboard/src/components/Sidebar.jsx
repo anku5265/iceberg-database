@@ -20,8 +20,7 @@ const groups = [
     links: [
       { to: '/apikeys', label: 'API Keys', icon: <KeyIcon /> },
       { to: '/logs', label: 'Logs', icon: <LogIcon /> },
-      { to: '/docs', label: 'Docs', icon: <DocIcon /> },
-      { to: '/admin', label: 'Admin', icon: <AdminIcon /> },
+      { to: '/settings', label: 'Settings', icon: <AdminIcon /> },
     ]
   },
 ]

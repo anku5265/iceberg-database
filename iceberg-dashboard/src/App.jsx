@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, Link } from 'react-router-dom'
 import Sidebar from './components/Sidebar'
 import ProfileMenu from './components/ProfileMenu'
 import Overview from './pages/Overview'
@@ -11,7 +11,7 @@ import Docs from './pages/Docs'
 import Login from './pages/Login'
 import LoginKey from './pages/LoginKey'
 import Signup from './pages/Signup'
-import Admin from './pages/Admin'
+import Settings from './pages/Settings'
 import Assistants from './pages/Assistants'
 import Memory from './pages/Memory'
 
@@ -37,7 +37,20 @@ function ProtectedLayout({ children }) {
               <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
             </svg>
           </button>
-          <ProfileMenu />
+          
+          <div className="flex items-center gap-2.5">
+            <Link
+              to="/settings?tab=docs"
+              className="flex items-center gap-1.5 text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] px-2.5 py-1.5 rounded-lg hover:bg-[var(--bg-hover)] transition border border-[var(--border)]"
+              title="Documentation & API Reference"
+            >
+              <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+              </svg>
+              <span>Docs</span>
+            </Link>
+            <ProfileMenu />
+          </div>
         </header>
         <main className="flex-1 overflow-y-auto bg-[var(--bg-base)]">{children}</main>
       </div>
@@ -47,9 +60,9 @@ function ProtectedLayout({ children }) {
 
 function PublicDocsLayout() {
   return (
-    <div className="min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)]">
+    <div className="h-screen w-screen overflow-y-auto bg-[var(--bg-base)] text-[var(--text-primary)] flex flex-col">
       {/* Public header */}
-      <header className="h-12 bg-[var(--bg-surface)] border-b border-[var(--border)] flex items-center justify-between px-6 sticky top-0 z-10">
+      <header className="h-12 bg-[var(--bg-surface)] border-b border-[var(--border)] flex items-center justify-between px-6 sticky top-0 z-10 shrink-0">
         <div className="flex items-center gap-2">
           <div className="w-5 h-5 rounded bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center">
             <span className="text-white text-[10px] font-black">IB</span>
@@ -63,7 +76,9 @@ function PublicDocsLayout() {
           <a href="/signup" className="text-sm bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg transition font-medium">Get started</a>
         </div>
       </header>
-      <Docs />
+      <div className="flex-1 pb-16">
+        <Docs />
+      </div>
     </div>
   )
 }
@@ -74,7 +89,7 @@ export default function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/login/key" element={<LoginKey />} />
       <Route path="/signup" element={<Signup />} />
-      <Route path="/docs" element={<PublicDocsLayout />} />
+      <Route path="/docs" element={isLoggedIn() ? <ProtectedLayout><Settings initialTab="docs" /></ProtectedLayout> : <PublicDocsLayout />} />
       <Route path="/" element={<ProtectedLayout><Overview /></ProtectedLayout>} />
       <Route path="/collections" element={<ProtectedLayout><Collections /></ProtectedLayout>} />
       <Route path="/explorer" element={<ProtectedLayout><Explorer /></ProtectedLayout>} />
@@ -82,7 +97,8 @@ export default function App() {
       <Route path="/logs" element={<ProtectedLayout><Logs /></ProtectedLayout>} />
       <Route path="/assistants" element={<ProtectedLayout><Assistants /></ProtectedLayout>} />
       <Route path="/memory" element={<ProtectedLayout><Memory /></ProtectedLayout>} />
-      <Route path="/admin" element={<ProtectedLayout><Admin /></ProtectedLayout>} />
+      <Route path="/settings" element={<ProtectedLayout><Settings /></ProtectedLayout>} />
+      <Route path="/admin" element={<Navigate to="/settings" replace />} />
     </Routes>
   )
 }
