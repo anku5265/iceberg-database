@@ -20,12 +20,12 @@
     "ai-agents",
     "semantic-search"
   ],
-  "author": "Iceberg Data Technologies <hello@icebergdb.in>",
+  "author": "Ankush <icebergdb.official@gmail.com>",
   "license": "MIT",
-  "homepage": "https://icebergdb.in",
+  "homepage": "https://iceberg-dashboard.vercel.app",
   "repository": {
     "type": "git",
-    "url": "https://github.com/icebergdb/iceberg-js.git"
+    "url": "https://github.com/anku5265/qora-database-.git"
   },
   "devDependencies": {
     "typescript": "^5.9.3"

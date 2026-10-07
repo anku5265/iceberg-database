@@ -4,13 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "icebergdb"
-version = "0.1.0"
+version = "0.1.1"
 description = "Iceberg — High-performance serverless vector database for AI agents and RAG applications"
 readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "MIT" }
 authors = [
-    { name = "Iceberg Data Technologies", email = "hello@icebergdb.in" }
+    { name = "Ankush", email = "icebergdb.official@gmail.com" },
+    { name = "Iceberg DB", email = "icebergdb.official@gmail.com" }
 ]
 keywords = ["vector database", "vector search", "rag", "ai agents", "embeddings", "semantic search"]
 classifiers = [

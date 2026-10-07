@@ -80,6 +80,12 @@ db = iceberg.connect(
 
 ---
 
+## 👤 Author & Creator
+
+Crafted with ❤️ by **Ankush** ([@anku5265](https://github.com/anku5265)) & the **Iceberg DB** team.
+
+---
+
 ## 🛡️ License
 
-MIT License © 2026 Iceberg Data Technologies.
+MIT License © 2026 Iceberg DB (Ankush).
