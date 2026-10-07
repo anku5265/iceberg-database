@@ -27,6 +27,7 @@ dist/
 # Secrets & local credentials
 get_pypi_2fa.py
 .npmrc
+FULL_CONVERSATION_CHAT_HISTORY.md
 
 # Media & Videos
 *.mp4

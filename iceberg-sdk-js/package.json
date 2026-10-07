@@ -24,7 +24,7 @@
   "homepage": "https://iceberg-dashboard.vercel.app",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/anku5265/qora-database-.git"
+    "url": "git+https://github.com/anku5265/iceberg-database.git"
   },
   "devDependencies": {
     "typescript": "^5.9.3"

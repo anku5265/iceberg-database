@@ -21,8 +21,8 @@ setup(
     url="https://iceberg-dashboard.vercel.app",
     project_urls={
         "Documentation": "https://iceberg-dashboard.vercel.app/docs",
-        "Source": "https://github.com/anku5265/qora-database-",
-        "Bug Tracker": "https://github.com/anku5265/qora-database-/issues",
+        "Source": "https://github.com/anku5265/iceberg-database",
+        "Bug Tracker": "https://github.com/anku5265/iceberg-database/issues",
     },
     license="MIT",
     packages=find_packages(),
