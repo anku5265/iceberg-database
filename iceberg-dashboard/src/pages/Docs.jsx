@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { API_URL } from '../lib/config'
 
 const NAV = [
@@ -485,82 +485,180 @@ export default function Docs() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-48px)] overflow-hidden">
-      {/* Sidebar */}
-      <div className="w-52 border-r border-[var(--border)] bg-[var(--bg-surface)] flex-shrink-0 overflow-y-auto">
-        <div className="p-4">
+    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6 animate-fadeIn font-sans text-[var(--text-primary)]">
+      
+      {/* ── 1. Page Header ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2">
+        <div>
+          <div className="flex items-center gap-3">
+            <h1 className="text-xl font-bold tracking-tight text-[var(--text-primary)]">Documentation &amp; API Reference</h1>
+            <span className="px-2 py-0.5 rounded text-xs font-mono bg-blue-500/10 text-blue-400 border border-blue-500/20">
+              {doc?.title || 'Guides'}
+            </span>
+          </div>
+          <p className="text-[var(--text-muted)] text-xs mt-1">
+            Complete architectural guides, SDK references, and interactive API documentation for Iceberg.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2.5">
+          <a
+            href={`${API_URL}/docs`}
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-2 rounded-lg transition shadow-sm"
+          >
+            <span>Open Interactive Swagger Docs</span>
+            <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15,3 21,3 21,9"/><line x1="10" y1="14" x2="21" y2="3"/>
+            </svg>
+          </a>
+        </div>
+      </div>
+
+      {/* ── 2. Telemetry Stat Cards ── */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
+        <div className="p-4 bg-[var(--card-bg)] border border-[var(--border)] rounded-xl space-y-1.5">
+          <div className="flex items-center justify-between text-xs text-[var(--text-muted)]">
+            <span>API Version</span>
+            <span className="text-blue-400">Spec</span>
+          </div>
+          <div className="text-xl font-bold font-mono text-[var(--text-primary)]">v1.0.0</div>
+          <p className="text-[11px] text-[var(--text-dim)]">FastAPI OpenAPI 3.1</p>
+        </div>
+
+        <div className="p-4 bg-[var(--card-bg)] border border-[var(--border)] rounded-xl space-y-1.5">
+          <div className="flex items-center justify-between text-xs text-[var(--text-muted)]">
+            <span>Backend Host</span>
+            <span className="text-emerald-400">Live</span>
+          </div>
+          <div className="text-xs font-bold font-mono text-[var(--text-primary)] truncate" title={API_URL}>
+            {API_URL.replace('https://', '')}
+          </div>
+          <p className="text-[11px] text-[var(--text-dim)]">Render cloud cluster</p>
+        </div>
+
+        <div className="p-4 bg-[var(--card-bg)] border border-[var(--border)] rounded-xl space-y-1.5">
+          <div className="flex items-center justify-between text-xs text-[var(--text-muted)]">
+            <span>Vector Engine</span>
+            <span className="text-purple-400">Core</span>
+          </div>
+          <div className="text-base font-bold font-mono text-[var(--text-primary)]">384d Cosine</div>
+          <p className="text-[11px] text-[var(--text-dim)]">MiniLM-L6 embeddings</p>
+        </div>
+
+        <div className="p-4 bg-[var(--card-bg)] border border-[var(--border)] rounded-xl space-y-1.5">
+          <div className="flex items-center justify-between text-xs text-[var(--text-muted)]">
+            <span>Hybrid Pipeline</span>
+            <span className="text-amber-400">RRF</span>
+          </div>
+          <div className="text-base font-bold font-mono text-[var(--text-primary)]">ANN + BM25</div>
+          <p className="text-[11px] text-[var(--text-dim)]">Dense + Sparse fusion</p>
+        </div>
+      </div>
+
+      {/* ── 3. Split Docs Navigation & Content Hub ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+        
+        {/* Left Sidebar (3 cols) */}
+        <div className="lg:col-span-3 bg-[var(--card-bg)] border border-[var(--border)] rounded-2xl p-4 space-y-5 sticky top-6 shadow-sm">
           {NAV.map((group, gi) => (
-            <div key={gi} className={gi > 0 ? 'mt-5' : ''}>
-              <p className="section-label px-2 mb-2">{group.group}</p>
-              <div className="space-y-px">
+            <div key={gi} className="space-y-1.5">
+              <p className="text-[11px] font-mono uppercase tracking-wider text-[var(--text-dim)] px-2 font-semibold">
+                {group.group}
+              </p>
+              <div className="space-y-1">
                 {group.items.map(item => (
-                  <button key={item.id} onClick={() => setActive(item.id)}
-                    className={`w-full text-left px-3 py-2 rounded-lg text-sm transition ${
+                  <button
+                    key={item.id}
+                    onClick={() => setActive(item.id)}
+                    className={`w-full text-left px-3 py-2 rounded-xl text-xs transition flex items-center justify-between ${
                       active === item.id
-                        ? 'bg-blue-600/10 text-blue-400 font-medium'
-                        : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]'
-                    }`}>
-                    {item.title}
+                        ? 'bg-blue-600/10 text-blue-400 font-semibold border border-blue-500/20'
+                        : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]'
+                    }`}
+                  >
+                    <span>{item.title}</span>
+                    {active === item.id && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                    )}
                   </button>
                 ))}
               </div>
             </div>
           ))}
-          <div className="mt-6 pt-4 border-t border-[var(--border)]">
-            <a href={`${API_URL}/docs`} target="_blank" rel="noreferrer"
-              className="flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 transition px-2">
-              Interactive API Docs
-              <svg width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15,3 21,3 21,9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+
+          <div className="pt-3 border-t border-[var(--border)]">
+            <a
+              href={`${API_URL}/docs`}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center justify-between px-3 py-2 text-xs text-blue-400 hover:text-blue-300 font-medium transition rounded-xl bg-blue-500/5 hover:bg-blue-500/10 border border-blue-500/20"
+            >
+              <span>Swagger UI Playground</span>
+              <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15,3 21,3 21,9"/><line x1="10" y1="14" x2="21" y2="3"/>
+              </svg>
             </a>
           </div>
         </div>
-      </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="max-w-3xl mx-auto px-8 py-8">
+        {/* Right Content Area (9 cols) */}
+        <div className="lg:col-span-9 bg-[var(--card-bg)] border border-[var(--border)] rounded-2xl p-6 md:p-8 space-y-6 shadow-sm">
           {doc && (
             <>
-              <div className="mb-8">
-                <h1 className="text-2xl font-bold text-[var(--text-primary)] tracking-tight mb-2">{doc.title}</h1>
-                <p className="text-[var(--text-muted)] text-sm font-mono">{doc.desc}</p>
-                <div className="mt-4 h-px bg-[var(--border)]"/>
+              <div className="pb-4 border-b border-[var(--border)]">
+                <h2 className="text-xl font-bold text-[var(--text-primary)] tracking-tight">
+                  {doc.title}
+                </h2>
+                <p className="text-xs text-[var(--text-muted)] mt-1">
+                  {doc.desc}
+                </p>
               </div>
 
               <div className="space-y-8">
                 {doc.sections.map((sec, si) => (
-                  <div key={si}>
+                  <div key={si} className="space-y-3">
                     {sec.heading && (
-                      <h2 className="text-base font-semibold text-[var(--text-primary)] mb-3 flex items-center gap-2">
-                        <span className="text-[var(--text-dim)] text-xs font-mono">{String(si + 1).padStart(2, '0')}</span>
-                        {sec.heading}
-                      </h2>
+                      <h3 className="text-sm font-semibold text-[var(--text-primary)] flex items-center gap-2">
+                        <span className="text-[11px] font-mono text-blue-400 bg-blue-500/10 border border-blue-500/20 px-1.5 py-0.5 rounded">
+                          {String(si + 1).padStart(2, '0')}
+                        </span>
+                        <span>{sec.heading}</span>
+                      </h3>
                     )}
+
                     {sec.text && (
-                      <p className="text-[var(--text-secondary)] text-sm leading-relaxed mb-3">
+                      <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
                         {renderBold(sec.text)}
                       </p>
                     )}
+
                     {sec.list && (
-                      <ul className="space-y-1.5 mb-3">
+                      <ul className="space-y-2 bg-[var(--bg-surface)] border border-[var(--border)] rounded-xl p-4">
                         {sec.list.map((item, li) => (
-                          <li key={li} className="flex items-start gap-2 text-sm text-[var(--text-secondary)]">
-                            <span className="text-[var(--text-dim)] mt-1">·</span>
+                          <li key={li} className="flex items-start gap-2.5 text-xs text-[var(--text-secondary)] leading-relaxed">
+                            <span className="text-blue-400 font-bold mt-0.5">›</span>
                             <span>{renderBold(item)}</span>
                           </li>
                         ))}
                       </ul>
                     )}
+
                     {sec.code && (
-                      <div className="relative group">
-                        <div className="flex items-center justify-between bg-[var(--bg-surface2)] border border-[var(--border)] rounded-t-lg px-4 py-2">
-                          <span className="text-[10px] font-mono text-[var(--text-dim)] uppercase tracking-wider">{sec.lang}</span>
-                          <button onClick={() => copy(sec.code, `${si}`)}
-                            className="text-[10px] text-[var(--text-dim)] hover:text-[var(--text-secondary)] transition opacity-0 group-hover:opacity-100">
-                            {copied === `${si}` ? '✓ Copied' : 'Copy'}
+                      <div className="relative group rounded-xl overflow-hidden border border-[var(--border)] shadow-xs">
+                        <div className="flex items-center justify-between bg-[var(--bg-surface)] border-b border-[var(--border)] px-4 py-2">
+                          <span className="text-[10px] font-mono text-[var(--text-dim)] uppercase tracking-wider font-semibold">
+                            {sec.lang}
+                          </span>
+                          <button
+                            onClick={() => copy(sec.code, `${si}`)}
+                            className="text-[11px] text-blue-400 hover:text-blue-300 transition font-medium"
+                          >
+                            {copied === `${si}` ? '✓ Copied' : 'Copy Code'}
                           </button>
                         </div>
-                        <pre className="bg-[var(--bg-base)] border border-t-0 border-[var(--border)] rounded-b-lg p-4 text-xs text-[var(--text-secondary)] font-mono overflow-x-auto leading-relaxed whitespace-pre">
+                        <pre className="p-4 bg-[var(--input-bg)] text-xs text-[var(--text-secondary)] font-mono overflow-x-auto leading-relaxed select-all">
                           {sec.code}
                         </pre>
                       </div>
@@ -571,7 +669,9 @@ export default function Docs() {
             </>
           )}
         </div>
+
       </div>
+
     </div>
   )
 }
