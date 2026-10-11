@@ -89,6 +89,15 @@
 - **Packaging:** `package.json`, `tsconfig.json`, TypeScript definitions ready for NPM.
 - **Release Automation:** `d:\icebergdb\publish_to_npm.bat`.
 
+### D. Multi-Language SDK Ecosystem (Go, Rust, .NET, Java)
+- **All SDKs 100% Synced:**
+  - **Go SDK (`iceberg-sdk-go`):** Module path `github.com/anku5265/iceberg-database/iceberg-sdk-go`.
+  - **Rust SDK (`iceberg-sdk-rust`):** `Cargo.toml` with Author `Ankush` and repo `anku5265/iceberg-database`.
+  - **.NET SDK (`iceberg-sdk-dotnet`):** `IcebergSdk.csproj` with Author `Ankush` and repo `anku5265/iceberg-database`.
+  - **Java SDK (`iceberg-sdk-java`):** `pom.xml` with Developer `anku5265 (Ankush)` and SCM repo.
+- **Render Backend 24/7 Keep-Alive:**
+  - Script: `d:\icebergdb\keep_alive.py` (pings `https://iceberg-backend-hrg9.onrender.com/health` every 9 minutes to eliminate 15-minute sleep mode cold starts).
+
 ### D. SaaS Launch Videos & Assets
 - **Video 1:** `d:\icebergdb\iceberg_saas_product_launch.mp4` (Full 1080p SaaS Launch Video).
 - **Video 2:** `d:\icebergdb\iceberg_saas_screen_studio_demo.mp4` (Screen Studio style product walkthrough).
