@@ -13,6 +13,20 @@
   <description>Official Java client for Iceberg Vector Database</description>
   <url>https://icebergdb.io</url>
 
+  <developers>
+    <developer>
+      <id>anku5265</id>
+      <name>Ankush</name>
+      <url>https://github.com/anku5265</url>
+    </developer>
+  </developers>
+
+  <scm>
+    <connection>scm:git:git://github.com/anku5265/iceberg-database.git</connection>
+    <developerConnection>scm:git:ssh://github.com:anku5265/iceberg-database.git</developerConnection>
+    <url>https://github.com/anku5265/iceberg-database/tree/main/iceberg-sdk-java</url>
+  </scm>
+
   <properties>
     <maven.compiler.source>11</maven.compiler.source>
     <maven.compiler.target>11</maven.compiler.target>

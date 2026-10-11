@@ -8,10 +8,10 @@
     <RootNamespace>Iceberg</RootNamespace>
     <PackageId>Iceberg</PackageId>
     <Version>0.1.0</Version>
-    <Authors>Iceberg</Authors>
+    <Authors>Ankush</Authors>
     <Description>Official .NET client for Iceberg Vector Database</Description>
     <PackageProjectUrl>https://icebergdb.io</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/iceberg-db/iceberg-sdk-dotnet</RepositoryUrl>
+    <RepositoryUrl>https://github.com/anku5265/iceberg-database</RepositoryUrl>
     <PackageTags>vector;search;ai;embeddings;rag</PackageTags>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>

@@ -2,9 +2,10 @@
 name = "iceberg"
 version = "0.1.0"
 edition = "2021"
+authors = ["Ankush <https://github.com/anku5265>"]
 description = "Official Rust client for Iceberg Vector Database"
 homepage = "https://icebergdb.io"
-repository = "https://github.com/iceberg-db/iceberg-sdk-rust"
+repository = "https://github.com/anku5265/iceberg-database"
 license = "MIT"
 keywords = ["vector", "search", "ai", "embeddings", "rag"]
 
