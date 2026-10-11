@@ -55,7 +55,7 @@ app.include_router(assistant.router)
 app.include_router(backup.router)
 app.include_router(status.router)
 
-@app.get("/")
+@app.api_route("/", methods=["GET", "HEAD"])
 def root():
     from services import storage
     return {
@@ -65,7 +65,8 @@ def root():
         "storage": "r2" if storage.is_configured() else "local"
     }
 
-@app.get("/health")
+@app.api_route("/health", methods=["GET", "HEAD"])
 def health():
     from services import storage
     return {"status": "ok", "storage": "r2" if storage.is_configured() else "local"}
+
