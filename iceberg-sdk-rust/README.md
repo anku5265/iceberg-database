@@ -4,10 +4,15 @@ Official Rust client for [Iceberg](https://icebergdb.io) — vector search for I
 
 ## Installation
 
+```bash
+cargo add icebergdb
+```
+
+Or add to `Cargo.toml`:
+
 ```toml
-# Cargo.toml
 [dependencies]
-iceberg = "0.1.0"
+icebergdb = "0.1.0"
 tokio = { version = "1", features = ["full"] }
 ```
 
