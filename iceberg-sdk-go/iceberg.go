@@ -19,7 +19,7 @@ import (
 	"path/filepath"
 )
 
-const DefaultBaseURL = "https://api.icebergdb.io"
+const DefaultBaseURL = "https://iceberg-backend-hrg9.onrender.com"
 
 type Client struct {
 	APIKey  string

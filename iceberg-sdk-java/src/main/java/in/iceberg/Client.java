@@ -45,7 +45,7 @@ import java.util.*;
  */
 public class Client {
 
-    public static final String DEFAULT_BASE_URL = "https://api.icebergdb.io";
+    public static final String DEFAULT_BASE_URL = "https://iceberg-backend-hrg9.onrender.com";
 
     private final String apiKey;
     private final String baseUrl;

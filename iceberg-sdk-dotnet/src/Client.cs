@@ -23,7 +23,7 @@ namespace Iceberg;
 /// </example>
 public class Client : IDisposable
 {
-    public const string DefaultBaseUrl = "https://api.icebergdb.io";
+    public const string DefaultBaseUrl = "https://iceberg-backend-hrg9.onrender.com";
 
     private readonly HttpClient _http;
     private readonly JsonSerializerOptions _json = new()

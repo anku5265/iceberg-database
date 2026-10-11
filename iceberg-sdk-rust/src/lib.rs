@@ -28,7 +28,7 @@ use std::collections::HashMap;
 use std::path::Path;
 use thiserror::Error;
 
-pub const DEFAULT_BASE_URL: &str = "https://api.icebergdb.io";
+pub const DEFAULT_BASE_URL: &str = "https://iceberg-backend-hrg9.onrender.com";
 
 // ── Error ─────────────────────────────────────────────────────────────────────
 
