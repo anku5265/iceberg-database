@@ -1,6 +1,6 @@
 # Iceberg .NET SDK
 
-Official .NET client for [Iceberg](https://icebergdb.io) — vector search for Indian AI teams.
+Official .NET client for [Iceberg Database](https://icebergdb.vercel.app) — vector search for modern AI applications.
 
 ## Requirements
 
@@ -9,7 +9,7 @@ Official .NET client for [Iceberg](https://icebergdb.io) — vector search for I
 ## Installation
 
 ```bash
-dotnet add package Iceberg
+dotnet add package IcebergDb
 ```
 
 ## Quickstart

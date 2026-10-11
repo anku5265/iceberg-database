@@ -4,20 +4,27 @@
     <TargetFramework>net6.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <AssemblyName>Iceberg</AssemblyName>
+    <AssemblyName>IcebergDb</AssemblyName>
     <RootNamespace>Iceberg</RootNamespace>
-    <PackageId>Iceberg</PackageId>
+    <PackageId>IcebergDb</PackageId>
     <Version>0.1.0</Version>
-    <Authors>Ankush</Authors>
-    <Description>Official .NET client for Iceberg Vector Database</Description>
-    <PackageProjectUrl>https://icebergdb.io</PackageProjectUrl>
+    <Authors>Ankush, Iceberg DB</Authors>
+    <Company>Iceberg DB</Company>
+    <Description>Official .NET C# client for Iceberg Vector Database</Description>
+    <PackageProjectUrl>https://icebergdb.vercel.app</PackageProjectUrl>
     <RepositoryUrl>https://github.com/anku5265/iceberg-database</RepositoryUrl>
-    <PackageTags>vector;search;ai;embeddings;rag</PackageTags>
+    <PackageTags>vector;database;ai;embeddings;rag;search;iceberg;icebergdb</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.Text.Json" Version="8.0.0" />
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Text.Json" Version="8.0.5" />
   </ItemGroup>
 
 </Project>

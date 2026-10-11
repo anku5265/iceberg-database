@@ -2,13 +2,14 @@
 
 [![PyPI version](https://img.shields.io/pypi/v/icebergdb.svg?color=blue)](https://pypi.org/project/icebergdb/)
 [![npm version](https://img.shields.io/npm/v/icebergdb.svg?color=red)](https://www.npmjs.com/package/icebergdb)
+[![crates.io](https://img.shields.io/crates/v/icebergdb.svg?color=orange)](https://crates.io/crates/icebergdb)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 [![Backend Status](https://img.shields.io/badge/Render-Active%20Cloud-success.svg)](https://iceberg-backend-hrg9.onrender.com/health)
-[![Cloud Console](https://img.shields.io/badge/Cloud%20Console-Live%20on%20Vercel-black.svg)](https://iceberg-dashboard.vercel.app)
+[![Official Website](https://img.shields.io/badge/Website-icebergdb.vercel.app-blueviolet.svg)](https://icebergdb.vercel.app)
 
 > **High-performance, sub-20ms serverless vector database & real-time RAG engine engineered for autonomous AI agents, LLM applications, and enterprise semantic retrieval.**
 
-Created by **Ankush** | [Official Dashboard](https://iceberg-dashboard.vercel.app) | [GitHub](https://github.com/anku5265/iceberg-database)
+Created by **Ankush** | [Official Website](https://icebergdb.vercel.app) | [Cloud Dashboard](https://iceberg-dashboard.vercel.app) | [GitHub](https://github.com/anku5265/iceberg-database)
 
 ---
 
@@ -93,14 +94,18 @@ graph LR
 
 ---
 
-## 🌐 Official Deployments
+## 🌐 Official Deployments & Packages
 
-| Component | Status | URL |
-| :--- | :--- | :--- |
-| **Cloud Dashboard** | 🟢 Live | [iceberg-dashboard.vercel.app](https://iceberg-dashboard.vercel.app) |
-| **Backend REST API** | 🟢 Active | [iceberg-backend-hrg9.onrender.com](https://iceberg-backend-hrg9.onrender.com) |
-| **PyPI Package** | 🟢 Live | [pypi.org/project/icebergdb](https://pypi.org/project/icebergdb/) |
-| **NPM Package** | 🟢 Live | [npmjs.com/package/icebergdb](https://www.npmjs.com/package/icebergdb) |
+| Component | Ecosystem | Status | Link |
+| :--- | :--- | :--- | :--- |
+| **Official Website** | Web | 🟢 Live | [icebergdb.vercel.app](https://icebergdb.vercel.app) |
+| **Cloud Dashboard** | Web | 🟢 Live | [iceberg-dashboard.vercel.app](https://iceberg-dashboard.vercel.app) |
+| **Backend REST API** | Cloud Engine | 🟢 Active | [iceberg-backend-hrg9.onrender.com](https://iceberg-backend-hrg9.onrender.com) |
+| **Python SDK** | PyPI | 🟢 Live (`v0.1.1`) | [pypi.org/project/icebergdb](https://pypi.org/project/icebergdb/) |
+| **JavaScript / TypeScript SDK** | NPM | 🟢 Live (`v0.1.0`) | [npmjs.com/package/icebergdb](https://www.npmjs.com/package/icebergdb) |
+| **Rust SDK** | Crates.io | 🟢 Live (`v0.1.0`) | [crates.io/crates/icebergdb](https://crates.io/crates/icebergdb) |
+| **Go SDK** | Go Modules | 🟢 Live (`v0.1.0`) | `github.com/anku5265/iceberg-database/iceberg-sdk-go` |
+| **.NET C# SDK** | NuGet | 🟡 Ready to Push (`v0.1.0`) | `IcebergDb` |
 
 ---
 
