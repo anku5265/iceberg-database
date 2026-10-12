@@ -3,6 +3,7 @@
 [![PyPI version](https://img.shields.io/pypi/v/icebergdb.svg?color=blue)](https://pypi.org/project/icebergdb/)
 [![npm version](https://img.shields.io/npm/v/icebergdb.svg?color=red)](https://www.npmjs.com/package/icebergdb)
 [![crates.io](https://img.shields.io/crates/v/icebergdb.svg?color=orange)](https://crates.io/crates/icebergdb)
+[![NuGet version](https://img.shields.io/nuget/v/IcebergDb.svg?color=004880)](https://www.nuget.org/packages/IcebergDb)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 [![Backend Status](https://img.shields.io/badge/Render-Active%20Cloud-success.svg)](https://iceberg-backend-hrg9.onrender.com/health)
 [![Official Website](https://img.shields.io/badge/Website-icebergdb.vercel.app-blueviolet.svg)](https://icebergdb.vercel.app)
@@ -105,7 +106,7 @@ graph LR
 | **JavaScript / TypeScript SDK** | NPM | 🟢 Live (`v0.1.0`) | [npmjs.com/package/icebergdb](https://www.npmjs.com/package/icebergdb) |
 | **Rust SDK** | Crates.io | 🟢 Live (`v0.1.0`) | [crates.io/crates/icebergdb](https://crates.io/crates/icebergdb) |
 | **Go SDK** | Go Modules | 🟢 Live (`v0.1.0`) | `github.com/anku5265/iceberg-database/iceberg-sdk-go` |
-| **.NET C# SDK** | NuGet | 🟡 Ready to Push (`v0.1.0`) | `IcebergDb` |
+| **.NET C# SDK** | NuGet | 🟢 Live (`v0.1.0`) | [nuget.org/packages/IcebergDb](https://www.nuget.org/packages/IcebergDb) |
 
 ---
 
