@@ -68,8 +68,8 @@ results = client.search(<span style="color:#c3e88d;">"my_docs"</span>, <span sty
 
     <!-- CTA buttons -->
     <div style="display:flex;gap:12px;margin-bottom:32px;">
-      <a href="https://dashboard.icebergdb.io" style="background:#2563eb;color:white;text-decoration:none;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:600;">Open Dashboard</a>
-      <a href="https://dashboard.icebergdb.io/docs" style="background:#111;color:#888;text-decoration:none;padding:12px 24px;border-radius:8px;font-size:14px;border:1px solid #222;">Read Docs</a>
+      <a href="https://dashboard.icebergdb.in" style="background:#2563eb;color:white;text-decoration:none;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:600;">Open Dashboard</a>
+      <a href="https://dashboard.icebergdb.in/docs" style="background:#111;color:#888;text-decoration:none;padding:12px 24px;border-radius:8px;font-size:14px;border:1px solid #222;">Read Docs</a>
     </div>
 
     <!-- What's included -->
@@ -88,7 +88,7 @@ results = client.search(<span style="color:#c3e88d;">"my_docs"</span>, <span sty
     <div style="border-top:1px solid #1a1a1a;padding-top:20px;">
       <p style="color:#444;font-size:12px;margin:0;">
         Questions? Reply to this email or reach us at
-        <a href="mailto:hello@icebergdb.io" style="color:#3b82f6;">hello@icebergdb.io</a>
+        <a href="mailto:hello@icebergdb.in" style="color:#3b82f6;">hello@icebergdb.in</a>
       </p>
       <p style="color:#333;font-size:11px;margin:8px 0 0;">© 2026 Iceberg — India's vector database</p>
     </div>

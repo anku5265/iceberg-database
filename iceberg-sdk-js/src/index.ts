@@ -1,6 +1,9 @@
 export interface SearchResult {
+  id?: string
   text: string
   score: number
+  source?: string
+  chunk_index?: number
   metadata: Record<string, unknown>
 }
 
@@ -9,6 +12,14 @@ export interface SearchResponse {
   query: string
   collection: string
   total: number
+}
+
+export interface MemoryItem {
+  content: string
+  score: number
+  type?: string
+  memory_type?: string
+  created_at?: number
 }
 
 export interface CollectionInfo {
@@ -21,6 +32,8 @@ export interface ClientOptions {
   apiKey: string
   baseUrl?: string
   timeout?: number
+  maxRetries?: number
+  backoffMs?: number
 }
 
 export class IcebergError extends Error {
@@ -30,45 +43,66 @@ export class IcebergError extends Error {
   }
 }
 
+const RETRYABLE_STATUS_CODES = new Set([429, 502, 503, 504])
+
 export class Client {
   private apiKey: string
   private baseUrl: string
+  private maxRetries: number
+  private backoffMs: number
 
-  /**
-   * Iceberg JavaScript/TypeScript SDK
-   *
-   * @example
-   * import { Client } from 'icebergdb'
-   * const client = new Client({ apiKey: 'your_api_key' })
-   *
-   * await client.createCollection('my_docs')
-   * await client.indexText('my_docs', 'Hello from India!')
-   *
-   * const results = await client.search('my_docs', 'Indian AI')
-   * results.forEach(r => console.log(r.score, r.text))
-   */
   constructor(options: ClientOptions) {
     this.apiKey = options.apiKey
-    this.baseUrl = (options.baseUrl || 'https://api.icebergdb.io').replace(/\/$/, '')
+    this.baseUrl = (options.baseUrl || 'https://api.icebergdb.in').replace(/\/$/, '')
+    this.maxRetries = Math.max(1, options.maxRetries ?? 3)
+    this.backoffMs = options.backoffMs ?? 500
+  }
+
+  private sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms))
   }
 
   private async request<T>(method: string, path: string, body?: unknown, formData?: FormData): Promise<T> {
     const headers: Record<string, string> = { 'X-API-Key': this.apiKey }
     if (body && !formData) headers['Content-Type'] = 'application/json'
 
-    const res = await fetch(`${this.baseUrl}${path}`, {
-      method,
-      headers,
-      body: formData || (body ? JSON.stringify(body) : undefined),
-    })
+    let lastError: unknown = null
 
-    if (!res.ok) {
-      let detail = res.statusText
-      try { detail = (await res.json()).detail || detail } catch {}
-      throw new IcebergError(res.status, `HTTP ${res.status}: ${detail}`)
+    for (let attempt = 0; attempt < this.maxRetries; attempt++) {
+      try {
+        const res = await fetch(`${this.baseUrl}${path}`, {
+          method,
+          headers,
+          body: formData || (body ? JSON.stringify(body) : undefined),
+        })
+
+        if (RETRYABLE_STATUS_CODES.has(res.status) && attempt < this.maxRetries - 1) {
+          await this.sleep(this.backoffMs * Math.pow(2, attempt))
+          continue
+        }
+
+        if (!res.ok) {
+          let detail = res.statusText
+          try {
+            detail = (await res.json()).detail || detail
+          } catch {}
+          throw new IcebergError(res.status, `HTTP ${res.status}: ${detail}`)
+        }
+
+        return (await res.json()) as T
+      } catch (err) {
+        if (err instanceof IcebergError) {
+          throw err
+        }
+        lastError = err
+        if (attempt < this.maxRetries - 1) {
+          await this.sleep(this.backoffMs * Math.pow(2, attempt))
+          continue
+        }
+      }
     }
 
-    return res.json() as T
+    throw new IcebergError(0, `Network error after ${this.maxRetries} attempts: ${String(lastError)}`)
   }
 
   // ── Collections ──────────────────────────────────────────────────────────
@@ -86,25 +120,60 @@ export class Client {
     return this.request('DELETE', `/collections/${name}`)
   }
 
+  async renameCollection(name: string, newName: string): Promise<{ renamed: boolean; old_name: string; new_name: string; points_migrated: number }> {
+    return this.request('PATCH', `/collections/${name}`, { new_name: newName })
+  }
+
+  async clearCollection(name: string): Promise<{ cleared: boolean; collection: string }> {
+    return this.request('POST', `/collections/${name}/clear`)
+  }
+
   async collectionInfo(name: string): Promise<CollectionInfo> {
     return this.request('GET', `/collections/${name}`)
   }
 
-  // ── Indexing ──────────────────────────────────────────────────────────────
+  // ── Indexing & Point-Level CRUD ──────────────────────────────────────────
 
-  async indexText(collection: string, text: string, source = 'sdk'): Promise<{ chunks_indexed: number }> {
+  async indexText(collection: string, text: string, source = 'sdk', namespace?: string): Promise<{ chunks_indexed: number }> {
     const form = new FormData()
     form.append('collection', collection)
     form.append('text', text)
     form.append('source', source)
+    if (namespace) form.append('namespace', namespace)
     return this.request('POST', '/documents/text', undefined, form)
   }
 
-  async uploadFile(collection: string, file: File | Blob, filename?: string): Promise<{ chunks_indexed: number; filename: string }> {
+  async uploadFile(collection: string, file: File | Blob, filename?: string, namespace?: string): Promise<{ chunks_indexed: number; filename: string }> {
     const form = new FormData()
     form.append('collection', collection)
     form.append('file', file, filename)
+    if (namespace) form.append('namespace', namespace)
     return this.request('POST', '/documents/upload', undefined, form)
+  }
+
+  async upsertPoint(
+    collection: string,
+    pointId: string,
+    options: { text?: string; vector?: number[]; source?: string; metadata?: Record<string, unknown> }
+  ): Promise<{ id: string; collection: string; updated: boolean }> {
+    return this.request('PUT', `/documents/${collection}/points/${pointId}`, {
+      text: options.text,
+      vector: options.vector,
+      source: options.source ?? 'sdk',
+      metadata: options.metadata ?? {},
+    })
+  }
+
+  async getPoint(collection: string, pointId: string): Promise<SearchResult> {
+    return this.request('GET', `/documents/${collection}/points/${pointId}`)
+  }
+
+  async deletePoint(collection: string, pointId: string): Promise<{ id: string; deleted: boolean }> {
+    return this.request('DELETE', `/documents/${collection}/points/${pointId}`)
+  }
+
+  async scroll(collection: string, limit = 100, offset = 0): Promise<{ points: SearchResult[]; count: number }> {
+    return this.request('GET', `/documents/${collection}/scroll?limit=${limit}&offset=${offset}`)
   }
 
   // ── Search ────────────────────────────────────────────────────────────────
@@ -115,6 +184,9 @@ export class Client {
     options: {
       topK?: number
       scoreThreshold?: number
+      searchType?: 'hybrid' | 'semantic' | 'keyword'
+      alpha?: number
+      namespace?: string
       filters?: Record<string, unknown>
     } = {}
   ): Promise<SearchResult[]> {
@@ -122,10 +194,45 @@ export class Client {
       collection,
       query,
       top_k: options.topK ?? 5,
-      score_threshold: options.scoreThreshold ?? 0.3,
+      score_threshold: options.scoreThreshold ?? 0.0,
+      search_type: options.searchType ?? 'hybrid',
+      alpha: options.alpha ?? 0.5,
+      namespace: options.namespace,
       filters: options.filters,
     })
     return data.results
+  }
+
+  // ── Agent Memory ──────────────────────────────────────────────────────────
+
+  async remember(
+    agentId: string,
+    content: string,
+    memoryType: 'short_term' | 'episodic' | 'long_term' | 'semantic' = 'long_term',
+    metadata: Record<string, unknown> = {}
+  ): Promise<{ stored: boolean; agent_id: string; memory_type: string }> {
+    return this.request('POST', `/memory/${agentId}/remember`, {
+      content,
+      memory_type: memoryType,
+      metadata,
+    })
+  }
+
+  async recall(
+    agentId: string,
+    query: string,
+    options: { topK?: number; memoryType?: string } = {}
+  ): Promise<MemoryItem[]> {
+    const data = await this.request<{ memories: MemoryItem[] }>('POST', `/memory/${agentId}/recall`, {
+      query,
+      top_k: options.topK ?? 5,
+      memory_type: options.memoryType,
+    })
+    return data.memories || []
+  }
+
+  async clearMemory(agentId: string): Promise<{ cleared: boolean; agent_id: string }> {
+    return this.request('DELETE', `/memory/${agentId}`)
   }
 
   // ── Usage ─────────────────────────────────────────────────────────────────

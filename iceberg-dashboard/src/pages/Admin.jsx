@@ -72,13 +72,13 @@ export default function Admin() {
     setTimeout(() => setCopied(''), 2000)
   }
 
-  const searchRemaining = billing?.search?.remaining ?? 2000
-  const searchUsed = Math.max(0, 2000 - searchRemaining)
-  const searchPct = Math.min(100, Math.round((searchUsed / 2000) * 100))
+  const searchRemaining = billing?.search?.remaining ?? 1000
+  const searchUsed = Math.max(0, 1000 - searchRemaining)
+  const searchPct = Math.min(100, Math.round((searchUsed / 1000) * 100))
 
-  const indexRemaining = billing?.index?.remaining ?? 500
-  const indexUsed = Math.max(0, 500 - indexRemaining)
-  const indexPct = Math.min(100, Math.round((indexUsed / 500) * 100))
+  const indexRemaining = billing?.index?.remaining ?? 1000
+  const indexUsed = Math.max(0, 1000 - indexRemaining)
+  const indexPct = Math.min(100, Math.round((indexUsed / 1000) * 100))
 
   return (
     <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6 animate-fadeIn font-sans text-[var(--text-primary)]">
@@ -192,7 +192,7 @@ export default function Admin() {
 
             <div className="py-2.5 flex items-center justify-between">
               <span className="text-[var(--text-muted)]">Iceberg Core Engine</span>
-              <span className="font-mono text-[var(--text-primary)]">v{status?.version || '0.1.0'}</span>
+              <span className="font-mono text-[var(--text-primary)]">v{status?.version || '1.0.0'}</span>
             </div>
 
             <div className="py-2.5 flex items-center justify-between">
@@ -235,7 +235,7 @@ export default function Admin() {
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-[var(--text-secondary)] font-medium">Daily Searches Quota</span>
                   <span className="font-mono text-[var(--text-primary)] font-semibold">
-                    {searchRemaining} remaining / 2,000 max
+                    {searchRemaining} remaining / 1,000 max
                   </span>
                 </div>
                 <div className="w-full bg-[var(--bg-base)] h-2 rounded-full overflow-hidden border border-[var(--border)]">
@@ -251,7 +251,7 @@ export default function Admin() {
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-[var(--text-secondary)] font-medium">Document Indexing Quota</span>
                   <span className="font-mono text-[var(--text-primary)] font-semibold">
-                    {indexRemaining} remaining / 500 chunks
+                    {indexRemaining} remaining / 1,000 chunks
                   </span>
                 </div>
                 <div className="w-full bg-[var(--bg-base)] h-2 rounded-full overflow-hidden border border-[var(--border)]">
@@ -267,7 +267,7 @@ export default function Admin() {
           <div className="pt-4 border-t border-[var(--border)] flex items-center justify-between">
             <span className="text-[11px] text-[var(--text-dim)]">Need higher QPS or enterprise SLA?</span>
             <a
-              href="https://dashboard.icebergdb.io/pricing"
+              href="https://dashboard.icebergdb.in/settings"
               target="_blank"
               rel="noreferrer"
               className="text-xs text-blue-400 hover:text-blue-300 font-semibold flex items-center gap-1 transition"

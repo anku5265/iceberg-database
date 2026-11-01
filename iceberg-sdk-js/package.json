@@ -1,6 +1,6 @@
 {
   "name": "icebergdb",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Official JavaScript and TypeScript client for Iceberg Vector Database — Built for AI agents and RAG applications",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -14,14 +14,15 @@
     "vector",
     "vectordb",
     "iceberg",
+    "icebergdb",
     "embeddings",
     "rag",
     "ai-agents",
     "semantic-search"
   ],
-  "author": "Ankush <icebergdb.official@gmail.com>",
+  "author": "Ankush <contact@icebergdb.in>",
   "license": "MIT",
-  "homepage": "https://iceberg-dashboard.vercel.app",
+  "homepage": "https://icebergdb.in",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/anku5265/iceberg-database.git"

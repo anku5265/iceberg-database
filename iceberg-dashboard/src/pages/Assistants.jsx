@@ -1,31 +1,121 @@
 import { useEffect, useState, useRef } from 'react'
+import { api } from '../lib/api'
 import { API_URL } from '../lib/config'
+import { Link } from 'react-router-dom'
 import ConfirmModal from '../components/ConfirmModal'
+import { CodeBlock } from '../components/CodeBlock'
 
-const KEY = () => localStorage.getItem('iceberg_api_key') || ''
-const H = () => ({ 'X-API-Key': KEY(), 'Content-Type': 'application/json' })
+const LLM_PROVIDERS = [
+  {
+    id: 'iceberg_fast',
+    name: 'Iceberg Native AI (FastEmbed India ap-south-1 — Zero API Key Needed)',
+    shortName: 'Iceberg Native AI',
+    defaultModel: 'all-MiniLM-L6-v2',
+    models: ['all-MiniLM-L6-v2'],
+    placeholder: 'Not required for Iceberg Native RAG',
+    needsKey: false,
+  },
+  {
+    id: 'openai',
+    name: 'OpenAI (GPT-4o / GPT-4o-mini / o3-mini)',
+    shortName: 'OpenAI',
+    defaultModel: 'gpt-4o-mini',
+    models: ['gpt-4o-mini', 'gpt-4o', 'o3-mini', 'gpt-3.5-turbo'],
+    placeholder: 'sk-proj-...',
+    needsKey: true,
+  },
+  {
+    id: 'claude',
+    name: 'Anthropic Claude (Claude 3.7 Sonnet / 3.5 Sonnet / Haiku)',
+    shortName: 'Anthropic Claude',
+    defaultModel: 'claude-3-5-sonnet-latest',
+    models: ['claude-3-7-sonnet-latest', 'claude-3-5-sonnet-latest', 'claude-3-5-haiku-latest'],
+    placeholder: 'sk-ant-api03-...',
+    needsKey: true,
+  },
+  {
+    id: 'gemini',
+    name: 'Google Gemini (Gemini 2.0 Flash / Gemini 1.5 Pro)',
+    shortName: 'Google Gemini',
+    defaultModel: 'gemini-2.0-flash',
+    models: ['gemini-2.0-flash', 'gemini-1.5-pro', 'gemini-pro'],
+    placeholder: 'AIzaSy...',
+    needsKey: true,
+  },
+  {
+    id: 'groq',
+    name: 'Groq LPU (Meta Llama 3.3 70B / Mixtral — Sub-100ms)',
+    shortName: 'Groq (Llama 3.3)',
+    defaultModel: 'llama-3.3-70b-versatile',
+    models: ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'mixtral-8x7b-32768'],
+    placeholder: 'gsk_...',
+    needsKey: true,
+  },
+  {
+    id: 'deepseek',
+    name: 'DeepSeek & OpenRouter (DeepSeek-V3 / DeepSeek-R1)',
+    shortName: 'DeepSeek / OpenRouter',
+    defaultModel: 'deepseek-chat',
+    models: ['deepseek-chat', 'deepseek-reasoner', 'qwen/qwen-2.5-72b-instruct'],
+    placeholder: 'sk-... or sk-or-v1-...',
+    needsKey: true,
+  },
+]
+
+const getProviderMeta = (id) => LLM_PROVIDERS.find(p => p.id === id) || LLM_PROVIDERS[0]
+
+// Synthesizes a clean, accurate RAG response from real Qdrant vector search hits when using Iceberg Native AI
+function synthesizeNativeRagAnswer(question, hits, assistantName) {
+  const q = question.trim().toLowerCase()
+  if (/^(hi|hello|hey|namaste|hola|yo)\b/.test(q) && q.split(/\s+/).length <= 3) {
+    return `Hello! I am ${assistantName}. Ask me any question about the documents indexed in my vector collection, and I will retrieve the relevant passages using Hybrid RRF search.`
+  }
+  if (!hits || hits.length === 0) {
+    return `No matching context was found in the vector collection for "${question}". Try uploading a document or indexing text in the Knowledge Base tab.`
+  }
+  const top = hits[0]
+  if (hits.length === 1 || (top.score && top.score > 0.62)) {
+    const extra = hits[1] && hits[1].text !== top.text ? `\n\nAdditional context: ${hits[1].text}` : ''
+    return `${top.text}${extra}`
+  }
+  return hits
+    .slice(0, 3)
+    .map((h, idx) => `${idx + 1}. ${h.text}`)
+    .join('\n\n')
+}
 
 export default function Assistants() {
   const [assistants, setAssistants] = useState([])
+  const [collections, setCollections] = useState([])
+  const [colDetails, setColDetails] = useState({})
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
   const [selected, setSelected] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [activeTab, setActiveTab] = useState('chat') // 'chat' | 'knowledge' | 'embed'
+  const [lastLatency, setLastLatency] = useState(null)
+
+  // Live chunks inside the selected assistant's collection
+  const [indexedChunks, setIndexedChunks] = useState([])
+  const [loadingChunks, setLoadingChunks] = useState(false)
 
   // Create form state
   const [form, setForm] = useState({
     name: '',
+    collectionMode: '__auto__', // '__auto__' or existing collection name
     greeting: 'Hi! How can I help you today?',
-    llm_provider: 'iceberg_fast', // iceberg_fast, openai, gemini
+    llm_provider: 'iceberg_fast',
     llm_api_key: '',
-    llm_model: 'gpt-3.5-turbo',
-    color: '#3b82f6',
+    llm_model: 'all-MiniLM-L6-v2',
+    color: '#0a0a0b',
   })
   const [createLoading, setCreateLoading] = useState(false)
 
-  // Upload state
+  // Upload & Direct Text Ingest state
   const [uploading, setUploading] = useState(false)
+  const [manualText, setManualText] = useState('')
+  const [manualSource, setManualSource] = useState('manual_knowledge.txt')
+  const [indexingText, setIndexingText] = useState(false)
   const [uploadSuccess, setUploadSuccess] = useState('')
   const [uploadError, setUploadError] = useState('')
 
@@ -33,35 +123,68 @@ export default function Assistants() {
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [deleting, setDeleting] = useState(false)
 
-  // Copy feedback state
-  const [copied, setCopied] = useState('')
-
-  // Quick Demo Seeder state
+  // Sample Assistant Seeder state
   const [seedingDemo, setSeedingDemo] = useState(false)
 
-  // Live Chat Simulator state
+  // Live Chat Playground state
   const [chatMessages, setChatMessages] = useState([])
   const [chatInput, setChatInput] = useState('')
   const [chatLoading, setChatLoading] = useState(false)
   const chatScrollRef = useRef(null)
 
-  // Load assistants from backend
+  const getTargetCollection = (asst) => {
+    if (!asst) return ''
+    return asst.collection || `_asst_${asst.id}`
+  }
+
+  // Load real assistants and real Qdrant collection vector counts
   const load = async (silent = false) => {
     if (!silent) setLoading(true)
     try {
-      const res = await fetch(`${API_URL}/assistant`, { headers: H() })
-      if (res.ok) {
-        const data = await res.json()
-        const list = data.assistants || []
-        setAssistants(list)
+      const [asstRes, colRes] = await Promise.all([
+        api.getAssistants(),
+        api.getCollections().catch(() => ({ collections: [] })),
+      ])
 
-        // If nothing selected or selected was deleted, select first
-        setSelected(prev => {
-          if (!prev && list.length > 0) return list[0]
-          if (prev && !list.find(a => a.id === prev.id)) return list[0] || null
-          return prev
-        })
+      const allCols = colRes?.collections || []
+      setCollections(allCols)
+
+      const list = (asstRes?.assistants || []).map(a => ({
+        ...a,
+        collection: a.collection || `_asst_${a.id}`,
+        llm_provider: a.llm_provider || 'iceberg_fast',
+        llm_model: a.llm_model || 'all-MiniLM-L6-v2',
+        color: a.color || '#0a0a0b',
+        greeting: a.greeting || 'Hi! How can I help you today?',
+      }))
+
+      setAssistants(list)
+
+      // Fetch real vector counts for all collections + assistant collections
+      const colsToFetch = Array.from(new Set([...allCols, ...list.map(a => a.collection)]))
+      if (colsToFetch.length > 0) {
+        const detailsObj = {}
+        await Promise.all(
+          colsToFetch.map(async (cName) => {
+            try {
+              const info = await api.getCollection(cName)
+              if (info && info.vector_count !== undefined) {
+                detailsObj[cName] = info
+              }
+            } catch {}
+          })
+        )
+        setColDetails(detailsObj)
       }
+
+      setSelected(prev => {
+        if (!prev && list.length > 0) return list[0]
+        if (prev) {
+          const match = list.find(a => a.id === prev.id)
+          return match || list[0] || null
+        }
+        return prev
+      })
     } catch (err) {
       console.error('Failed to load assistants:', err)
     } finally {
@@ -69,10 +192,31 @@ export default function Assistants() {
     }
   }
 
+  // Fetch sample of real indexed chunks from the selected assistant's Qdrant collection
+  const loadIndexedChunks = async (asst) => {
+    if (!asst) {
+      setIndexedChunks([])
+      return
+    }
+    const col = getTargetCollection(asst)
+    setLoadingChunks(true)
+    try {
+      const res = await api.search(col, 'overview guide documentation information system', 8, 'hybrid', 0.5)
+      if (res && Array.isArray(res.results)) {
+        setIndexedChunks(res.results)
+      } else {
+        setIndexedChunks([])
+      }
+    } catch {
+      setIndexedChunks([])
+    } finally {
+      setLoadingChunks(false)
+    }
+  }
+
   useEffect(() => {
     load()
-    // Auto-refresh every 4s
-    const timer = setInterval(() => load(true), 4000)
+    const timer = setInterval(() => load(true), 4500)
     const onFocus = () => load(true)
     window.addEventListener('focus', onFocus)
     return () => {
@@ -81,7 +225,7 @@ export default function Assistants() {
     }
   }, [])
 
-  // When selected assistant changes, initialize chat simulator
+  // When selected assistant changes, initialize chat playground and load its real indexed chunks
   useEffect(() => {
     if (selected) {
       setChatMessages([
@@ -90,54 +234,68 @@ export default function Assistants() {
           role: 'assistant',
           text: selected.greeting || 'Hi! How can I help you today?',
           sources: [],
+          latencyMs: null,
+          topScore: null,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         },
       ])
+      loadIndexedChunks(selected)
     } else {
       setChatMessages([])
+      setIndexedChunks([])
     }
-  }, [selected?.id])
+  }, [selected?.id, selected?.collection])
 
-  // Scroll chat simulator to bottom on new messages
   useEffect(() => {
     if (chatScrollRef.current) {
       chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight
     }
   }, [chatMessages, chatLoading])
 
-  // Create new assistant
+  const handleProviderChange = (providerId) => {
+    const meta = getProviderMeta(providerId)
+    setForm({
+      ...form,
+      llm_provider: providerId,
+      llm_model: meta.defaultModel,
+    })
+  }
+
+  // Create new assistant connected to a real Qdrant collection
   const create = async (e) => {
     e.preventDefault()
     if (!form.name.trim()) return
     setCreateLoading(true)
     try {
-      const payload = {
+      const chosenCol =
+        form.collectionMode && form.collectionMode !== '__auto__'
+          ? form.collectionMode
+          : `asst_${form.name.trim().toLowerCase().replace(/[^a-z0-9_]/g, '_').slice(0, 20)}`
+
+      const created = await api.createAssistant({
         name: form.name.trim(),
+        collection: chosenCol,
+        description: `${getProviderMeta(form.llm_provider).shortName} (${form.llm_model})`,
         greeting: form.greeting.trim() || 'Hi! How can I help you today?',
-        llm_provider: form.llm_provider === 'iceberg_fast' ? 'openai' : form.llm_provider,
+        llm_provider: form.llm_provider,
         llm_api_key: form.llm_api_key.trim(),
         llm_model: form.llm_model,
         color: form.color,
-      }
-      const res = await fetch(`${API_URL}/assistant`, {
-        method: 'POST',
-        headers: H(),
-        body: JSON.stringify(payload),
       })
-      const data = await res.json()
-      if (res.ok && data.id) {
-        setCreating(false)
-        setForm({
-          name: '',
-          greeting: 'Hi! How can I help you today?',
-          llm_provider: 'iceberg_fast',
-          llm_api_key: '',
-          llm_model: 'gpt-3.5-turbo',
-          color: '#3b82f6',
-        })
-        await load()
-        setSelected(data)
-      }
+
+      setCreating(false)
+      setForm({
+        name: '',
+        collectionMode: '__auto__',
+        greeting: 'Hi! How can I help you today?',
+        llm_provider: 'iceberg_fast',
+        llm_api_key: '',
+        llm_model: 'all-MiniLM-L6-v2',
+        color: '#0a0a0b',
+      })
+      await load()
+      setSelected(created)
+      setActiveTab('chat')
     } catch (err) {
       console.error(err)
     } finally {
@@ -145,49 +303,51 @@ export default function Assistants() {
     }
   }
 
-  // Quick Demo Seeder: creates a bot and pre-indexes an Iceberg knowledge guide
+  // 1-Click Sample Assistant Seeder (Creates real Qdrant collection + indexes 6 real documentation chunks)
   const handleLaunchDemoBot = async () => {
     setSeedingDemo(true)
     try {
-      // 1. Create assistant
-      const demoConfig = {
+      const targetCol = 'asst_iceberg_support'
+      const created = await api.createAssistant({
         name: 'Iceberg Tech Support',
-        greeting: 'Hello! I am your AI assistant trained on IcebergDB documentation. Ask me about vector search, indexing, or hybrid retrieval!',
-        llm_provider: 'openai',
+        collection: targetCol,
+        description: 'Iceberg Native AI (all-MiniLM-L6-v2)',
+        greeting: 'Hello! I am your AI assistant grounded on the Iceberg DB documentation collection. Ask me about vector search latency, hybrid RRF ranking, embeddings, or agent memory.',
+        llm_provider: 'iceberg_fast',
         llm_api_key: '',
-        llm_model: 'gpt-3.5-turbo',
-        color: '#3b82f6',
-      }
-      const res = await fetch(`${API_URL}/assistant`, {
-        method: 'POST',
-        headers: H(),
-        body: JSON.stringify(demoConfig),
+        llm_model: 'all-MiniLM-L6-v2',
+        color: '#0a0a0b',
       })
-      const asst = await res.json()
 
-      if (asst?.id) {
-        // 2. Upload sample knowledge document
-        const sampleDoc = `IcebergDB Knowledge Base Guide:
-1. Overview: IcebergDB is a high-performance vector database optimized for semantic search and Retrieval-Augmented Generation (RAG).
-2. Embeddings: Uses 384-dimensional dense vectors with Cosine distance metric for deep semantic similarity.
-3. Hybrid Search: Combines dense vector retrieval with BM25 keyword matching for maximum precision and recall.
-4. Latency: Sub-15 millisecond vector query times with HNSW indexing.
-5. Security: Data sovereignty guaranteed with zero third-party telemetry, hosted in Mumbai, India.`
-        const file = new File([sampleDoc], 'iceberg_architecture_guide.txt', { type: 'text/plain' })
+      const realDocs = [
+        'Iceberg DB delivers sub-15ms vector query latency (~1.95ms pure dense HNSW lookup and ~8.73ms Hybrid RRF search) hosted in India (ap-south-1).',
+        'Hybrid Search in Iceberg DB combines 384-dimensional dense semantic embeddings (all-MiniLM-L6-v2 Cosine similarity) with sparse BM25 keyword matching using Reciprocal Rank Fusion (RRF).',
+        'Server-side CPU embeddings are built directly into Iceberg DB at zero extra cost — developers can send raw text or PDFs without needing an external OpenAI embedding API key.',
+        'Iceberg Agent Memory provides 4 cognitive persistence tiers: short_term (30m TTL), episodic (7d TTL), long_term (permanent), and semantic memory via /remember and /recall endpoints.',
+        'Iceberg DB provides official open-source SDKs for Python (pip install icebergdb), JavaScript/TypeScript (npm install icebergdb), Rust (Crates.io), .NET (NuGet), Go, and Model Context Protocol (MCP).',
+        'Every workspace in Iceberg DB enforces strict multi-tenant namespace isolation with 100% India data residency for DPDP Act compliance, and the free tier includes 100,000 vectors that never pause.'
+      ]
+
+      await api.indexBatch(targetCol, realDocs, 'iceberg_architecture_guide.md')
+
+      // Also sync sample doc to /assistant/{id}/upload if backend route is active
+      try {
+        const file = new File([realDocs.join('\n\n')], 'iceberg_architecture_guide.md', { type: 'text/plain' })
         const formData = new FormData()
         formData.append('file', file)
-        await fetch(`${API_URL}/assistant/${asst.id}/upload`, {
+        await fetch(`${API_URL}/assistant/${created.id}/upload`, {
           method: 'POST',
-          headers: { 'X-API-Key': KEY() },
+          headers: { 'X-API-Key': localStorage.getItem('iceberg_api_key') || '' },
           body: formData,
         })
+      } catch {}
 
-        await load()
-        setSelected(asst)
-        setActiveTab('chat')
-      }
+      await load()
+      setSelected(created)
+      await loadIndexedChunks(created)
+      setActiveTab('chat')
     } catch (err) {
-      console.error('Failed to launch demo bot:', err)
+      console.error('Failed to launch sample assistant:', err)
     } finally {
       setSeedingDemo(false)
     }
@@ -198,7 +358,8 @@ export default function Assistants() {
     if (!deleteTarget) return
     setDeleting(true)
     try {
-      await fetch(`${API_URL}/assistant/${deleteTarget.id}`, { method: 'DELETE', headers: H() })
+      const targetCol = getTargetCollection(deleteTarget)
+      await api.deleteAssistant(deleteTarget.id, true, targetCol)
       if (selected?.id === deleteTarget.id) setSelected(null)
       setDeleteTarget(null)
       await load()
@@ -209,35 +370,58 @@ export default function Assistants() {
     }
   }
 
-  // Upload document
-  const uploadDoc = async (id, file) => {
-    if (!file) return
+  // Upload real document (.pdf, .txt, .md) into the assistant's Qdrant collection
+  const uploadDoc = async (asst, file) => {
+    if (!file || !asst) return
     setUploading(true)
     setUploadSuccess('')
     setUploadError('')
+    const targetCol = getTargetCollection(asst)
     try {
-      const formData = new FormData()
-      formData.append('file', file)
-      const res = await fetch(`${API_URL}/assistant/${id}/upload`, {
-        method: 'POST',
-        headers: { 'X-API-Key': KEY() },
-        body: formData,
-      })
-      const data = await res.json()
-      if (res.ok) {
-        setUploadSuccess(`Indexed "${file.name}" (${data.indexed || 'all'} chunks) into Qdrant collection!`)
-        setTimeout(() => setUploadSuccess(''), 5000)
+      // Ensure collection exists first
+      await api.createCollection(targetCol, `RAG Knowledge Base for ${asst.name}`).catch(() => {})
+      const data = await api.uploadFile(targetCol, file)
+      const chunksCount = data?.chunks_indexed ?? data?.indexed ?? 'all'
+      if (data && (data.chunks_indexed !== undefined || data.indexed !== undefined || data.filename)) {
+        setUploadSuccess(`Indexed "${file.name}" (${chunksCount} vector chunks) into collection "${targetCol}".`)
+        await load(true)
+        await loadIndexedChunks(asst)
+        setTimeout(() => setUploadSuccess(''), 6000)
       } else {
-        setUploadError(data.detail || 'Upload failed')
+        setUploadError(data?.detail || 'Document upload failed')
       }
     } catch (err) {
-      setUploadError('Failed to upload document')
+      setUploadError('Failed to upload and index document')
     } finally {
       setUploading(false)
     }
   }
 
-  // Live Chat Simulator send
+  // Direct text ingestion into the assistant's Qdrant collection
+  const handleManualTextIngest = async (e) => {
+    e.preventDefault()
+    if (!manualText.trim() || !selected) return
+    setIndexingText(true)
+    setUploadSuccess('')
+    setUploadError('')
+    const targetCol = getTargetCollection(selected)
+    try {
+      await api.createCollection(targetCol, `RAG Knowledge Base for ${selected.name}`).catch(() => {})
+      const res = await api.indexText(targetCol, manualText.trim(), manualSource.trim() || 'manual_entry.txt')
+      const count = res?.chunks_indexed ?? 1
+      setManualText('')
+      setUploadSuccess(`Embedded and indexed ${count} chunk(s) into "${targetCol}".`)
+      await load(true)
+      await loadIndexedChunks(selected)
+      setTimeout(() => setUploadSuccess(''), 5000)
+    } catch {
+      setUploadError('Failed to index text into collection')
+    } finally {
+      setIndexingText(false)
+    }
+  }
+
+  // Live RAG Chat Playground — performs REAL Qdrant Hybrid Search + LLM generation
   const sendChatMessage = async (presetText = null) => {
     const textToSend = (presetText || chatInput).trim()
     if (!textToSend || !selected || chatLoading) return
@@ -253,44 +437,121 @@ export default function Assistants() {
     setChatInput('')
     setChatLoading(true)
 
+    const targetCol = getTargetCollection(selected)
+    const t0 = performance.now()
+
     try {
-      const res = await fetch(`${API_URL}/assistant/${selected.id}/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: textToSend }),
-      })
-      const data = await res.json()
-      if (res.ok) {
-        setChatMessages(prev => [
-          ...prev,
-          {
-            id: Date.now() + 1,
-            role: 'assistant',
-            text: data.reply || "I couldn't find relevant information in the documents.",
-            sources: data.sources || [],
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          },
-        ])
-      } else {
-        setChatMessages(prev => [
-          ...prev,
-          {
-            id: Date.now() + 1,
-            role: 'assistant',
-            text: `Error: ${data.detail || 'Assistant request failed'}`,
-            sources: [],
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          },
-        ])
+      // 1. Execute REAL Hybrid Vector + BM25 Search against the assistant's Qdrant collection
+      const searchRes = await api.search(targetCol, textToSend, 4, 'hybrid', 0.5)
+      const measuredMs = Math.max(1, Math.round((performance.now() - t0) * 10) / 10)
+      const hits = Array.isArray(searchRes?.results) ? searchRes.results : []
+      const serverMs = searchRes?.latency_ms || searchRes?.took_ms || measuredMs
+      setLastLatency(serverMs)
+
+      const sources = Array.from(
+        new Set(
+          hits
+            .map(h => h.metadata?.source || h.source || targetCol)
+            .filter(Boolean)
+        )
+      )
+      const topScore = hits.length > 0 && hits[0].score !== undefined ? hits[0].score : null
+      const contextText = hits.map(h => h.text).join('\n\n')
+
+      // 2. Route to configured LLM Provider if API key is provided, else use Native RAG Synthesizer
+      const provider = selected.llm_provider || 'iceberg_fast'
+      const apiKey = (selected.llm_api_key || '').trim()
+      const model = selected.llm_model || 'all-MiniLM-L6-v2'
+
+      let replyText = ''
+
+      if (apiKey && contextText && (provider === 'openai' || provider === 'groq' || provider === 'deepseek')) {
+        const endpoint =
+          provider === 'groq'
+            ? 'https://api.groq.com/openai/v1/chat/completions'
+            : provider === 'deepseek'
+            ? apiKey.startsWith('sk-or-')
+              ? 'https://openrouter.ai/api/v1/chat/completions'
+              : 'https://api.deepseek.com/chat/completions'
+            : 'https://api.openai.com/v1/chat/completions'
+        try {
+          const llmRes = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${apiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              model,
+              messages: [
+                {
+                  role: 'system',
+                  content: `You are ${selected.name}, an enterprise AI assistant powered by Iceberg DB. Answer the user's question accurately and concisely using ONLY the retrieved vector context below:\n\n${contextText}`,
+                },
+                { role: 'user', content: textToSend },
+              ],
+            }),
+          })
+          if (llmRes.ok) {
+            const llmJson = await llmRes.json()
+            replyText = llmJson?.choices?.[0]?.message?.content || ''
+          }
+        } catch {}
+      } else if (apiKey && contextText && provider === 'gemini') {
+        try {
+          const geminiModel = model.startsWith('gemini') ? model : 'gemini-2.0-flash'
+          const llmRes = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${apiKey}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents: [
+                  {
+                    parts: [
+                      {
+                        text: `You are ${selected.name}. Answer using ONLY this retrieved vector context:\n\n${contextText}\n\nQuestion: ${textToSend}`,
+                      },
+                    ],
+                  },
+                ],
+              }),
+            }
+          )
+          if (llmRes.ok) {
+            const llmJson = await llmRes.json()
+            replyText = llmJson?.candidates?.[0]?.content?.parts?.[0]?.text || ''
+          }
+        } catch {}
       }
+
+      if (!replyText) {
+        replyText = synthesizeNativeRagAnswer(textToSend, hits, selected.name)
+      }
+
+      setChatMessages(prev => [
+        ...prev,
+        {
+          id: Date.now() + 1,
+          role: 'assistant',
+          text: replyText,
+          sources,
+          latencyMs: serverMs,
+          topScore,
+          hitsCount: hits.length,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        },
+      ])
     } catch (err) {
       setChatMessages(prev => [
         ...prev,
         {
           id: Date.now() + 1,
           role: 'assistant',
-          text: 'Unable to connect to assistant endpoint. Please check your network connection.',
+          text: 'Unable to query vector collection. Please verify your collection has indexed documents.',
           sources: [],
+          latencyMs: null,
+          topScore: null,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         },
       ])
@@ -299,119 +560,112 @@ export default function Assistants() {
     }
   }
 
-  // Copy helper
-  const copy = (text, key) => {
-    navigator.clipboard.writeText(text)
-    setCopied(key)
-    setTimeout(() => setCopied(''), 2000)
-  }
-
   const filteredAssistants = assistants.filter(a =>
     a.name.toLowerCase().includes(searchQuery.trim().toLowerCase()) ||
-    a.id.toLowerCase().includes(searchQuery.trim().toLowerCase())
+    a.id.toLowerCase().includes(searchQuery.trim().toLowerCase()) ||
+    (a.collection || '').toLowerCase().includes(searchQuery.trim().toLowerCase())
   )
+
+  // Total real vectors across all assistants' collections
+  const totalAssistantVectors = assistants.reduce((sum, a) => {
+    const cName = getTargetCollection(a)
+    const count = colDetails[cName]?.vector_count
+    return sum + (typeof count === 'number' ? count : 0)
+  }, 0)
+
+  const selectedCollection = getTargetCollection(selected)
+  const selectedVectorCount = colDetails[selectedCollection]?.vector_count ?? indexedChunks.length
 
   const chatUrl = selected ? `${API_URL}/assistant/${selected.id}/chat` : ''
   const widgetScript = selected ? `<script src="${API_URL}/assistant/${selected.id}/widget.js"></script>` : ''
   const waWebhookUrl = selected ? `${API_URL}/assistant/${selected.id}/whatsapp` : ''
+  const currentProviderMeta = getProviderMeta(form.llm_provider)
 
   return (
-    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6 animate-fadeIn font-sans text-[var(--text-primary)]">
+    <div className="p-5 md:p-8 max-w-7xl mx-auto space-y-6 text-[var(--text-primary)]">
       
-      {/* ── 1. Page Header ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2">
+      {/* ── 1. Clean Enterprise Page Header ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-xl font-bold tracking-tight text-[var(--text-primary)]">Assistants</h1>
-            <span className="px-2 py-0.5 rounded text-xs font-mono bg-blue-500/10 text-blue-400 border border-blue-500/20">
-              {assistants.length} active
-            </span>
-          </div>
-          <p className="text-[var(--text-muted)] text-xs mt-1">
-            No-code RAG chatbots — vector search across knowledge bases with embeddable widget &amp; WhatsApp.
+          <h1 className="text-xl font-semibold tracking-tight text-[var(--text-primary)]">Assistants</h1>
+          <p className="text-[13px] text-[var(--text-muted)] mt-1">
+            Provision managed RAG assistants grounded on your real vector collections with configurable LLM routing.
           </p>
         </div>
 
         <div className="flex items-center gap-2.5">
           <button
-            onClick={() => load()}
-            className="px-3 py-2 text-xs font-medium bg-[var(--bg-surface)] hover:bg-[var(--bg-hover)] border border-[var(--border)] rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition flex items-center gap-1.5"
-            title="Refresh assistants"
+            onClick={() => {
+              load()
+              if (selected) loadIndexedChunks(selected)
+            }}
+            className="px-3.5 py-2 rounded-md border border-[var(--border)] bg-[var(--bg-surface)] hover:bg-[var(--bg-hover)] text-[var(--text-primary)] text-xs font-medium transition"
           >
-            <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" className={loading ? 'animate-spin' : ''}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
-            </svg>
-            <span>Refresh</span>
+            {loading ? 'Syncing...' : 'Refresh'}
           </button>
 
           <button
             onClick={() => setCreating(true)}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-2 rounded-lg transition shadow-sm"
+            className="px-3.5 py-2 rounded-md bg-[var(--text-primary)] text-[var(--bg-base)] hover:opacity-90 text-xs font-semibold transition"
           >
-            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-            </svg>
-            <span>New Assistant</span>
+            New Assistant
           </button>
         </div>
       </div>
 
-      {/* ── 2. Telemetry Stat Cards ── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
-        <div className="p-4 bg-[var(--card-bg)] border border-[var(--border)] rounded-xl space-y-1.5">
-          <div className="flex items-center justify-between text-xs text-[var(--text-muted)]">
-            <span>Active Bots</span>
-            <span className="text-blue-400">RAG</span>
-          </div>
-          <div className="text-2xl font-bold font-mono text-[var(--text-primary)]">{assistants.length}</div>
-          <p className="text-[11px] text-[var(--text-dim)]">Live interactive endpoints</p>
+      {/* ── 2. Unified 4-Cell Enterprise Metric Strip (Live Backend Telemetry) ── */}
+      <div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-lg grid grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 lg:divide-x divide-[var(--border)] shadow-[var(--shadow)]">
+        <div className="p-5">
+          <p className="text-xs font-medium text-[var(--text-muted)]">Active Assistants</p>
+          <p className="text-2xl font-semibold text-[var(--text-primary)] font-mono tabular-nums mt-2">
+            {assistants.length}
+          </p>
+          <p className="text-[11px] text-[var(--text-muted)] mt-1.5">Provisioned RAG endpoints</p>
         </div>
 
-        <div className="p-4 bg-[var(--card-bg)] border border-[var(--border)] rounded-xl space-y-1.5">
-          <div className="flex items-center justify-between text-xs text-[var(--text-muted)]">
-            <span>Knowledge Engine</span>
-            <span className="text-emerald-400">Vectors</span>
-          </div>
-          <div className="text-lg font-bold font-mono text-[var(--text-primary)]">Qdrant + 384d</div>
-          <p className="text-[11px] text-[var(--text-dim)]">Dense Cosine embeddings</p>
+        <div className="p-5 border-t-0">
+          <p className="text-xs font-medium text-[var(--text-muted)]">Indexed Knowledge</p>
+          <p className="text-2xl font-semibold text-[var(--text-primary)] font-mono tabular-nums mt-2">
+            {totalAssistantVectors.toLocaleString()}
+          </p>
+          <p className="text-[11px] text-[var(--text-muted)] mt-1.5">384d vectors across bots</p>
         </div>
 
-        <div className="p-4 bg-[var(--card-bg)] border border-[var(--border)] rounded-xl space-y-1.5">
-          <div className="flex items-center justify-between text-xs text-[var(--text-muted)]">
-            <span>Query Latency</span>
-            <span className="text-purple-400">ANN</span>
-          </div>
-          <div className="text-lg font-bold font-mono text-[var(--text-primary)]">&lt; 18ms</div>
-          <p className="text-[11px] text-[var(--text-dim)]">Sub-25ms hybrid context</p>
+        <div className="p-5">
+          <p className="text-xs font-medium text-[var(--text-muted)]">Retrieval Architecture</p>
+          <p className="text-xl font-semibold text-[var(--text-primary)] font-mono mt-2">
+            {lastLatency ? `${lastLatency}ms · RRF` : 'HNSW + BM25'}
+          </p>
+          <p className="text-[11px] text-[var(--text-muted)] mt-1.5">
+            {lastLatency ? 'Last live vector retrieval' : 'Top-4 hybrid context injection'}
+          </p>
         </div>
 
-        <div className="p-4 bg-[var(--card-bg)] border border-[var(--border)] rounded-xl space-y-1.5">
-          <div className="flex items-center justify-between text-xs text-[var(--text-muted)]">
-            <span>Channels</span>
-            <span className="text-amber-400">Omni</span>
-          </div>
-          <div className="text-lg font-bold font-mono text-[var(--text-primary)]">Web, REST, WA</div>
-          <p className="text-[11px] text-[var(--text-dim)]">Zero-code multi-channel</p>
+        <div className="p-5">
+          <p className="text-xs font-medium text-[var(--text-muted)]">Supported Models</p>
+          <p className="text-xl font-semibold text-[var(--text-primary)] font-mono mt-2">
+            6 Providers
+          </p>
+          <p className="text-[11px] text-[var(--text-muted)] mt-1.5">OpenAI, Claude, Gemini, Groq, DeepSeek, Native</p>
         </div>
       </div>
 
-      {/* ── 3. Create Assistant Drawer / Form ── */}
+      {/* ── 3. Create Assistant Form Panel (Connects to Real Collections!) ── */}
       {creating && (
-        <form onSubmit={create} className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl p-5 md:p-6 space-y-4 animate-fadeIn shadow-lg">
+        <form onSubmit={create} className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-lg p-5 space-y-4 shadow-[var(--shadow)]">
           <div className="flex items-center justify-between pb-3 border-b border-[var(--border)]">
             <div>
-              <h3 className="text-sm font-semibold text-[var(--text-primary)] flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-                <span>Create New AI Assistant</span>
+              <h3 className="text-[13.5px] font-semibold text-[var(--text-primary)]">
+                Create RAG Assistant
               </h3>
               <p className="text-xs text-[var(--text-muted)] mt-0.5">
-                Configure your assistant identity, greeting message, and vector retrieval settings.
+                Connect your assistant to an existing vector collection or provision a new knowledge base.
               </p>
             </div>
             <button
               type="button"
               onClick={() => setCreating(false)}
-              className="text-[var(--text-dim)] hover:text-[var(--text-primary)] text-sm transition"
+              className="text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] transition"
             >
               ✕
             </button>
@@ -419,677 +673,588 @@ export default function Assistants() {
 
           <div className="grid md:grid-cols-2 gap-4">
             <div>
-              <label className="text-[var(--text-secondary)] text-xs font-medium mb-1.5 block">Assistant Name *</label>
+              <label className="text-[var(--text-muted)] text-xs font-medium mb-1.5 block">Assistant Name</label>
               <input
+                autoFocus
                 value={form.name}
                 onChange={e => setForm({ ...form, name: e.target.value })}
                 required
-                placeholder="e.g. Customer Support Bot, Documentation Guide"
-                className="w-full bg-[var(--input-bg)] border border-[var(--input-border)] rounded-lg px-3.5 py-2.5 text-[var(--text-primary)] text-xs focus:outline-none focus:border-blue-600 placeholder-[var(--text-dim)]"
+                placeholder="e.g. Iceberg Tech Support"
+                className="input-base text-xs w-full"
               />
             </div>
 
             <div>
-              <label className="text-[var(--text-secondary)] text-xs font-medium mb-1.5 block">Greeting Message</label>
-              <input
-                value={form.greeting}
-                onChange={e => setForm({ ...form, greeting: e.target.value })}
-                placeholder="Hi! How can I help you today?"
-                className="w-full bg-[var(--input-bg)] border border-[var(--input-border)] rounded-lg px-3.5 py-2.5 text-[var(--text-primary)] text-xs focus:outline-none focus:border-blue-600 placeholder-[var(--text-dim)]"
-              />
-            </div>
-
-            <div>
-              <label className="text-[var(--text-secondary)] text-xs font-medium mb-1.5 block">LLM Provider</label>
+              <label className="text-[var(--text-muted)] text-xs font-medium mb-1.5 block">Knowledge Base Collection</label>
               <select
-                value={form.llm_provider}
-                onChange={e => setForm({ ...form, llm_provider: e.target.value })}
-                className="w-full bg-[var(--input-bg)] border border-[var(--input-border)] rounded-lg px-3.5 py-2.5 text-[var(--text-primary)] text-xs focus:outline-none focus:border-blue-600"
+                value={form.collectionMode}
+                onChange={e => setForm({ ...form, collectionMode: e.target.value })}
+                className="input-base text-xs font-mono w-full"
               >
-                <option value="iceberg_fast">⚡ Fast Semantic RAG (Direct Vector Search - No LLM Key Required)</option>
-                <option value="openai">OpenAI (GPT-3.5 / GPT-4)</option>
-                <option value="gemini">Google Gemini</option>
+                <option value="__auto__">+ Auto-create dedicated collection</option>
+                {collections.map(c => (
+                  <option key={c} value={c}>
+                    {c} ({colDetails[c]?.vector_count ?? 0} vectors)
+                  </option>
+                ))}
               </select>
             </div>
 
             <div>
-              <label className="text-[var(--text-secondary)] text-xs font-medium mb-1.5 flex items-center justify-between">
-                <span>LLM API Key</span>
-                <span className="text-[10px] text-[var(--text-dim)]">
-                  {form.llm_provider === 'iceberg_fast' ? 'Optional for semantic fallback' : 'Required for external generation'}
+              <label className="text-[var(--text-muted)] text-xs font-medium mb-1.5 block">LLM Provider</label>
+              <select
+                value={form.llm_provider}
+                onChange={e => handleProviderChange(e.target.value)}
+                className="input-base text-xs w-full"
+              >
+                {LLM_PROVIDERS.map(p => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="text-[var(--text-muted)] text-xs font-medium mb-1.5 block">Model</label>
+              <select
+                value={form.llm_model}
+                onChange={e => setForm({ ...form, llm_model: e.target.value })}
+                className="input-base text-xs font-mono w-full"
+              >
+                {currentProviderMeta.models.map(m => (
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="text-[var(--text-muted)] text-xs font-medium mb-1.5 flex items-center justify-between">
+                <span>{currentProviderMeta.shortName} API Key</span>
+                <span className="text-[11px] text-[var(--text-dim)]">
+                  {!currentProviderMeta.needsKey ? 'Not required' : 'Encrypted'}
                 </span>
               </label>
               <input
                 type="password"
                 value={form.llm_api_key}
                 onChange={e => setForm({ ...form, llm_api_key: e.target.value })}
-                placeholder={form.llm_provider === 'iceberg_fast' ? 'Optional (leave blank for native vector RAG)' : 'sk-... or AIzaSy...'}
-                className="w-full bg-[var(--input-bg)] border border-[var(--input-border)] rounded-lg px-3.5 py-2.5 text-[var(--text-primary)] text-xs focus:outline-none focus:border-blue-600 placeholder-[var(--text-dim)]"
+                placeholder={currentProviderMeta.placeholder}
+                disabled={!currentProviderMeta.needsKey}
+                className="input-base text-xs w-full disabled:opacity-50"
               />
             </div>
 
-            <div className="md:col-span-2">
-              <label className="text-[var(--text-secondary)] text-xs font-medium mb-1.5 block">Widget Theme Color</label>
-              <div className="flex items-center gap-3">
-                {['#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#ec4899'].map(c => (
-                  <button
-                    key={c}
-                    type="button"
-                    onClick={() => setForm({ ...form, color: c })}
-                    style={{ backgroundColor: c }}
-                    className={`w-7 h-7 rounded-full transition-transform ${form.color === c ? 'ring-2 ring-white scale-110' : 'opacity-80 hover:opacity-100'}`}
-                  />
-                ))}
-                <input
-                  type="text"
-                  value={form.color}
-                  onChange={e => setForm({ ...form, color: e.target.value })}
-                  placeholder="#3b82f6"
-                  className="w-28 bg-[var(--input-bg)] border border-[var(--input-border)] rounded-lg px-2.5 py-1 text-xs text-[var(--text-primary)] font-mono text-center focus:outline-none focus:border-blue-600"
-                />
-              </div>
+            <div>
+              <label className="text-[var(--text-muted)] text-xs font-medium mb-1.5 block">Greeting Message</label>
+              <input
+                value={form.greeting}
+                onChange={e => setForm({ ...form, greeting: e.target.value })}
+                placeholder="Hi! How can I help you today?"
+                className="input-base text-xs w-full"
+              />
             </div>
           </div>
 
-          <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[var(--border)]">
+          <div className="flex items-center gap-2.5 pt-3 border-t border-[var(--border)]">
+            <button
+              type="submit"
+              disabled={createLoading || !form.name.trim()}
+              className="px-4 py-2 rounded-md bg-[var(--text-primary)] text-[var(--bg-base)] hover:opacity-90 disabled:opacity-40 text-xs font-semibold transition"
+            >
+              {createLoading ? 'Provisioning...' : 'Create Assistant'}
+            </button>
             <button
               type="button"
               onClick={() => setCreating(false)}
-              className="px-4 py-2 text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition"
+              className="px-3.5 py-2 rounded-md border border-[var(--border)] bg-[var(--bg-surface)] hover:bg-[var(--bg-hover)] text-[var(--text-secondary)] text-xs font-medium transition"
             >
               Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={createLoading}
-              className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-xs font-semibold px-5 py-2 rounded-lg transition shadow-sm flex items-center gap-2"
-            >
-              {createLoading && <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
-              <span>{createLoading ? 'Deploying...' : 'Deploy Assistant'}</span>
             </button>
           </div>
         </form>
       )}
 
-      {/* ── 4. Main Body: Hero Empty State OR Split Workspace ── */}
-      {assistants.length === 0 && !creating ? (
-        /* ── Full Width Hero Empty State ── */
-        <div className="bg-[var(--card-bg)] border border-[var(--border)] rounded-2xl p-8 md:p-12 text-center relative overflow-hidden shadow-sm">
-          {/* Subtle background glow */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-blue-600/5 rounded-full blur-3xl pointer-events-none" />
-
-          <div className="max-w-xl mx-auto space-y-5 relative z-10">
-            {/* Glowing Bot Icon */}
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-500 p-0.5 mx-auto shadow-lg shadow-blue-500/20">
-              <div className="w-full h-full bg-[#0a0f1d] rounded-2xl flex items-center justify-center text-blue-400">
-                <svg width="28" height="28" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 2a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2 2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zM4 11a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v7a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3v-7zM9 14h.01M15 14h.01M10 18h4" />
-                </svg>
-              </div>
+      {/* ── 4. Split-Pane Enterprise Assistant Workbench (Directory + Playground/Knowledge/API) ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+        
+        {/* Left Column (4 cols): Assistant Directory Card */}
+        <div className="lg:col-span-4 bg-[var(--card-bg)] border border-[var(--card-border)] rounded-lg overflow-hidden shadow-[var(--shadow)] flex flex-col min-h-[560px]">
+          <div className="px-4 py-3.5 border-b border-[var(--border)] flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <h2 className="text-[13px] font-semibold text-[var(--text-primary)]">Directory</h2>
+              <span className="text-[11px] font-mono text-[var(--text-muted)] px-1.5 py-0.5 rounded bg-[var(--bg-surface2)] border border-[var(--border)]">
+                {assistants.length}
+              </span>
             </div>
-
-            <div>
-              <h2 className="text-xl font-bold tracking-tight text-[var(--text-primary)]">
-                Deploy Production RAG Chatbots in Seconds
-              </h2>
-              <p className="text-xs md:text-sm text-[var(--text-muted)] mt-2 leading-relaxed">
-                Transform PDFs, documentation, and product guides into live AI assistants. Iceberg automatically handles semantic chunking, 384d vector embedding into Qdrant, and exposes ready-to-use Web, REST, and WhatsApp endpoints.
-              </p>
-            </div>
-
-            <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-              <button
-                onClick={() => setCreating(true)}
-                className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-5 py-2.5 rounded-lg transition shadow-sm flex items-center gap-2"
-              >
-                <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-                </svg>
-                <span>Create Custom Assistant</span>
-              </button>
-
-              <button
-                onClick={handleLaunchDemoBot}
-                disabled={seedingDemo}
-                className="bg-[var(--bg-surface)] hover:bg-[var(--bg-hover)] text-blue-400 border border-blue-500/30 text-xs font-semibold px-5 py-2.5 rounded-lg transition flex items-center gap-2"
-              >
-                {seedingDemo ? (
-                  <span className="w-3.5 h-3.5 border-2 border-blue-400/30 border-t-blue-400 rounded-full animate-spin" />
-                ) : (
-                  <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-                  </svg>
-                )}
-                <span>{seedingDemo ? 'Spinning up Demo Bot...' : '⚡ Quick Demo: Launch Support Bot'}</span>
-              </button>
-            </div>
-
-            {/* 3 Step Walkthrough Cards */}
-            <div className="grid md:grid-cols-3 gap-3.5 pt-6 text-left border-t border-[var(--border)] mt-8">
-              <div className="p-3.5 bg-[var(--bg-surface)] border border-[var(--border)] rounded-xl space-y-1.5">
-                <div className="text-xs font-semibold text-[var(--text-primary)] flex items-center gap-2">
-                  <span className="w-5 h-5 rounded-full bg-blue-500/10 text-blue-400 text-[11px] font-mono flex items-center justify-center font-bold">1</span>
-                  <span>Instant Setup</span>
-                </div>
-                <p className="text-[11px] text-[var(--text-muted)] leading-relaxed">
-                  Name your assistant, choose an accent color, and configure the greeting message.
-                </p>
-              </div>
-
-              <div className="p-3.5 bg-[var(--bg-surface)] border border-[var(--border)] rounded-xl space-y-1.5">
-                <div className="text-xs font-semibold text-[var(--text-primary)] flex items-center gap-2">
-                  <span className="w-5 h-5 rounded-full bg-emerald-500/10 text-emerald-400 text-[11px] font-mono flex items-center justify-center font-bold">2</span>
-                  <span>Train with Documents</span>
-                </div>
-                <p className="text-[11px] text-[var(--text-muted)] leading-relaxed">
-                  Upload PDF, Markdown, or text files. Chunks are automatically embedded with 384d vectors.
-                </p>
-              </div>
-
-              <div className="p-3.5 bg-[var(--bg-surface)] border border-[var(--border)] rounded-xl space-y-1.5">
-                <div className="text-xs font-semibold text-[var(--text-primary)] flex items-center gap-2">
-                  <span className="w-5 h-5 rounded-full bg-purple-500/10 text-purple-400 text-[11px] font-mono flex items-center justify-center font-bold">3</span>
-                  <span>Deploy Everywhere</span>
-                </div>
-                <p className="text-[11px] text-[var(--text-muted)] leading-relaxed">
-                  Embed a floating widget on your website with one script tag, or link to WhatsApp Business.
-                </p>
-              </div>
-            </div>
+            <button
+              onClick={() => setCreating(true)}
+              className="text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition"
+            >
+              + New
+            </button>
           </div>
-        </div>
-      ) : (
-        /* ── Split Assistant Workspace ── */
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-          
-          {/* Left Column: Assistant Directory (4 cols) */}
-          <div className="lg:col-span-4 space-y-3">
-            {/* Search Filter */}
-            <div className="relative">
+
+          {assistants.length > 0 && (
+            <div className="p-3 border-b border-[var(--border)]">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                placeholder="Search assistants..."
-                className="w-full bg-[var(--card-bg)] border border-[var(--border)] rounded-xl pl-8 pr-3 py-2 text-xs text-[var(--text-primary)] placeholder-[var(--text-dim)] focus:outline-none focus:border-blue-600 transition"
+                placeholder="Filter assistants or collections..."
+                className="w-full bg-[var(--bg-surface2)] border border-[var(--border)] rounded-md px-3 py-1.5 text-xs text-[var(--text-primary)] placeholder:text-[var(--text-dim)] focus:outline-none focus:border-[var(--text-muted)]"
               />
-              <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" className="absolute left-2.5 top-2.5 text-[var(--text-dim)]">
-                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-              </svg>
             </div>
+          )}
 
-            {/* List */}
-            <div className="space-y-2 max-h-[640px] overflow-y-auto pr-1">
-              {filteredAssistants.length === 0 ? (
-                <div className="p-6 text-center bg-[var(--card-bg)] border border-[var(--border)] rounded-xl text-xs text-[var(--text-dim)]">
-                  No matching assistants found.
+          <div className="p-3 space-y-2 flex-1 overflow-y-auto max-h-[460px]">
+            {assistants.length === 0 ? (
+              <div className="py-12 px-4 text-center space-y-3">
+                <p className="text-xs font-semibold text-[var(--text-primary)]">No assistants provisioned</p>
+                <p className="text-[11px] text-[var(--text-muted)] leading-relaxed">
+                  Create a custom assistant connected to your collections, or load the pre-indexed sample support assistant.
+                </p>
+                <div className="pt-2 flex flex-col gap-2">
+                  <button
+                    onClick={() => setCreating(true)}
+                    className="w-full py-2 rounded-md bg-[var(--text-primary)] text-[var(--bg-base)] hover:opacity-90 text-xs font-semibold transition"
+                  >
+                    Create Assistant
+                  </button>
+                  <button
+                    onClick={handleLaunchDemoBot}
+                    disabled={seedingDemo}
+                    className="w-full py-2 rounded-md border border-[var(--border)] bg-[var(--bg-surface)] hover:bg-[var(--bg-hover)] text-[var(--text-primary)] text-xs font-medium transition disabled:opacity-50"
+                  >
+                    {seedingDemo ? 'Indexing Sample Knowledge...' : 'Load Sample Assistant'}
+                  </button>
                 </div>
-              ) : (
-                filteredAssistants.map(a => {
-                  const isSelected = selected?.id === a.id
-                  return (
-                    <div
-                      key={a.id}
-                      onClick={() => setSelected(a)}
-                      className={`p-3.5 rounded-xl border cursor-pointer transition-all duration-150 flex items-center justify-between group ${
-                        isSelected
-                          ? 'bg-[var(--card-bg)] border-blue-500 shadow-sm ring-1 ring-blue-500/20'
-                          : 'bg-[var(--card-bg)] border-[var(--border)] hover:border-[var(--border2)] hover:bg-[var(--bg-hover)]'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div
-                          className="w-3 h-3 rounded-full shrink-0 shadow-xs"
-                          style={{ backgroundColor: a.color || '#3b82f6' }}
-                        />
-                        <div className="min-w-0">
-                          <div className="text-xs font-semibold text-[var(--text-primary)] truncate group-hover:text-blue-400 transition">
-                            {a.name}
-                          </div>
-                          <div className="text-[10px] font-mono text-[var(--text-dim)] mt-0.5">
-                            #{a.id}
-                          </div>
-                        </div>
-                      </div>
-
+              </div>
+            ) : filteredAssistants.length === 0 ? (
+              <div className="py-8 text-center text-xs text-[var(--text-muted)]">
+                No assistants match "{searchQuery}"
+              </div>
+            ) : (
+              filteredAssistants.map(a => {
+                const isSelected = selected?.id === a.id
+                const colName = getTargetCollection(a)
+                const vecCount = colDetails[colName]?.vector_count ?? 0
+                return (
+                  <div
+                    key={a.id}
+                    onClick={() => setSelected(a)}
+                    className={`p-3.5 rounded-md border cursor-pointer transition flex items-start justify-between gap-2 ${
+                      isSelected
+                        ? 'bg-[var(--bg-surface2)] border-[var(--text-primary)]'
+                        : 'bg-[var(--card-bg)] border-[var(--border)] hover:bg-[var(--bg-hover)]'
+                    }`}
+                  >
+                    <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                          Live
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                        <span className="text-[13px] font-semibold text-[var(--text-primary)] truncate">
+                          {a.name}
                         </span>
-
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setDeleteTarget(a)
-                          }}
-                          className="opacity-0 group-hover:opacity-100 p-1 text-[var(--text-dim)] hover:text-red-400 hover:bg-red-500/10 rounded transition"
-                          title="Delete assistant"
-                        >
-                          <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                            <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                          </svg>
-                        </button>
+                      </div>
+                      <div className="text-[11px] font-mono text-[var(--text-muted)] mt-1 pl-4 truncate">
+                        #{a.id} · {a.llm_model || 'all-MiniLM-L6-v2'}
+                      </div>
+                      <div className="text-[10.5px] font-mono text-[var(--text-dim)] mt-0.5 pl-4 truncate">
+                        {colName} ({vecCount} vectors)
                       </div>
                     </div>
-                  )
-                })
-              )}
-            </div>
 
-            <button
-              onClick={() => setCreating(true)}
-              className="w-full py-2.5 bg-[var(--bg-surface)] hover:bg-[var(--bg-hover)] border border-dashed border-[var(--border2)] rounded-xl text-xs font-medium text-[var(--text-secondary)] hover:text-blue-400 transition flex items-center justify-center gap-2"
-            >
-              <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-              </svg>
-              <span>Create Another Bot</span>
-            </button>
-          </div>
-
-          {/* Right Column: Active Assistant Workspace (8 cols) */}
-          {selected ? (
-            <div className="lg:col-span-8 bg-[var(--card-bg)] border border-[var(--border)] rounded-2xl overflow-hidden shadow-sm flex flex-col min-h-[640px]">
-              
-              {/* Workspace Header */}
-              <div className="p-4 md:p-5 border-b border-[var(--border)] flex flex-wrap items-center justify-between gap-3 bg-[var(--bg-surface)]">
-                <div className="flex items-center gap-3">
-                  <div
-                    className="w-3.5 h-3.5 rounded-full shadow-sm"
-                    style={{ backgroundColor: selected.color || '#3b82f6' }}
-                  />
-                  <div>
-                    <h2 className="text-sm font-bold text-[var(--text-primary)] flex items-center gap-2">
-                      <span>{selected.name}</span>
-                      <span className="font-mono text-[11px] font-normal text-[var(--text-dim)]">#{selected.id}</span>
-                    </h2>
-                    <p className="text-[11px] text-[var(--text-muted)]">
-                      Qdrant vector collection: <span className="font-mono text-blue-400">_asst_{selected.id}</span>
-                    </p>
+                    <span className="text-[11px] font-medium text-emerald-500 shrink-0">
+                      Ready
+                    </span>
                   </div>
+                )
+              })
+            )}
+          </div>
+        </div>
+
+        {/* Right Column (8 cols): Active Assistant Inspector & Playground */}
+        <div className="lg:col-span-8 bg-[var(--card-bg)] border border-[var(--card-border)] rounded-lg overflow-hidden shadow-[var(--shadow)] flex flex-col min-h-[560px]">
+          {selected ? (
+            <>
+              {/* Workspace Header */}
+              <div className="px-5 py-4 border-b border-[var(--border)] bg-[var(--bg-surface2)] flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-2.5">
+                    <h2 className="text-[14px] font-semibold text-[var(--text-primary)]">
+                      {selected.name}
+                    </h2>
+                    <span className="font-mono text-xs text-[var(--text-muted)]">
+                      #{selected.id}
+                    </span>
+                    <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-[var(--card-bg)] border border-[var(--border)] text-[var(--text-secondary)]">
+                      {selectedVectorCount} vectors
+                    </span>
+                  </div>
+                  <p className="text-[11.5px] text-[var(--text-muted)] mt-0.5">
+                    Collection:{' '}
+                    <Link
+                      to={`/explorer?collection=${encodeURIComponent(selectedCollection)}`}
+                      className="font-mono text-[var(--text-primary)] underline decoration-[var(--border2)] hover:opacity-80"
+                    >
+                      {selectedCollection}
+                    </Link>{' '}
+                    · Model: <span className="font-mono text-[var(--text-primary)]">{selected.llm_model || 'all-MiniLM-L6-v2'}</span>
+                  </p>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setActiveTab('knowledge')}
+                    className="text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition"
+                  >
+                    + Add Knowledge
+                  </button>
                   <button
                     onClick={() => setDeleteTarget(selected)}
-                    className="px-3 py-1.5 text-xs text-[var(--text-muted)] hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 rounded-lg transition flex items-center gap-1.5"
+                    className="text-xs font-medium text-red-500 hover:text-red-400 transition"
                   >
-                    <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                      <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                    </svg>
-                    <span>Delete</span>
+                    Delete
                   </button>
                 </div>
               </div>
 
-              {/* Tab Navigation */}
-              <div className="flex items-center gap-1 px-4 pt-3 border-b border-[var(--border)] bg-[var(--card-bg)]">
-                <button
-                  onClick={() => setActiveTab('chat')}
-                  className={`px-3.5 py-2 text-xs font-medium border-b-2 transition flex items-center gap-2 ${
-                    activeTab === 'chat'
-                      ? 'border-blue-500 text-blue-400 font-semibold'
-                      : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]'
-                  }`}
-                >
-                  <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                  </svg>
-                  <span>Chat Simulator</span>
-                </button>
-
-                <button
-                  onClick={() => setActiveTab('knowledge')}
-                  className={`px-3.5 py-2 text-xs font-medium border-b-2 transition flex items-center gap-2 ${
-                    activeTab === 'knowledge'
-                      ? 'border-blue-500 text-blue-400 font-semibold'
-                      : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]'
-                  }`}
-                >
-                  <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 6h10M6 10h10M6 14h6"/>
-                  </svg>
-                  <span>Document Training</span>
-                </button>
-
-                <button
-                  onClick={() => setActiveTab('embed')}
-                  className={`px-3.5 py-2 text-xs font-medium border-b-2 transition flex items-center gap-2 ${
-                    activeTab === 'embed'
-                      ? 'border-blue-500 text-blue-400 font-semibold'
-                      : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]'
-                  }`}
-                >
-                  <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
-                  </svg>
-                  <span>Integrations &amp; Embed</span>
-                </button>
+              {/* Clean Monochrome Tab Bar */}
+              <div className="flex items-center gap-6 px-5 border-b border-[var(--border)] bg-[var(--card-bg)]">
+                {[
+                  { id: 'chat', label: 'Playground' },
+                  { id: 'knowledge', label: `Knowledge Base (${selectedVectorCount})` },
+                  { id: 'embed', label: 'API & Embed' },
+                ].map(t => (
+                  <button
+                    key={t.id}
+                    onClick={() => setActiveTab(t.id)}
+                    className={`py-3 text-xs border-b-2 transition -mb-px ${
+                      activeTab === t.id
+                        ? 'border-[var(--text-primary)] text-[var(--text-primary)] font-semibold'
+                        : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)] font-medium'
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
               </div>
 
-              {/* Tab 1: Live Interactive Chat Simulator */}
+              {/* Tab 1: Live RAG Playground */}
               {activeTab === 'chat' && (
-                <div className="flex-1 flex flex-col p-4 md:p-5 space-y-4">
-                  <div className="flex items-center justify-between text-xs text-[var(--text-muted)] pb-2 border-b border-[var(--border)]">
-                    <span className="flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                      Live RAG Playground — Top-4 context vectors injected
-                    </span>
-                    <button
-                      onClick={() => setChatMessages([
-                        {
-                          id: 'greeting',
-                          role: 'assistant',
-                          text: selected.greeting || 'Hi! How can I help you today?',
-                          sources: [],
-                          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                        },
-                      ])}
-                      className="text-[11px] text-[var(--text-dim)] hover:text-[var(--text-primary)] transition"
-                    >
-                      Clear Chat
-                    </button>
-                  </div>
+                <div className="flex-1 flex flex-col p-5 space-y-4">
+                  {selectedVectorCount === 0 && (
+                    <div className="p-3 rounded-md bg-[var(--bg-surface2)] border border-[var(--border)] flex items-center justify-between gap-3 text-xs">
+                      <span className="text-[var(--text-muted)]">
+                        Collection <code className="font-mono text-[var(--text-primary)]">{selectedCollection}</code> has 0 indexed vectors. Add documents to ground responses.
+                      </span>
+                      <button
+                        onClick={() => setActiveTab('knowledge')}
+                        className="px-3 py-1.5 rounded bg-[var(--text-primary)] text-[var(--bg-base)] text-[11px] font-semibold shrink-0"
+                      >
+                        Upload Docs
+                      </button>
+                    </div>
+                  )}
 
-                  {/* Messages Feed */}
-                  <div ref={chatScrollRef} className="flex-1 overflow-y-auto space-y-3.5 min-h-[300px] max-h-[420px] p-2">
+                  <div ref={chatScrollRef} className="flex-1 overflow-y-auto space-y-3 min-h-[300px] max-h-[380px] pr-1">
                     {chatMessages.map(msg => (
                       <div
                         key={msg.id}
-                        className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                        className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                       >
-                        {msg.role === 'assistant' && (
-                          <div
-                            className="w-7 h-7 rounded-lg shrink-0 flex items-center justify-center text-white text-xs font-bold shadow-xs mt-0.5"
-                            style={{ backgroundColor: selected.color || '#3b82f6' }}
-                          >
-                            AI
-                          </div>
-                        )}
-
-                        <div className={`space-y-1.5 max-w-[80%] ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-                          <div
-                            className={`p-3.5 rounded-2xl text-xs leading-relaxed ${
-                              msg.role === 'user'
-                                ? 'bg-blue-600 text-white rounded-tr-none'
-                                : 'bg-[var(--bg-surface)] border border-[var(--border)] text-[var(--text-primary)] rounded-tl-none'
-                            }`}
-                          >
-                            <p className="whitespace-pre-wrap">{msg.text}</p>
-
-                            {/* Source Citations */}
-                            {msg.sources && msg.sources.length > 0 && (
-                              <div className="mt-2.5 pt-2 border-t border-[var(--border)]/60 text-[10px] text-blue-400 flex flex-wrap items-center gap-1.5">
-                                <span className="font-semibold text-[var(--text-dim)]">Retrieved from:</span>
-                                {msg.sources.map((src, idx) => (
-                                  <span key={idx} className="bg-blue-500/10 border border-blue-500/20 px-1.5 py-0.5 rounded font-mono">
-                                    {src}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                          <div className={`text-[10px] text-[var(--text-dim)] px-1 ${msg.role === 'user' ? 'text-right' : 'text-left'}`}>
-                            {msg.timestamp}
-                          </div>
+                        <div
+                          className={`max-w-[84%] rounded-lg px-4 py-3 text-xs leading-relaxed ${
+                            msg.role === 'user'
+                              ? 'bg-[var(--text-primary)] text-[var(--bg-base)]'
+                              : 'bg-[var(--bg-surface2)] border border-[var(--border)] text-[var(--text-primary)]'
+                          }`}
+                        >
+                          <p className="whitespace-pre-wrap">{msg.text}</p>
+                          {(msg.sources?.length > 0 || msg.latencyMs) && (
+                            <div className="mt-2 pt-2 border-t border-[var(--border)] flex flex-wrap items-center gap-x-3 gap-y-1 text-[10.5px] font-mono text-[var(--text-muted)]">
+                              {msg.sources?.length > 0 && (
+                                <span>Source: {msg.sources.join(', ')}</span>
+                              )}
+                              {typeof msg.topScore === 'number' && (
+                                <span>Match: {(msg.topScore * 100).toFixed(1)}%</span>
+                              )}
+                              {msg.latencyMs && (
+                                <span>Retrieval: {msg.latencyMs}ms</span>
+                              )}
+                            </div>
+                          )}
                         </div>
-
-                        {msg.role === 'user' && (
-                          <div className="w-7 h-7 rounded-lg bg-[var(--border)] shrink-0 flex items-center justify-center text-xs font-bold text-[var(--text-primary)] mt-0.5">
-                            You
-                          </div>
-                        )}
                       </div>
                     ))}
 
-                    {/* Typing Animation Indicator */}
                     {chatLoading && (
-                      <div className="flex gap-3 justify-start items-center">
-                        <div
-                          className="w-7 h-7 rounded-lg shrink-0 flex items-center justify-center text-white text-xs font-bold shadow-xs"
-                          style={{ backgroundColor: selected.color || '#3b82f6' }}
-                        >
-                          AI
-                        </div>
-                        <div className="p-3 bg-[var(--bg-surface)] border border-[var(--border)] rounded-2xl rounded-tl-none flex items-center gap-1.5">
-                          <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                          <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                          <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                      <div className="flex justify-start">
+                        <div className="px-4 py-2.5 rounded-lg bg-[var(--bg-surface2)] border border-[var(--border)] text-xs text-[var(--text-muted)] font-mono">
+                          Searching {selectedCollection} (Hybrid RRF) &amp; generating answer...
                         </div>
                       </div>
                     )}
                   </div>
 
-                  {/* Sample Query Prompt Pills */}
+                  {/* Quick Prompt Pills */}
                   <div className="flex flex-wrap items-center gap-2 pt-1">
-                    <span className="text-[10px] text-[var(--text-dim)]">Try asking:</span>
-                    {['What information do you have?', 'Summarize your key capabilities', 'How fast is vector search?'].map((prompt, i) => (
+                    <span className="text-[11px] text-[var(--text-muted)]">Test query:</span>
+                    {[
+                      'How fast is Iceberg hybrid search?',
+                      'How does Agent Memory work?',
+                      'Which SDKs are supported?',
+                    ].map((prompt, i) => (
                       <button
                         key={i}
                         type="button"
                         onClick={() => sendChatMessage(prompt)}
-                        className="text-[11px] bg-[var(--bg-surface)] hover:bg-[var(--bg-hover)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-blue-400 px-2.5 py-1 rounded-full transition truncate max-w-[220px]"
+                        className="text-[11px] bg-[var(--bg-surface2)] hover:bg-[var(--bg-hover)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] px-2.5 py-1 rounded-md transition"
                       >
                         {prompt}
                       </button>
                     ))}
                   </div>
 
-                  {/* Chat Input Field */}
+                  {/* Input Bar */}
                   <form
                     onSubmit={(e) => {
                       e.preventDefault()
                       sendChatMessage()
                     }}
-                    className="flex items-center gap-2 pt-1"
+                    className="flex items-center gap-2.5 pt-1"
                   >
                     <input
                       type="text"
                       value={chatInput}
                       onChange={e => setChatInput(e.target.value)}
-                      placeholder={`Ask ${selected.name} anything...`}
+                      placeholder={`Ask ${selected.name} a question...`}
                       disabled={chatLoading}
-                      className="flex-1 bg-[var(--input-bg)] border border-[var(--input-border)] rounded-xl px-4 py-2.5 text-xs text-[var(--text-primary)] placeholder-[var(--text-dim)] focus:outline-none focus:border-blue-600 transition disabled:opacity-50"
+                      className="flex-1 input-base text-xs py-2.5"
                     />
                     <button
                       type="submit"
                       disabled={!chatInput.trim() || chatLoading}
-                      className="bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition shadow-sm flex items-center gap-1.5"
+                      className="px-5 py-2.5 rounded-md bg-[var(--text-primary)] text-[var(--bg-base)] hover:opacity-90 disabled:opacity-40 text-xs font-semibold transition"
                     >
-                      <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                        <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
-                      </svg>
-                      <span>Send</span>
+                      Send
                     </button>
                   </form>
                 </div>
               )}
 
-              {/* Tab 2: Document Knowledge Base Upload */}
+              {/* Tab 2: Knowledge Base Document & Text Ingestion + Live Indexed Chunks */}
               {activeTab === 'knowledge' && (
-                <div className="p-5 md:p-6 space-y-5 flex-1">
-                  <div>
-                    <h3 className="text-sm font-semibold text-[var(--text-primary)]">Knowledge Base Training</h3>
-                    <p className="text-xs text-[var(--text-muted)] mt-1">
-                      Upload reference documents. The backend parses text, applies recursive semantic chunking, embeds each chunk with 384d MiniLM, and inserts into collection <code className="text-blue-400 font-mono">_asst_{selected.id}</code>.
-                    </p>
+                <div className="p-5 space-y-5 flex-1 overflow-y-auto max-h-[480px]">
+                  <div className="grid md:grid-cols-2 gap-4">
+                    {/* Option A: File Upload */}
+                    <div className="space-y-2">
+                      <h3 className="text-xs font-semibold text-[var(--text-primary)]">
+                        1. Upload Document (.pdf, .txt, .md)
+                      </h3>
+                      <label className="block border border-dashed border-[var(--border2)] hover:border-[var(--text-primary)] rounded-lg p-6 text-center cursor-pointer transition bg-[var(--bg-surface2)]">
+                        <input
+                          type="file"
+                          accept=".pdf,.txt,.md"
+                          className="hidden"
+                          onChange={e => e.target.files?.[0] && uploadDoc(selected, e.target.files[0])}
+                        />
+                        <p className="text-xs font-semibold text-[var(--text-primary)]">
+                          {uploading ? 'Embedding & Indexing into Qdrant...' : 'Click to upload file (.pdf, .txt, .md)'}
+                        </p>
+                        <p className="text-[11px] text-[var(--text-muted)] mt-1">
+                          Auto-chunks &amp; embeds into <code className="font-mono">{selectedCollection}</code>
+                        </p>
+                      </label>
+                    </div>
+
+                    {/* Option B: Direct Text / FAQ Ingestion */}
+                    <form onSubmit={handleManualTextIngest} className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-xs font-semibold text-[var(--text-primary)]">
+                          2. Paste Knowledge Text Directly
+                        </h3>
+                        <input
+                          type="text"
+                          value={manualSource}
+                          onChange={e => setManualSource(e.target.value)}
+                          placeholder="source_name.txt"
+                          className="bg-[var(--bg-surface2)] border border-[var(--border)] rounded px-2 py-0.5 text-[10.5px] font-mono text-[var(--text-secondary)] w-36"
+                        />
+                      </div>
+                      <textarea
+                        rows={3}
+                        value={manualText}
+                        onChange={e => setManualText(e.target.value)}
+                        placeholder="Paste product documentation, FAQ answers, or pricing rules to embed into this assistant..."
+                        className="w-full input-base text-xs resize-none"
+                      />
+                      <button
+                        type="submit"
+                        disabled={indexingText || !manualText.trim()}
+                        className="w-full py-2 rounded-md bg-[var(--text-primary)] text-[var(--bg-base)] hover:opacity-90 disabled:opacity-40 text-xs font-semibold transition"
+                      >
+                        {indexingText ? 'Embedding (384d)...' : 'Embed & Index Text'}
+                      </button>
+                    </form>
                   </div>
 
-                  {/* Drag & Drop Upload Card */}
-                  <label className="block border-2 border-dashed border-[var(--border2)] hover:border-blue-500 rounded-2xl p-8 text-center cursor-pointer transition bg-[var(--bg-surface)] hover:bg-[var(--bg-hover)] group">
-                    <input
-                      type="file"
-                      accept=".pdf,.txt,.md"
-                      className="hidden"
-                      onChange={e => e.target.files?.[0] && uploadDoc(selected.id, e.target.files[0])}
-                    />
-                    <div className="space-y-3">
-                      <div className="w-12 h-12 rounded-xl bg-blue-500/10 text-blue-400 mx-auto flex items-center justify-center group-hover:scale-105 transition-transform">
-                        <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
-                        </svg>
-                      </div>
-                      <div>
-                        <p className="text-xs font-semibold text-[var(--text-primary)]">
-                          {uploading ? 'Parsing & Indexing into Vector DB...' : 'Click to select or drop documents here'}
-                        </p>
-                        <p className="text-[11px] text-[var(--text-dim)] mt-1">
-                          Supported formats: PDF (.pdf), Text (.txt), Markdown (.md)
-                        </p>
-                      </div>
-                    </div>
-                  </label>
-
-                  {/* Status Banner */}
                   {uploadSuccess && (
-                    <div className="p-3.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl text-xs flex items-center gap-2.5 animate-fadeIn">
-                      <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <span>{uploadSuccess}</span>
+                    <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 rounded-md text-xs">
+                      {uploadSuccess}
                     </div>
                   )}
 
                   {uploadError && (
-                    <div className="p-3.5 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl text-xs flex items-center gap-2.5 animate-fadeIn">
-                      <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-                      </svg>
-                      <span>{uploadError}</span>
+                    <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-500 rounded-md text-xs">
+                      {uploadError}
                     </div>
                   )}
 
-                  {/* Technical Pipeline Info Box */}
-                  <div className="p-4 bg-[var(--bg-surface)] border border-[var(--border)] rounded-xl space-y-2">
-                    <h4 className="text-xs font-semibold text-[var(--text-primary)] flex items-center gap-2">
-                      <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" className="text-blue-400">
-                        <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
-                      </svg>
-                      <span>How Knowledge Ingestion Works</span>
-                    </h4>
-                    <p className="text-[11px] text-[var(--text-muted)] leading-relaxed">
-                      1. Document text is extracted in memory using PyPDF or UTF-8 decode.<br/>
-                      2. Text is recursively segmented into overlapping 500-character windows.<br/>
-                      3. Each chunk is transformed into a dense 384-dimensional mathematical vector using our all-MiniLM-L6-v2 transformer model.<br/>
-                      4. Vectors are indexed into Qdrant HNSW graph with payload source citations for sub-18ms semantic retrieval.
-                    </p>
+                  {/* Live Indexed Chunks Table */}
+                  <div className="border border-[var(--border)] rounded-lg overflow-hidden">
+                    <div className="px-4 py-2.5 bg-[var(--bg-surface2)] border-b border-[var(--border)] flex items-center justify-between">
+                      <span className="text-xs font-semibold text-[var(--text-primary)]">
+                        Indexed Vector Chunks in <code className="font-mono">{selectedCollection}</code>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => loadIndexedChunks(selected)}
+                        className="text-[11px] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                      >
+                        {loadingChunks ? 'Loading...' : 'Refresh Chunks'}
+                      </button>
+                    </div>
+
+                    {indexedChunks.length === 0 ? (
+                      <div className="p-6 text-center text-xs text-[var(--text-muted)]">
+                        No chunks indexed in <code className="font-mono">{selectedCollection}</code> yet. Upload a file or paste text above.
+                      </div>
+                    ) : (
+                      <div className="divide-y divide-[var(--border)] max-h-[210px] overflow-y-auto">
+                        {indexedChunks.map((chunk, i) => (
+                          <div key={i} className="p-3 text-xs space-y-1 hover:bg-[var(--bg-hover)]">
+                            <div className="flex items-center justify-between text-[10.5px] font-mono text-[var(--text-muted)]">
+                              <span>Source: {chunk.metadata?.source || chunk.source || 'document'}</span>
+                              <span>384d · Cosine</span>
+                            </div>
+                            <p className="text-[var(--text-primary)] line-clamp-2 leading-relaxed">
+                              {chunk.text}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
 
-              {/* Tab 3: Integrations & Embeds */}
+              {/* Tab 3: API & Embed */}
               {activeTab === 'embed' && (
-                <div className="p-5 md:p-6 space-y-6 flex-1">
+                <div className="p-5 space-y-5 flex-1 overflow-y-auto max-h-[480px]">
                   <div>
-                    <h3 className="text-sm font-semibold text-[var(--text-primary)]">Deployment &amp; Integrations</h3>
+                    <h3 className="text-[13.5px] font-semibold text-[var(--text-primary)]">Endpoints &amp; Embeds</h3>
                     <p className="text-xs text-[var(--text-muted)] mt-1">
-                      Integrate {selected.name} across web applications, direct links, or WhatsApp Business.
+                      Connect <span className="font-semibold text-[var(--text-primary)]">{selected.name}</span> (grounded on <code className="font-mono text-[var(--text-primary)]">{selectedCollection}</code>) to your app via REST API, HTML widget, or WhatsApp Webhook.
                     </p>
                   </div>
 
-                  {/* 1. Direct Public Chat Endpoint */}
-                  <div className="space-y-2">
-                    <label className="text-xs font-semibold text-[var(--text-primary)] flex items-center justify-between">
-                      <span>1. Public Chat API Endpoint</span>
-                      <span className="text-[10px] text-emerald-400 font-mono">POST /assistant/{selected.id}/chat</span>
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <code className="flex-1 bg-[var(--input-bg)] border border-[var(--border)] rounded-xl px-3.5 py-2.5 text-xs font-mono text-[var(--text-secondary)] truncate select-all">
-                        {chatUrl}
-                      </code>
-                      <button
-                        onClick={() => copy(chatUrl, 'chat')}
-                        className="px-3.5 py-2.5 text-xs font-medium bg-[var(--bg-surface)] hover:bg-[var(--bg-hover)] border border-[var(--border)] rounded-xl text-[var(--text-primary)] transition shrink-0"
-                      >
-                        {copied === 'chat' ? '✓ Copied' : 'Copy'}
-                      </button>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-semibold text-[var(--text-primary)]">1. REST Chat Endpoint</span>
+                      <span className="font-mono text-[11px] text-[var(--text-muted)]">POST /assistant/{selected.id}/chat</span>
                     </div>
+                    <CodeBlock code={chatUrl} label="Endpoint" />
                   </div>
 
-                  {/* 2. One-Line Website Embed Script */}
-                  <div className="space-y-2">
-                    <label className="text-xs font-semibold text-[var(--text-primary)] flex items-center justify-between">
-                      <span>2. Website Embed Widget</span>
-                      <span className="text-[10px] text-blue-400">Paste before &lt;/body&gt;</span>
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <code className="flex-1 bg-[var(--input-bg)] border border-[var(--border)] rounded-xl px-3.5 py-2.5 text-xs font-mono text-blue-400 truncate select-all">
-                        {widgetScript}
-                      </code>
-                      <button
-                        onClick={() => copy(widgetScript, 'widget')}
-                        className="px-3.5 py-2.5 text-xs font-medium bg-[var(--bg-surface)] hover:bg-[var(--bg-hover)] border border-[var(--border)] rounded-xl text-[var(--text-primary)] transition shrink-0"
-                      >
-                        {copied === 'widget' ? '✓ Copied' : 'Copy'}
-                      </button>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-semibold text-[var(--text-primary)]">2. Website Widget Script</span>
+                      <span className="font-mono text-[11px] text-[var(--text-muted)]">Paste before &lt;/body&gt;</span>
                     </div>
-                    <p className="text-[11px] text-[var(--text-dim)]">
-                      Renders a floating bottom-right chat bubble on any HTML site matching your assistant theme color ({selected.color || '#3b82f6'}).
-                    </p>
+                    <CodeBlock code={widgetScript} label="HTML" />
                   </div>
 
-                  {/* 3. WhatsApp Business Webhook */}
-                  <div className="space-y-2">
-                    <label className="text-xs font-semibold text-[var(--text-primary)] flex items-center justify-between">
-                      <span>3. WhatsApp Business Webhook</span>
-                      <span className="text-[10px] text-green-400">Meta Cloud API</span>
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <code className="flex-1 bg-[var(--input-bg)] border border-[var(--border)] rounded-xl px-3.5 py-2.5 text-xs font-mono text-[var(--text-secondary)] truncate select-all">
-                        {waWebhookUrl}
-                      </code>
-                      <button
-                        onClick={() => copy(waWebhookUrl, 'wa')}
-                        className="px-3.5 py-2.5 text-xs font-medium bg-[var(--bg-surface)] hover:bg-[var(--bg-hover)] border border-[var(--border)] rounded-xl text-[var(--text-primary)] transition shrink-0"
-                      >
-                        {copied === 'wa' ? '✓ Copied' : 'Copy'}
-                      </button>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-semibold text-[var(--text-primary)]">3. WhatsApp Business Webhook</span>
+                      <span className="font-mono text-[11px] text-[var(--text-muted)]">Verify Token: {selected.id}</span>
                     </div>
-                    <p className="text-[11px] text-[var(--text-dim)]">
-                      In Meta for Developers &gt; WhatsApp &gt; Configuration, set this URL as your Webhook callback. Verification token is your assistant ID: <span className="font-mono text-[var(--text-primary)]">{selected.id}</span>.
-                    </p>
+                    <CodeBlock code={waWebhookUrl} label="Webhook" />
                   </div>
 
-                  {/* 4. cURL REST Snippet */}
-                  <div className="space-y-2">
-                    <label className="text-xs font-semibold text-[var(--text-primary)] flex items-center justify-between">
-                      <span>4. cURL Request Example</span>
-                      <span className="text-[10px] text-[var(--text-dim)]">Terminal / Backend</span>
-                    </label>
-                    <div className="relative">
-                      <pre className="p-3.5 bg-[var(--input-bg)] border border-[var(--border)] rounded-xl text-[11px] font-mono text-[var(--text-secondary)] overflow-x-auto">
-{`curl -X POST "${chatUrl}" \\
-  -H "Content-Type: application/json" \\
-  -d '{"message": "Hello, how does Iceberg vector search work?"}'`}
-                      </pre>
-                      <button
-                        onClick={() => copy(`curl -X POST "${chatUrl}" -H "Content-Type: application/json" -d '{"message": "Hello, how does Iceberg vector search work?"}'`, 'curl')}
-                        className="absolute right-2.5 top-2.5 px-2.5 py-1 text-[11px] font-medium bg-[var(--card-bg)] hover:bg-[var(--bg-hover)] border border-[var(--border)] rounded-lg text-[var(--text-primary)] transition"
-                      >
-                        {copied === 'curl' ? '✓ Copied' : 'Copy'}
-                      </button>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-semibold text-[var(--text-primary)]">4. Python SDK RAG Retrieval</span>
+                      <span className="font-mono text-[11px] text-[var(--text-muted)]">pip install icebergdb</span>
                     </div>
+                    <CodeBlock
+                      code={`from iceberg import IcebergClient\n\nclient = IcebergClient(api_key="YOUR_API_KEY")\nresults = client.search("${selectedCollection}", query="How fast is Iceberg hybrid search?", top_k=4)`}
+                      label="Python"
+                    />
                   </div>
                 </div>
               )}
+            </>
+          ) : (
+            /* Empty Inspector State inside Right Pane */
+            <div className="flex-1 flex flex-col">
+              <div className="flex items-center gap-6 px-5 border-b border-[var(--border)] bg-[var(--bg-surface2)]">
+                <span className="py-3 text-xs border-b-2 border-[var(--text-primary)] text-[var(--text-primary)] font-semibold -mb-px">
+                  Playground
+                </span>
+                <span className="py-3 text-xs text-[var(--text-muted)] font-medium">
+                  Knowledge Base
+                </span>
+                <span className="py-3 text-xs text-[var(--text-muted)] font-medium">
+                  API &amp; Embed
+                </span>
+              </div>
 
+              <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
+                <p className="text-[14px] font-semibold text-[var(--text-primary)]">
+                  No assistant selected
+                </p>
+                <p className="text-xs text-[var(--text-muted)] mt-1.5 max-w-md leading-relaxed">
+                  Create a new RAG assistant connected to any of your vector collections, or load the pre-indexed sample support assistant to test live Qdrant retrieval.
+                </p>
+                <div className="flex items-center gap-2.5 mt-5">
+                  <button
+                    onClick={handleLaunchDemoBot}
+                    disabled={seedingDemo}
+                    className="px-4 py-2 rounded-md border border-[var(--border)] bg-[var(--bg-surface)] hover:bg-[var(--bg-hover)] text-[var(--text-primary)] text-xs font-medium transition disabled:opacity-50"
+                  >
+                    {seedingDemo ? 'Indexing Sample Knowledge...' : 'Load Sample Assistant'}
+                  </button>
+                  <button
+                    onClick={() => setCreating(true)}
+                    className="px-4 py-2 rounded-md bg-[var(--text-primary)] text-[var(--bg-base)] hover:opacity-90 text-xs font-semibold transition"
+                  >
+                    New Assistant
+                  </button>
+                </div>
+              </div>
             </div>
-          ) : null}
-
+          )}
         </div>
-      )}
 
-      {/* Modern In-App Confirmation Modal */}
+      </div>
+
+      {/* Delete Confirmation Modal */}
       <ConfirmModal
         open={!!deleteTarget}
-        title="Delete AI Assistant?"
+        title="Delete assistant?"
         message={
           <div>
             Are you sure you want to delete <span className="font-semibold text-[var(--text-primary)]">{deleteTarget?.name}</span>?
-            <br />
-            The vector knowledge collection <code className="text-blue-400 font-mono">_asst_{deleteTarget?.id}</code> and all associated chat endpoints will be permanently removed.
+            {getTargetCollection(deleteTarget).startsWith('asst_') && (
+              <>
+                {' '}The dedicated vector collection <code className="font-mono text-[var(--text-primary)]">{getTargetCollection(deleteTarget)}</code> will also be removed.
+              </>
+            )}
           </div>
         }
         confirmText="Delete Assistant"
@@ -1097,7 +1262,6 @@ export default function Assistants() {
         onConfirm={confirmDelete}
         onClose={() => setDeleteTarget(null)}
       />
-
     </div>
   )
 }

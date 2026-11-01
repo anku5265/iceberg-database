@@ -7,11 +7,11 @@
     <AssemblyName>IcebergDb</AssemblyName>
     <RootNamespace>Iceberg</RootNamespace>
     <PackageId>IcebergDb</PackageId>
-    <Version>0.1.0</Version>
+    <Version>1.0.0</Version>
     <Authors>Ankush, Iceberg DB</Authors>
     <Company>Iceberg DB</Company>
     <Description>Official .NET C# client for Iceberg Vector Database</Description>
-    <PackageProjectUrl>https://icebergdb.vercel.app</PackageProjectUrl>
+    <PackageProjectUrl>https://icebergdb.in</PackageProjectUrl>
     <RepositoryUrl>https://github.com/anku5265/iceberg-database</RepositoryUrl>
     <PackageTags>vector;database;ai;embeddings;rag;search;iceberg;icebergdb</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>

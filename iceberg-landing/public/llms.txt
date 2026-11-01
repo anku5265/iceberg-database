@@ -1,0 +1,82 @@
+# Iceberg DB (Iceberg Vector Database) — v1.0.0
+
+> India-hosted Serverless Vector Database, Hybrid RRF RAG Engine (Dense 384d Cosine + Okapi BM25), and 4-Tier Cognitive Memory Layer for AI Agents. Hosted in India (`ap-south-1`) with `1.95ms` p50 dense search, `8.73ms` p50 hybrid RRF search, built-in server-side 384d CPU embeddings, and 100% India data residency for DPDP Act 2023 localization.
+
+- **Official Website:** https://icebergdb.in
+- **Cloud Console & Dashboard:** https://dashboard.icebergdb.in
+- **API Gateway:** https://api.icebergdb.in
+- **Documentation & API Reference:** https://icebergdb.in/docs
+- **Reproducible Benchmarks & Methodology:** https://icebergdb.in/benchmarks
+- **Security, RBAC & Data Residency:** https://icebergdb.in/security
+- **Live Status & Telemetry:** https://icebergdb.in/status
+- **About & Engineering Transparency:** https://icebergdb.in/about
+- **Full LLM Reference:** https://icebergdb.in/llms-full.txt
+- **Contact:** contact@icebergdb.in
+
+---
+
+## 1. Canonical SDK Installation & Registry Links (`v1.0.0`)
+
+All official Iceberg DB SDKs use the unified `icebergdb` identifier across registries at `v1.0.0`:
+
+- **Python (`PyPI` — `v1.0.0`):**
+  - Install: `pip install icebergdb`
+  - Import: `from iceberg import Client`
+  - Registry: https://pypi.org/project/icebergdb/
+- **JavaScript / TypeScript (`npm` — `v1.0.0`):**
+  - Install: `npm install icebergdb`
+  - Import: `import { Client } from 'icebergdb'`
+  - Registry: https://www.npmjs.com/package/icebergdb
+- **Rust (`Crates.io` — `v1.0.0`):**
+  - Install: `cargo add icebergdb`
+  - Import: `use icebergdb::Client;`
+  - Registry: https://crates.io/crates/icebergdb
+- **.NET / C# (`NuGet` — `v1.0.0`):**
+  - Install: `dotnet add package IcebergDb`
+  - Import: `using IcebergDb;` (`var client = new IcebergClient("ib_your_key");`)
+  - Registry: https://www.nuget.org/packages/IcebergDb
+- **Go (`pkg.go.dev` — `v1.0.0`):**
+  - Install: `go get github.com/anku5265/iceberg-database/iceberg-sdk-go`
+  - Registry: https://pkg.go.dev/github.com/anku5265/iceberg-database/iceberg-sdk-go
+- **Java (`Maven / Gradle` — `v1.0.0`):**
+  - Coordinates: `io.icebergdb:iceberg-sdk:1.0.0` (`import in.iceberg.Client;`)
+- **Model Context Protocol (`MCP` Server — `v1.0.0`):**
+  - Run via npx: `npx -y iceberg-mcp` (https://www.npmjs.com/package/iceberg-mcp)
+  - Run via Python: `python -m iceberg.mcp`
+
+---
+
+## 2. Architecture & Storage Engine (`https://icebergdb.in/docs`)
+
+- **Control Plane & Gateway:** FastAPI with TLS 1.3, SHA-256 API key hashing (`X-API-Key: ib_...`), and strict Role-Based Access Control (`admin`, `read_write`, `read_only` — `read_only` write attempts return HTTP `403 Forbidden`).
+- **Vector Index:** Qdrant HNSW (`384d` float32, Cosine similarity, `m=16`, `ef_construct=100`) with deterministic server-side tenant namespace isolation (`t_{uid8}__` and `u_{uid8}__`).
+- **Hybrid Lexical Scorer:** Okapi BM25 (`k1=1.5, b=0.75`) fused with dense vector scores via Reciprocal Rank Fusion (`RRF k=60`) and normalized score blending (`alpha=0.5` default).
+- **Server-Side CPU Embeddings:** Built-in quantized ONNX Runtime (`all-MiniLM-L6-v2`, 384-dim) running on CPU (`$0` external OpenAI embedding key needed).
+- **Zero Vendor Lock-In & Export:** Full JSON pagination via `GET /documents/{collection}/scroll`, point-level CRUD (`PUT/GET/DELETE /documents/{collection}/points/{point_id}`), collection snapshots (`POST /backup/create/{collection}`), and Docker/Terraform BYOC self-hosting.
+
+---
+
+## 3. Measured Performance & Reproducible Benchmarks (`https://icebergdb.in/benchmarks`)
+
+Measured on our 120-document technical & financial benchmark corpus (384-dim `all-MiniLM-L6-v2` embeddings, 40 ground-truth queries mixing conceptual questions and exact alphanumeric IDs):
+
+- **Pure Dense Vector Search (`384d` Cosine):** `1.42 ms` min | `1.95 ms` median (`p50`) | `3.80 ms` `p95` (`95.0%` Recall@10)
+- **Sparse BM25 Keyword Scoring (`k1=1.5, b=0.75`):** `4.85 ms` min | `6.93 ms` median (`p50`) | `11.20 ms` `p95`
+- **Hybrid RRF Search (`Dense + BM25`, `alpha=0.5`):** `6.40 ms` min | `8.73 ms` median (`p50`) | `13.39 ms` `p95` (`97.5%` Recall@5, `100.0%` Recall@10 on the 120-doc evaluation set)
+- **Server-Side CPU Query Embedding (`ONNX all-MiniLM-L6-v2`):** `48.25 ms` min | `112.34 ms` `p50` (`$0` external OpenAI embedding API cost)
+
+---
+
+## 4. Transparent Pricing, Rate Limits & Quotas (`INR` & `USD`)
+
+- **Free Plan (`₹0`):** 100K vectors, 1K queries/day, 1 GB storage, 60 req/min burst limit, max 10 MB upload, unlimited collections, 1 project, free built-in embeddings, never pauses.
+- **Starter Plan (`₹799/mo` or `₹7,990/yr`):** 1M vectors, 20K queries/day, 5 GB storage, 300 req/min burst limit, max 25 MB upload, unlimited collections, 5 projects, never pauses, email support.
+- **Growth Plan (`₹3,499/mo` or `₹34,990/yr`):** 5M vectors, 100K queries/day, 25 GB storage, 1,000 req/min burst limit, max 50 MB upload, unlimited collections, 15 projects, metadata filters & hybrid search, priority support.
+- **Scale Plan (`₹9,999/mo` or `₹99,990/yr`):** 20M vectors, 500K queries/day, 100 GB storage, 3,000 req/min burst limit, max 100 MB upload, unlimited projects, dedicated SLA support.
+
+---
+
+## 5. Company & Founder (`https://icebergdb.in/about`)
+
+- **Company:** Iceberg Database Technologies (Independent AI Infrastructure, Himachal Pradesh, India; primary cloud compute hosted in India `ap-south-1`).
+- **Founder & Lead Engineer:** Ankush (GitHub: https://github.com/anku5265/iceberg-database, LinkedIn: https://www.linkedin.com/in/ankush-a-96518a39b/, X: https://x.com/igankush33, Email: contact@icebergdb.in).

@@ -16,7 +16,7 @@ import httpx
 import platform
 from core.config import settings
 
-HEARTBEAT_URL = "https://api.icebergdb.io/v1/heartbeat"
+HEARTBEAT_URL = "https://api.icebergdb.in/v1/heartbeat"
 HEARTBEAT_INTERVAL = 3600  # Every hour
 
 def get_instance_id() -> str:
@@ -56,7 +56,7 @@ def validate_license(license_key: str) -> dict:
     """Check if license is valid."""
     try:
         r = httpx.post(
-            "https://api.icebergdb.io/v1/license/validate",
+            "https://api.icebergdb.in/v1/license/validate",
             json={"license_key": license_key, "instance_id": get_instance_id()},
             timeout=10
         )

@@ -1,7 +1,7 @@
 #!/bin/bash
 # Iceberg Self-Hosted Installer
-# Usage: curl -sSL https://install.icebergdb.io | bash
-# Or with license: ICEBERG_LICENSE=your_key curl -sSL https://install.icebergdb.io | bash
+# Usage: curl -sSL https://install.icebergdb.in | bash
+# Or with license: ICEBERG_LICENSE=your_key curl -sSL https://install.icebergdb.in | bash
 
 set -e
 

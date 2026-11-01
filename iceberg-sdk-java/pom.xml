@@ -6,12 +6,12 @@
 
   <groupId>io.icebergdb</groupId>
   <artifactId>iceberg-sdk</artifactId>
-  <version>0.1.0</version>
+  <version>1.0.0</version>
   <packaging>jar</packaging>
 
   <name>Iceberg Java SDK</name>
   <description>Official Java client for Iceberg Vector Database</description>
-  <url>https://icebergdb.io</url>
+  <url>https://icebergdb.in</url>
 
   <developers>
     <developer>

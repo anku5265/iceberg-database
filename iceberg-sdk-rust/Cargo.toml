@@ -1,10 +1,10 @@
 [package]
 name = "icebergdb"
-version = "0.1.0"
+version = "1.0.0"
 edition = "2021"
 authors = ["Ankush <https://github.com/anku5265>"]
 description = "Official Rust client for Iceberg Vector Database"
-homepage = "https://icebergdb.vercel.app"
+homepage = "https://icebergdb.in"
 repository = "https://github.com/anku5265/iceberg-database"
 license = "MIT"
 readme = "README.md"

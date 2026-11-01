@@ -1,8 +1,11 @@
+import Footer from '../components/Footer'
+import IcebergLogo from "../components/IcebergLogo"
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Navbar } from '../components/Navbar'
+import { CodeBlock } from '../components/CodeBlock'
 
-const D = import.meta.env.VITE_DASHBOARD_URL || 'http://localhost:3000'
+const D = import.meta.env.VITE_DASHBOARD_URL || 'https://dashboard.icebergdb.in'
 
 export default function ProductAssistant() {
   const [dark] = useState(true)
@@ -11,9 +14,9 @@ export default function ProductAssistant() {
     <div className="min-h-screen bg-[#0a0a0a] text-white">
       <Navbar dark={dark} />
 
-      <section className="container mx-auto px-6 pt-24 pb-16 max-w-5xl">
+      <section className="container mx-auto px-6 pt-12 pb-10 md:pt-24 md:pb-16 max-w-5xl">
         <div className="inline-flex items-center gap-2 text-xs px-3 py-1.5 rounded-full border border-[#222] text-[#666] bg-[#111] mb-6">Iceberg Assistant</div>
-        <h1 className="text-5xl md:text-6xl font-extrabold leading-tight tracking-tight mb-6">
+        <h1 className="text-3xl sm:text-4xl md:text-6xl font-extrabold leading-tight tracking-tight mb-6">
           Upload docs.<br />
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-blue-600">Get a chatbot instantly.</span>
         </h1>
@@ -27,13 +30,13 @@ export default function ProductAssistant() {
       </section>
 
       {/* How it works */}
-      <section className="border-y border-[#111] py-20">
+      <section className="border-y border-[#111] py-12 md:py-20">
         <div className="container mx-auto px-6 max-w-5xl">
           <p className="text-xs text-[#555] uppercase tracking-widest mb-3">How it works</p>
           <h2 className="text-3xl font-bold mb-12">Three steps to a live chatbot</h2>
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-6">
             {[
-              { step: '01', title: 'Create assistant', desc: 'Name it, set a greeting, pick your LLM (OpenAI or Gemini), choose a color. Done in 30 seconds.' },
+              { step: '01', title: 'Create assistant', desc: 'Name it, set a greeting, pick your LLM (OpenAI, Claude, Gemini, Groq, DeepSeek, or Iceberg AI), choose a color. Done in 30 seconds.' },
               { step: '02', title: 'Upload documents', desc: 'Upload PDFs, .txt files, or any text. Iceberg chunks and indexes everything automatically. Your chatbot now knows your content.' },
               { step: '03', title: 'Deploy anywhere', desc: 'Paste one line of JS on your website. Or point your WhatsApp Business webhook to the provided URL. Live instantly.' },
             ].map((s, i) => (
@@ -48,19 +51,19 @@ export default function ProductAssistant() {
       </section>
 
       {/* Channels */}
-      <section className="border-b border-[#111] py-20">
+      <section className="border-b border-[#111] py-12 md:py-20">
         <div className="container mx-auto px-6 max-w-5xl">
           <p className="text-xs text-[#555] uppercase tracking-widest mb-3">Deploy channels</p>
           <h2 className="text-3xl font-bold mb-4">Meet your users where they are</h2>
           <p className="text-[#666] mb-12 max-w-2xl">Two deployment channels built in — embed on any website with one line of code, or connect to WhatsApp Business. No extra setup, no third-party services.</p>
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-2 gap-3 md:gap-6">
             <div className="rounded-xl border border-[#1a1a1a] p-6">
               <div className="text-blue-400 mb-4">
                 <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17.25 6.75 22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3-4.5 16.5"/></svg>
               </div>
               <h3 className="font-semibold mb-2">Website embed widget</h3>
               <p className="text-sm text-[#666] leading-relaxed mb-4">One line of JavaScript. Paste it anywhere — WordPress, Webflow, custom HTML. A chat bubble appears in the bottom-right corner.</p>
-              <pre className="bg-[#0d0d0d] border border-[#1a1a1a] rounded-lg p-3 text-xs font-mono text-[#aaa] overflow-x-auto">{`<script src="https://api.icebergdb.io/assistant/YOUR_ID/widget.js"></script>`}</pre>
+              <CodeBlock code={`<script src="https://api.icebergdb.in/assistant/YOUR_ID/widget.js"></script>`} label="HTML Embed" />
             </div>
             <div className="rounded-xl border border-[#1a1a1a] p-6">
               <div className="text-green-400 mb-4">
@@ -68,30 +71,38 @@ export default function ProductAssistant() {
               </div>
               <h3 className="font-semibold mb-2">WhatsApp Business</h3>
               <p className="text-sm text-[#666] leading-relaxed mb-4">Point your WhatsApp Business API webhook to Iceberg. Users message your WhatsApp number — the assistant answers from your documents automatically.</p>
-              <pre className="bg-[#0d0d0d] border border-[#1a1a1a] rounded-lg p-3 text-xs font-mono text-[#aaa] overflow-x-auto">{`Webhook URL:\nhttps://api.icebergdb.io/assistant/YOUR_ID/whatsapp`}</pre>
+              <CodeBlock code={`https://api.icebergdb.in/assistant/YOUR_ID/whatsapp`} label="Webhook URL" />
             </div>
           </div>
         </div>
       </section>
 
       {/* LLM support */}
-      <section className="border-b border-[#111] py-20">
+      <section className="border-b border-[#111] py-12 md:py-20">
         <div className="container mx-auto px-6 max-w-5xl">
           <p className="text-xs text-[#555] uppercase tracking-widest mb-3">LLM support</p>
           <h2 className="text-3xl font-bold mb-4">Bring your own LLM</h2>
-          <p className="text-[#666] mb-12 max-w-2xl">Iceberg handles retrieval. You choose the generation model. Swap anytime without touching your documents.</p>
-          <div className="grid md:grid-cols-3 gap-4">
+          <p className="text-[#666] mb-12 max-w-2xl">Iceberg handles fast hybrid RRF retrieval hosted in India (ap-south-1). You choose the generation model — swap providers anytime without re-indexing your documents.</p>
+          <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
             {[
-              { name: 'OpenAI', models: 'GPT-3.5, GPT-4, GPT-4o', status: 'Supported' },
-              { name: 'Google Gemini', models: 'Gemini Pro, Gemini Flash', status: 'Supported' },
-              { name: 'Iceberg AI', models: 'Coming soon — India-hosted model', status: 'Soon' },
+              { name: 'OpenAI', models: 'GPT-4o, GPT-4o-mini, o3-mini', useCase: 'Enterprise & general RAG', status: 'Supported' },
+              { name: 'Anthropic Claude', models: 'Claude 3.7 Sonnet, 3.5 Sonnet, Haiku', useCase: 'Zero-hallucination & coding docs', status: 'Supported' },
+              { name: 'Google Gemini', models: 'Gemini 2.0 Flash, Gemini 1.5 Pro', useCase: 'Fast multimodal & Indian languages', status: 'Supported' },
+              { name: 'Groq (Meta Llama)', models: 'Llama 3.3 70B, Llama 3.1 8B, Mixtral', useCase: 'Sub-100ms instant voice & chat bots', status: 'Supported' },
+              { name: 'DeepSeek & OpenRouter', models: 'DeepSeek-V3, DeepSeek-R1, Qwen 2.5', useCase: 'Ultra-low-cost high-volume RAG', status: 'Supported' },
+              { name: 'Iceberg Native AI', models: 'FastEmbed MiniLM-L6 — Hosted in India (ap-south-1)', useCase: 'Zero external API key needed', status: 'Supported' },
             ].map((l, i) => (
-              <div key={i} className="rounded-xl border border-[#1a1a1a] p-5">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="font-semibold">{l.name}</span>
-                  <span className={`text-xs px-2 py-0.5 rounded-full border ${l.status === 'Soon' ? 'text-[#555] border-[#333]' : 'text-green-400 border-green-900/40 bg-green-950/30'}`}>{l.status}</span>
+              <div key={i} className="rounded-xl border border-[#1a1a1a] bg-[#0d0d0d] p-5 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between mb-2.5">
+                    <span className="font-semibold text-white">{l.name}</span>
+                    <span className="text-xs px-2 py-0.5 rounded-full border text-green-400 border-green-900/40 bg-green-950/30">{l.status}</span>
+                  </div>
+                  <p className="text-xs text-[#888] mb-2">{l.models}</p>
                 </div>
-                <p className="text-xs text-[#555]">{l.models}</p>
+                <div className="pt-2.5 border-t border-[#161616] text-[11px] font-mono text-blue-400/90">
+                  Best for: {l.useCase}
+                </div>
               </div>
             ))}
           </div>
@@ -99,17 +110,17 @@ export default function ProductAssistant() {
       </section>
 
       {/* Full features */}
-      <section className="border-b border-[#111] py-20">
+      <section className="border-b border-[#111] py-12 md:py-20">
         <div className="container mx-auto px-6 max-w-5xl">
           <p className="text-xs text-[#555] uppercase tracking-widest mb-3">Everything included</p>
           <h2 className="text-3xl font-bold mb-12">What you get out of the box</h2>
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-2 gap-3 md:gap-6">
             {[
               { title: 'No-code document upload', desc: 'Upload PDFs, text files via dashboard or API. Iceberg chunks and indexes automatically — no preprocessing needed.' },
               { title: 'Website embed — one line', desc: 'Paste a single script tag on any website. Chat bubble appears in the bottom-right corner, styled with your brand color.' },
               { title: 'WhatsApp Business integration', desc: 'Point your WhatsApp Business webhook to Iceberg. Users message your number — the assistant answers from your documents.' },
               { title: 'Custom greeting & branding', desc: 'Set your assistant name, greeting message, and accent color. Matches your product, not Iceberg.' },
-              { title: 'OpenAI & Gemini support', desc: 'Bring your own API key for OpenAI or Google Gemini. Swap models anytime without touching your documents.' },
+              { title: 'OpenAI, Claude, Gemini, Groq & DeepSeek', desc: 'Bring your own API key for any major LLM provider — or run on Iceberg Native AI with zero external API keys.' },
               { title: 'Multi-assistant support', desc: 'Create separate assistants for different use cases — support bot, onboarding bot, sales bot — each with its own document set.' },
             ].map((f, i) => (
               <div key={i} className="flex gap-4 p-5 rounded-xl border border-[#1a1a1a]">
@@ -133,17 +144,5 @@ export default function ProductAssistant() {
       </section>
       <Footer />
     </div>
-  )
-}
-
-function Footer() {
-  return (
-    <footer className="border-t border-[#111] py-10">
-      <div className="container mx-auto px-6 max-w-6xl flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-[#555]">
-        <Link to="/" className="text-white font-bold text-lg">Iceberg</Link>
-        <div className="flex gap-6">{['Privacy','Terms','Docs','Status'].map(l=><a key={l} href="#" className="hover:text-white transition">{l}</a>)}</div>
-        <div>© 2026 Iceberg</div>
-      </div>
-    </footer>
   )
 }

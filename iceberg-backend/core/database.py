@@ -81,6 +81,20 @@ def init_db():
             created_at INTEGER NOT NULL,
             FOREIGN KEY (user_id) REFERENCES users(id)
         );
+
+        CREATE TABLE IF NOT EXISTS payments (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            plan TEXT NOT NULL,
+            amount INTEGER NOT NULL,
+            currency TEXT DEFAULT 'INR',
+            payment_id TEXT,
+            order_id TEXT,
+            status TEXT DEFAULT 'success',
+            billing_type TEXT DEFAULT 'one_time',
+            created_at INTEGER NOT NULL,
+            FOREIGN KEY (user_id) REFERENCES users(id)
+        );
     """)
     conn.commit()
 

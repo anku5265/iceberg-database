@@ -1,40 +1,188 @@
 import { useState, useRef, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import IcebergLogo from './IcebergLogo'
 
-const D = import.meta.env.VITE_DASHBOARD_URL || 'http://localhost:3000'
+const D = import.meta.env.VITE_DASHBOARD_URL || 'https://dashboard.icebergdb.in'
 
-export function Navbar({ dark, setDark }) {
+export function useSessionTheme() {
+  const [dark, setDarkState] = useState(() => {
+    try {
+      return sessionStorage.getItem('iceberg_session_theme') !== 'light'
+    } catch {
+      return true
+    }
+  })
+
+  useEffect(() => {
+    const sync = () => {
+      try {
+        const isDark = sessionStorage.getItem('iceberg_session_theme') !== 'light'
+        setDarkState(isDark)
+        document.documentElement.classList.toggle('theme-light', !isDark)
+      } catch {}
+    }
+    const handleAuthLinkClick = (e) => {
+      const a = e.target?.closest?.('a[href]')
+      if (!a) return
+      const href = a.getAttribute('href') || ''
+      if (href.includes('/login') || href.includes('/signup')) {
+        try {
+          const isLight = sessionStorage.getItem('iceberg_session_theme') === 'light'
+          const url = new URL(a.href, window.location.origin)
+          url.searchParams.set('theme', isLight ? 'light' : 'dark')
+          a.href = url.toString()
+        } catch {}
+      }
+    }
+    sync()
+    window.addEventListener('iceberg-theme-change', sync)
+    window.addEventListener('popstate', sync)
+    document.addEventListener('click', handleAuthLinkClick, true)
+    return () => {
+      window.removeEventListener('iceberg-theme-change', sync)
+      window.removeEventListener('popstate', sync)
+      document.removeEventListener('click', handleAuthLinkClick, true)
+    }
+  }, [])
+
+  const setDark = (val) => {
+    const nextDark = typeof val === 'function' ? val(dark) : !!val
+    try {
+      sessionStorage.setItem('iceberg_session_theme', nextDark ? 'dark' : 'light')
+    } catch {}
+    document.documentElement.classList.toggle('theme-light', !nextDark)
+    setDarkState(nextDark)
+    window.dispatchEvent(new Event('iceberg-theme-change'))
+  }
+
+  return [dark, setDark]
+}
+
+export const PRODUCTS_LIST = [
+  { icon: <DBIcon/>,     name: 'Iceberg Database',  desc: 'Serverless, India-hosted vector DB', to: '/product/database' },
+  { icon: <MemIcon/>,    name: 'Iceberg Memory',     desc: 'Persistent memory for AI agents',    to: '/product/memory' },
+  { icon: <BotIcon/>,    name: 'Iceberg Assistant',  desc: 'No-code RAG chatbot + WhatsApp',     to: '/product/assistant' },
+  { icon: <ByocIcon/>,   name: 'Iceberg BYOC',       desc: 'Deploy on your own server',          to: '/product/byoc' },
+  { icon: <SDKIcon/>,    name: 'Iceberg SDK',         desc: 'Python, JS, Go, Java, .NET, Rust',  to: '/product/sdk' },
+  { icon: <DashIcon/>,   name: 'Iceberg Dashboard',  desc: 'Manage collections, search, keys',   to: '/product/dashboard' },
+]
+
+export const CAPS_LIST = [
+  { icon: <SecIcon/>,    name: 'Security',         desc: 'DPDP compliant, India data residency', to: '/security' },
+  { icon: <IntIcon/>,    name: 'Integrations',     desc: 'LangChain, LlamaIndex, REST API',       to: '/integrations' },
+  { icon: <BackupIcon/>, name: 'Backup & Restore', desc: 'One-click backup, restore anytime',     to: '/product/backup' },
+  { icon: <NsIcon/>,     name: 'Namespaces',       desc: 'Logical separation within collections', to: '/product/namespaces' },
+]
+
+export function MobileNavDrawer({ open, setOpen }) {
+  const [dark] = useSessionTheme()
+  if (!open) return null
+  const themeQuery = !dark ? '?theme=light' : ''
   return (
-    <nav className={`sticky top-0 z-50 border-b ${dark ? 'border-white/[0.06] bg-[#0a0a0a]/90' : 'border-black/[0.06] bg-white/90'} backdrop-blur-md`}>
-      <div className="container mx-auto px-6 py-3 flex items-center justify-between max-w-6xl">
+    <div className={`md:hidden border-t px-4 py-5 space-y-5 max-h-[82vh] overflow-y-auto ${dark ? 'border-white/[0.08] bg-[#0a0a0f]' : 'border-black/[0.08] bg-white'}`}>
+      <div>
+        <p className="text-[10px] text-[#666] uppercase tracking-widest font-semibold mb-2.5 px-1">Products</p>
+        <div className="grid grid-cols-1 gap-1">
+          {PRODUCTS_LIST.map(p => (
+            <Link key={p.name} to={p.to} onClick={() => setOpen(false)}
+              className={`flex items-center gap-3 p-2.5 rounded-lg transition ${dark ? 'hover:bg-white/[0.05]' : 'hover:bg-black/[0.04]'}`}>
+              <span className="text-blue-500 flex-shrink-0">{p.icon}</span>
+              <div>
+                <div className={`text-sm font-medium leading-tight ${dark ? 'text-white' : 'text-[#111827]'}`}>{p.name}</div>
+                <div className="text-xs text-[#777]">{p.desc}</div>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      <div className={`border-t pt-4 ${dark ? 'border-white/[0.06]' : 'border-black/[0.08]'}`}>
+        <p className="text-[10px] text-[#666] uppercase tracking-widest font-semibold mb-2.5 px-1">Capabilities</p>
+        <div className="grid grid-cols-1 gap-1">
+          {CAPS_LIST.map(c => (
+            <Link key={c.name} to={c.to} onClick={() => setOpen(false)}
+              className={`flex items-center gap-3 p-2.5 rounded-lg transition ${dark ? 'hover:bg-white/[0.05]' : 'hover:bg-black/[0.04]'}`}>
+              <span className="text-blue-500 flex-shrink-0">{c.icon}</span>
+              <div>
+                <div className={`text-sm font-medium leading-tight ${dark ? 'text-white' : 'text-[#111827]'}`}>{c.name}</div>
+                <div className="text-xs text-[#777]">{c.desc}</div>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      <div className={`border-t pt-4 flex flex-wrap gap-2 ${dark ? 'border-white/[0.06]' : 'border-black/[0.08]'}`}>
+        <Link to="/docs" onClick={() => setOpen(false)} className={`px-3.5 py-2 rounded-lg text-xs font-medium ${dark ? 'bg-white/[0.04] text-white' : 'bg-black/[0.04] text-[#111827]'}`}>Documentation</Link>
+        <a href="/#pricing" onClick={() => setOpen(false)} className={`px-3.5 py-2 rounded-lg text-xs font-medium ${dark ? 'bg-white/[0.04] text-white' : 'bg-black/[0.04] text-[#111827]'}`}>Pricing</a>
+        <Link to="/status" onClick={() => setOpen(false)} className={`px-3.5 py-2 rounded-lg text-xs font-medium ${dark ? 'bg-white/[0.04] text-white' : 'bg-black/[0.04] text-[#111827]'}`}>Status</Link>
+        <Link to="/contact" onClick={() => setOpen(false)} className={`px-3.5 py-2 rounded-lg text-xs font-medium ${dark ? 'bg-white/[0.04] text-white' : 'bg-black/[0.04] text-[#111827]'}`}>Contact</Link>
+      </div>
+
+      <div className={`border-t pt-4 grid grid-cols-2 gap-2.5 ${dark ? 'border-white/[0.06]' : 'border-black/[0.08]'}`}>
+        <a href={`${D}/login${themeQuery}`} className={`py-2.5 text-center rounded-lg border text-xs font-medium ${dark ? 'border-white/15 text-white' : 'border-black/15 text-[#111827]'}`}>Sign in</a>
+        <a href={`${D}/signup${themeQuery}`} className="py-2.5 text-center rounded-lg bg-blue-600 text-xs font-semibold text-white">Start free →</a>
+      </div>
+    </div>
+  )
+}
+
+export function Navbar() {
+  const [dark, setDark] = useSessionTheme()
+  const [mobileOpen, setMobileOpen] = useState(false)
+  const themeQuery = !dark ? '?theme=light' : ''
+  return (
+    <nav className={`sticky top-0 z-50 border-b ${dark ? 'border-white/[0.06] bg-[#0a0a0a]/90' : 'border-black/[0.08] bg-white/95'} backdrop-blur-md`}>
+      <div className="container mx-auto px-4 md:px-6 py-3 flex items-center justify-between max-w-6xl">
         <div className="flex items-center gap-8">
-          <Link to="/" className="text-xl font-bold text-white">Iceberg</Link>
+          <Link to="/" className="flex items-center gap-2.5 md:gap-3 no-underline group">
+            <IcebergLogo className="w-8 h-8 md:w-9 md:h-9 transition-transform group-hover:scale-105" />
+            <span className={`text-lg md:text-xl font-bold tracking-tight ${dark ? 'text-white' : 'text-[#111827]'}`}>Iceberg</span>
+          </Link>
           <div className="hidden md:flex items-center gap-1 text-sm">
             <ProductDropdown dark={dark} />
-            {[['Developers','#code'],['Pricing','/#pricing'],['Docs','/docs'],['Blog','#']].map(([l,h]) => (
-              <a key={l} href={h} className={`${dark ? 'text-[#888] hover:text-white hover:bg-white/5' : 'text-[#666] hover:text-black hover:bg-black/5'} px-3 py-1.5 rounded-md transition`}>{l}</a>
+            {[['Developers','/#code'],['Benchmarks','/benchmarks'],['Pricing','/#pricing'],['Docs','/docs'],['Contact','/contact']].map(([l,h]) => (
+              <a key={l} href={h} className={`${dark ? 'text-[#888] hover:text-white hover:bg-white/5' : 'text-[#4b5563] hover:text-black hover:bg-black/5'} px-3 py-1.5 rounded-md transition`}>{l}</a>
             ))}
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <a href={`${D}/login`} className={`text-sm ${dark ? 'text-[#888] hover:text-white' : 'text-[#666] hover:text-black'} px-3 py-1.5 transition`}>Sign in</a>
-          <a href={`${D}/signup`} className="bg-white text-black text-sm font-semibold px-4 py-1.5 rounded-md hover:bg-white/90 transition">Start your project</a>
-          {setDark && (
-            <button onClick={() => setDark(!dark)} className={`p-1.5 rounded-md border transition ${dark ? 'border-[#1f1f1f] hover:border-[#333] text-[#888] hover:text-white' : 'border-[#ddd] hover:border-[#aaa] text-[#666] hover:text-black'}`}>
-              {dark ? (
-                <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
-              ) : (
-                <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-              )}
-            </button>
-          )}
+          <a href={`${D}/login${themeQuery}`} className={`hidden sm:inline-block text-sm ${dark ? 'text-[#888] hover:text-white' : 'text-[#4b5563] hover:text-black'} px-3 py-1.5 transition`}>Sign in</a>
+          <a href={`${D}/signup${themeQuery}`} className="btn-primary text-xs md:text-sm font-semibold px-3 md:px-4 py-1.5 rounded-md transition whitespace-nowrap">
+            <span className="md:hidden">Start free</span>
+            <span className="hidden md:inline">Start your project</span>
+          </a>
+          <button
+            onClick={() => setDark(!dark)}
+            title={dark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            aria-label="Toggle theme"
+            className={`p-2 rounded-lg border transition ${dark ? 'border-[#1f1f1f] hover:border-[#333] text-[#888] hover:text-white' : 'border-[#d1d5db] hover:border-[#9ca3af] text-[#4b5563] hover:text-black bg-white'}`}
+          >
+            {dark ? (
+              <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+            ) : (
+              <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            )}
+          </button>
+          <button
+            onClick={() => setMobileOpen(!mobileOpen)}
+            className={`md:hidden p-2 rounded-lg border transition ${dark ? 'border-white/10 text-white/80 hover:text-white hover:bg-white/5' : 'border-black/10 text-black/80 hover:text-black hover:bg-black/5'}`}
+            aria-label="Toggle Menu"
+          >
+            {mobileOpen ? (
+              <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+            ) : (
+              <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+            )}
+          </button>
         </div>
       </div>
+      <MobileNavDrawer open={mobileOpen} setOpen={setMobileOpen} dark={dark} />
     </nav>
   )
 }
 
-function ProductDropdown({ dark }) {
+function ProductDropdown({ dark = true }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
   useEffect(() => {
@@ -43,54 +191,45 @@ function ProductDropdown({ dark }) {
     return () => document.removeEventListener('mousedown', h)
   }, [])
 
-  const products = [
-    { icon: <DBIcon/>,     name: 'Iceberg Database',  desc: 'Serverless, India-hosted vector DB', to: '/product/database' },
-    { icon: <MemIcon/>,    name: 'Iceberg Memory',     desc: 'Persistent memory for AI agents',    to: '/product/memory' },
-    { icon: <BotIcon/>,    name: 'Iceberg Assistant',  desc: 'No-code RAG chatbot + WhatsApp',     to: '/product/assistant' },
-    { icon: <ByocIcon/>,   name: 'Iceberg BYOC',       desc: 'Deploy on your own server',          to: '/product/byoc' },
-    { icon: <SDKIcon/>,    name: 'Iceberg SDK',         desc: 'Python, JS, Go, Java, .NET, Rust',  to: '/product/sdk' },
-    { icon: <DashIcon/>,   name: 'Iceberg Dashboard',  desc: 'Manage collections, search, keys',   to: '/product/dashboard' },
-  ]
-  const caps = [
-    { icon: <SecIcon/>,    name: 'Security',         desc: 'DPDP compliant, India data residency', to: '/security' },
-    { icon: <IntIcon/>,    name: 'Integrations',     desc: 'LangChain, LlamaIndex, REST API',       to: '/integrations' },
-    { icon: <BackupIcon/>, name: 'Backup & Restore', desc: 'One-click backup, restore anytime',     to: '/product/backup' },
-    { icon: <NsIcon/>,     name: 'Namespaces',       desc: 'Logical separation within collections', to: '/product/namespaces' },
-  ]
-
   return (
     <div ref={ref} className="relative">
-      <button onClick={() => setOpen(!open)} className={`flex items-center gap-1 px-3 py-1.5 rounded-md transition text-sm ${open ? 'text-white bg-white/5' : 'text-[#888] hover:text-white hover:bg-white/5'}`}>
+      <button onClick={() => setOpen(!open)} className={`flex items-center gap-1 px-3 py-1.5 rounded-md transition text-sm ${
+        dark
+          ? (open ? 'text-white bg-white/5' : 'text-[#888] hover:text-white hover:bg-white/5')
+          : (open ? 'text-black bg-black/5' : 'text-[#4b5563] hover:text-black hover:bg-black/5')
+      }`}>
         Product
         <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" className={`transition-transform ${open ? 'rotate-180' : ''}`}><path d="m6 9 6 6 6-6"/></svg>
       </button>
       {open && (
-        <div className="absolute top-full left-0 mt-2 w-[560px] bg-[#111] border border-[#222] rounded-xl shadow-2xl shadow-black/50 p-5 z-50">
+        <div className={`absolute top-full left-0 mt-2 w-[560px] rounded-xl shadow-2xl p-5 z-50 border ${
+          dark ? 'bg-[#111] border-[#222] shadow-black/50' : 'bg-white border-[#e5e7eb] shadow-black/10'
+        }`}>
           <div className="mb-5">
             <p className="text-xs text-[#555] uppercase tracking-widest mb-3 px-1">Products</p>
             <div className="grid grid-cols-2 gap-1">
-              {products.map(p => (
+              {PRODUCTS_LIST.map(p => (
                 <Link key={p.name} to={p.to} onClick={() => setOpen(false)}
-                  className="flex items-start gap-3 p-3 rounded-lg hover:bg-white/[0.04] transition group">
-                  <span className="text-[#555] group-hover:text-blue-400 transition mt-0.5 flex-shrink-0">{p.icon}</span>
+                  className={`flex items-start gap-3 p-3 rounded-lg transition group ${dark ? 'hover:bg-white/[0.04]' : 'hover:bg-black/[0.04]'}`}>
+                  <span className="text-[#555] group-hover:text-blue-500 transition mt-0.5 flex-shrink-0">{p.icon}</span>
                   <div>
-                    <span className="text-sm text-white font-medium block">{p.name}</span>
+                    <span className={`text-sm font-medium block ${dark ? 'text-white' : 'text-[#111827]'}`}>{p.name}</span>
                     <span className="text-xs text-[#666]">{p.desc}</span>
                   </div>
                 </Link>
               ))}
             </div>
           </div>
-          <div className="border-t border-[#1a1a1a] mb-4"/>
+          <div className={`border-t mb-4 ${dark ? 'border-[#1a1a1a]' : 'border-[#e5e7eb]'}`}/>
           <div>
             <p className="text-xs text-[#555] uppercase tracking-widest mb-3 px-1">Capabilities</p>
             <div className="grid grid-cols-2 gap-1">
-              {caps.map(c => (
+              {CAPS_LIST.map(c => (
                 <Link key={c.name} to={c.to} onClick={() => setOpen(false)}
-                  className="flex items-start gap-3 p-3 rounded-lg hover:bg-white/[0.04] transition group">
-                  <span className="text-[#555] group-hover:text-blue-400 transition mt-0.5 flex-shrink-0">{c.icon}</span>
+                  className={`flex items-start gap-3 p-3 rounded-lg transition group ${dark ? 'hover:bg-white/[0.04]' : 'hover:bg-black/[0.04]'}`}>
+                  <span className="text-[#555] group-hover:text-blue-500 transition mt-0.5 flex-shrink-0">{c.icon}</span>
                   <div>
-                    <div className="text-sm text-white font-medium">{c.name}</div>
+                    <div className={`text-sm font-medium ${dark ? 'text-white' : 'text-[#111827]'}`}>{c.name}</div>
                     <div className="text-xs text-[#666]">{c.desc}</div>
                   </div>
                 </Link>
@@ -113,4 +252,3 @@ function SecIcon() { return <svg width="18" height="18" fill="none" stroke="curr
 function IntIcon() { return <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 16.875h3.375m0 0h3.375m-3.375 0V13.5m0 3.375v3.375M6 10.5h2.25a2.25 2.25 0 0 0 2.25-2.25V6a2.25 2.25 0 0 0-2.25-2.25H6A2.25 2.25 0 0 0 3.75 6v2.25A2.25 2.25 0 0 0 6 10.5Zm0 9.75h2.25A2.25 2.25 0 0 0 10.5 18v-2.25a2.25 2.25 0 0 0-2.25-2.25H6a2.25 2.25 0 0 0-2.25 2.25V18A2.25 2.25 0 0 0 6 20.25Zm9.75-9.75H18a2.25 2.25 0 0 0 2.25-2.25V6A2.25 2.25 0 0 0 18 3.75h-2.25A2.25 2.25 0 0 0 13.5 6v2.25a2.25 2.25 0 0 0 2.25 2.25Z"/></svg> }
 function BackupIcon() { return <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 0 1-2.247 2.118H6.622a2.25 2.25 0 0 1-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z"/></svg> }
 function NsIcon() { return <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z"/></svg> }
-function GHIcon() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2z"/></svg> }

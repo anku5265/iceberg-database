@@ -1,20 +1,42 @@
-from .client import Client, SearchResult, IcebergError
+from .client import (
+    Client,
+    SearchResult,
+    MemoryItem,
+    IcebergError,
+    AuthenticationError,
+    PermissionDeniedError,
+    NotFoundError,
+    ValidationError,
+    RateLimitError,
+)
 from typing import Optional
 
-__version__ = "0.1.0"
-__all__ = ["Client", "SearchResult", "IcebergError", "connect"]
+__version__ = "1.0.0"
+__all__ = [
+    "Client",
+    "SearchResult",
+    "MemoryItem",
+    "IcebergError",
+    "AuthenticationError",
+    "PermissionDeniedError",
+    "NotFoundError",
+    "ValidationError",
+    "RateLimitError",
+    "connect",
+]
 
 
 def connect(
     api_key: Optional[str] = None,
     base_url: Optional[str] = None,
     timeout: float = 30.0,
+    max_retries: int = 3,
 ) -> Client:
     """
-    Connect to Iceberg Vector Database.
-    
+    Connect to Iceberg Vector Database (v1.0.0).
+
     Example:
         import iceberg
-        db = iceberg.connect(api_key="your_key")
+        db = iceberg.connect(api_key="ib_your_key")
     """
-    return Client(api_key=api_key, base_url=base_url, timeout=timeout)
+    return Client(api_key=api_key, base_url=base_url, timeout=timeout, max_retries=max_retries)

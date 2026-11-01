@@ -1,11 +1,11 @@
-﻿"""
+"""
 No-code RAG Assistant — Upload docs, get a chatbot instantly.
 Better than Pinecone Assistant:
   - WhatsApp channel support
   - Website embed widget
   - Custom branding
-  - Any LLM (OpenAI, Gemini, future: Iceberg's own model)
-  - India hosted
+  - Any LLM (OpenAI, Claude, Gemini, Groq, DeepSeek, or Iceberg Native AI)
+  - India hosted in Mumbai
 """
 import uuid
 import time
@@ -28,9 +28,9 @@ class AssistantCreate(BaseModel):
     name: str
     description: str = ""
     greeting: str = "Hi! How can I help you?"
-    llm_provider: str = "openai"   # openai, gemini, custom
+    llm_provider: str = "iceberg_fast"   # iceberg_fast, openai, claude, gemini, groq, deepseek
     llm_api_key: str = ""
-    llm_model: str = "gpt-3.5-turbo"
+    llm_model: str = "all-MiniLM-L6-v2"
     color: str = "#2563eb"
 
 class ChatRequest(BaseModel):
@@ -57,16 +57,16 @@ async def create_assistant(body: AssistantCreate, user_id: str = Depends(verify_
     return {
         "id": asst_id,
         "name": body.name,
-        "chat_url": f"http://localhost:8000/assistant/{asst_id}/chat",
-        "embed_code": f'<script src="http://localhost:8000/assistant/{asst_id}/widget.js"></script>',
-        "whatsapp_webhook": f"http://localhost:8000/assistant/{asst_id}/whatsapp",
+        "chat_url": f"https://api.icebergdb.in/assistant/{asst_id}/chat",
+        "embed_code": f'<script src="https://api.icebergdb.in/assistant/{asst_id}/widget.js"></script>',
+        "whatsapp_webhook": f"https://api.icebergdb.in/assistant/{asst_id}/whatsapp",
         "message": "Assistant created. Upload documents to train it."
     }
 
 @router.get("")
 async def list_assistants(user_id: str = Depends(verify_api_key)):
     conn = get_conn()
-    rows = conn.execute("SELECT id, name, description, created_at FROM assistants WHERE user_id=?", (user_id,)).fetchall()
+    rows = conn.execute("SELECT id, name, description, llm_provider, llm_model, color, greeting, created_at FROM assistants WHERE user_id=?", (user_id,)).fetchall()
     conn.close()
     return {"assistants": [dict(r) for r in rows]}
 
@@ -136,7 +136,7 @@ async def chat(asst_id: str, body: ChatRequest):
             "sources": []
         }
 
-    # Call LLM — pluggable (future: replace with Iceberg's own model)
+    # Call LLM — pluggable across 6 providers
     reply = await _call_llm(
         provider=asst["llm_provider"],
         api_key=asst["llm_api_key"],
@@ -154,33 +154,64 @@ async def chat(asst_id: str, body: ChatRequest):
 
 async def _call_llm(provider: str, api_key: str, model: str, context: str, question: str, greeting: str) -> str:
     """
-    Pluggable LLM caller.
-    Future: when Iceberg has own AI model, add provider='Iceberg' here.
+    Pluggable LLM caller supporting OpenAI, Anthropic Claude, Google Gemini,
+    Groq (Meta Llama 3.3), DeepSeek / OpenRouter, and Iceberg Native AI.
     """
     system_prompt = f"""You are a helpful assistant. Answer questions based on the provided context only.
 If the answer is not in the context, say you don't know.
 Context:
 {context[:3000]}"""
 
-    if provider == "openai" and api_key:
+    if provider in ("openai", "groq", "deepseek") and api_key:
+        if provider == "groq":
+            url = "https://api.groq.com/openai/v1/chat/completions"
+            default_model = "llama-3.3-70b-versatile"
+        elif provider == "deepseek":
+            url = "https://openrouter.ai/api/v1/chat/completions" if api_key.startswith("sk-or-") else "https://api.deepseek.com/chat/completions"
+            default_model = "deepseek-chat"
+        else:
+            url = "https://api.openai.com/v1/chat/completions"
+            default_model = "gpt-4o-mini"
         try:
             r = httpx.post(
-                "https://api.openai.com/v1/chat/completions",
+                url,
                 headers={"Authorization": f"Bearer {api_key}"},
-                json={"model": model, "messages": [
+                json={"model": model or default_model, "messages": [
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": question}
                 ]},
                 timeout=30,
             )
             return r.json()["choices"][0]["message"]["content"]
-        except Exception as e:
+        except Exception:
+            pass
+
+    if provider == "claude" and api_key:
+        try:
+            r = httpx.post(
+                "https://api.anthropic.com/v1/messages",
+                headers={
+                    "x-api-key": api_key,
+                    "anthropic-version": "2023-06-01",
+                    "content-type": "application/json",
+                },
+                json={
+                    "model": model or "claude-3-5-sonnet-latest",
+                    "max_tokens": 1024,
+                    "system": system_prompt,
+                    "messages": [{"role": "user", "content": question}],
+                },
+                timeout=30,
+            )
+            return r.json()["content"][0]["text"]
+        except Exception:
             pass
 
     if provider == "gemini" and api_key:
+        gemini_model = model if model and model.startswith("gemini") else "gemini-2.0-flash"
         try:
             r = httpx.post(
-                f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={api_key}",
+                f"https://generativelanguage.googleapis.com/v1beta/models/{gemini_model}:generateContent?key={api_key}",
                 json={"contents": [{"parts": [{"text": f"{system_prompt}\n\nQuestion: {question}"}]}]},
                 timeout=30,
             )
@@ -188,7 +219,7 @@ Context:
         except Exception:
             pass
 
-    # Fallback — no LLM configured, return context snippet
+    # Fallback / Iceberg Native AI — zero external key needed, returns top semantic snippet
     return f"Based on the documents: {context[:500]}..."
 
 # ── WhatsApp webhook ──────────────────────────────────────────────────────────
@@ -256,7 +287,7 @@ async def widget_js(asst_id: str):
   var color = "{asst['color']}";
   var name = "{asst['name']}";
   var greeting = "{asst['greeting']}";
-  var apiUrl = "http://localhost:8000/assistant/{asst_id}/chat";
+  var apiUrl = "https://api.icebergdb.in/assistant/{asst_id}/chat";
 
   // Create chat button
   var btn = document.createElement('div');

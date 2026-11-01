@@ -6,7 +6,7 @@ Deploy Iceberg in YOUR AWS account. Your data never leaves your infrastructure.
 
 - AWS account
 - Terraform installed (`brew install terraform` or https://terraform.io)
-- Iceberg BYOC license key from https://dashboard.icebergdb.io/byoc
+- Iceberg BYOC license key from https://dashboard.icebergdb.in/byoc
 
 ## Deploy in 3 commands
 

@@ -1,6 +1,6 @@
 //! # Iceberg Rust SDK
 //!
-//! Official Rust client for [Iceberg](https://icebergdb.io) — vector search for Indian AI teams.
+//! Official Rust client for [Iceberg](https://icebergdb.in) — vector search for Indian AI teams.
 //!
 //! ## Quickstart
 //!

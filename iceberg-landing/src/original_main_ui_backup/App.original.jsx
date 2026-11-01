@@ -372,7 +372,7 @@ function HomePage() {
           </div>
           <div className="flex gap-6">
             {['Privacy','Terms','Docs','Status'].map(l=><a key={l} href="#" className="hover:text-white transition">{l}</a>)}
-            <a href="mailto:hello@icebergdb.io" className="hover:text-white transition">Contact</a>
+            <a href="mailto:hello@icebergdb.in" className="hover:text-white transition">Contact</a>
           </div>
           <div>� 2026 Iceberg</div>
         </div>
@@ -427,7 +427,7 @@ function CodeBlock() {
     ),
     curl: (
       <code>
-        <span className="token-fn">curl</span><span className="token-plain"> -X POST https://api.icebergdb.io/search \</span>{'\n'}
+        <span className="token-fn">curl</span><span className="token-plain"> -X POST https://api.icebergdb.in/search \</span>{'\n'}
         <span className="token-plain">  -H </span><span className="token-string">"X-API-Key: ib_your_key"</span><span className="token-plain"> \</span>{'\n'}
         <span className="token-plain">  -H </span><span className="token-string">"Content-Type: application/json"</span><span className="token-plain"> \</span>{'\n'}
         <span className="token-plain">  -d </span><span className="token-string">{"'{"}</span>{'\n'}

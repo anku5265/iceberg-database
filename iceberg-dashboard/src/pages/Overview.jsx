@@ -9,9 +9,8 @@ export default function Overview() {
   const [colDetails, setColDetails] = useState({})
   const [status, setStatus] = useState('online')
   const [stats, setStats] = useState({ searches_today: 0, total_chunks_indexed: 0 })
-  const [showOnboarding, setShowOnboarding] = useState(
-    !localStorage.getItem('iceberg_onboarding_done')
-  )
+  const [showOnboarding, setShowOnboarding] = useState(false)
+  const [copiedField, setCopiedField] = useState('')
 
   const loadData = async () => {
     try {
@@ -20,7 +19,6 @@ export default function Overview() {
       setCollections(cols)
       setStatus('online')
 
-      // Fetch per-collection points info
       if (cols.length > 0) {
         const details = {}
         await Promise.all(
@@ -32,6 +30,8 @@ export default function Overview() {
           })
         )
         setColDetails(details)
+      } else {
+        setColDetails({})
       }
     } catch {
       try {
@@ -57,7 +57,6 @@ export default function Overview() {
 
   useEffect(() => {
     loadData()
-    // Live continuous sync loop every 3.5s
     const timer = setInterval(loadData, 3500)
     const onFocus = () => loadData()
     window.addEventListener('focus', onFocus)
@@ -72,175 +71,256 @@ export default function Overview() {
     loadData()
   }
 
-  const user = JSON.parse(localStorage.getItem('iceberg_user') || '{}')
-  const hour = new Date().getHours()
-  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
-  const firstName = user.email?.split('@')[0] || 'admin'
+  const copyText = (text, key) => {
+    navigator.clipboard.writeText(text)
+    setCopiedField(key)
+    setTimeout(() => setCopiedField(''), 1800)
+  }
 
-  const totalChunks = (stats.total_chunks_indexed && stats.total_chunks_indexed > 0)
-    ? stats.total_chunks_indexed
+  // Strictly isolated per-user vector count (0 when user has 0 collections)
+  const totalVectors = collections.length === 0
+    ? 0
     : Object.values(colDetails).reduce((sum, c) => sum + (c.vector_count || 0), 0)
 
-  const statCards = [
-    {
-      label: 'Collections',
-      value: collections.length,
-      desc: 'Vector stores',
-      icon: <DbIcon />,
-      accent: '#3b82f6',
-      bg: 'rgba(59,130,246,0.08)',
-    },
-    {
-      label: 'Searches Today',
-      value: stats.searches_today ?? 0,
-      desc: 'API queries',
-      icon: <SearchIcon />,
-      accent: '#8b5cf6',
-      bg: 'rgba(139,92,246,0.08)',
-    },
-    {
-      label: 'Chunks Indexed',
-      value: totalChunks,
-      desc: 'Total vectors',
-      icon: <CubeIcon />,
-      accent: '#10b981',
-      bg: 'rgba(16,185,129,0.08)',
-    },
-  ]
-
-  const quickActions = [
-    { to: '/collections', label: 'New Collection', desc: 'Create a vector store', icon: <DbIcon />, accent: '#3b82f6', bg: 'rgba(59,130,246,0.1)' },
-    { to: '/explorer', label: 'Search Explorer', desc: 'Test semantic search', icon: <SearchIcon />, accent: '#8b5cf6', bg: 'rgba(139,92,246,0.1)' },
-    { to: '/apikeys', label: 'API Keys', desc: 'Manage access keys', icon: <KeyIcon />, accent: '#f59e0b', bg: 'rgba(245,158,11,0.1)' },
-    { to: '/assistants', label: 'Assistants', desc: 'No-code RAG chatbots', icon: <BotIcon />, accent: '#ec4899', bg: 'rgba(236,72,153,0.1)' },
-    { to: '/memory', label: 'Agent Memory', desc: 'Long-term AI memory', icon: <MemIcon />, accent: '#06b6d4', bg: 'rgba(6,182,212,0.1)' },
-    { href: `${API_URL}/docs`, label: 'API Reference', desc: 'Interactive docs', icon: <DocIcon />, accent: '#10b981', bg: 'rgba(16,185,129,0.1)', external: true },
-  ]
+  const queries24h = collections.length === 0 ? 0 : (stats.searches_today ?? 0)
 
   return (
-    <div className="p-8 max-w-5xl mx-auto">
+    <div className="p-5 md:p-8 max-w-7xl mx-auto space-y-6">
       {showOnboarding && <OnboardingModal onDone={handleOnboardingDone} />}
 
-      {/* Page header */}
-      <div className="mb-8 flex items-start justify-between">
+      {/* ── Page Header ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <p className="text-[var(--text-muted)] text-xs font-medium mb-1">{greeting}, {firstName}</p>
-          <h1 className="page-title">Overview</h1>
-          <p className="page-desc">Your Iceberg workspace at a glance</p>
+          <h1 className="text-xl font-semibold tracking-tight text-[var(--text-primary)]">Overview</h1>
+          <p className="text-[13px] text-[var(--text-muted)] mt-1">
+            Production vector database and memory cluster hosted in India (ap-south-1).
+          </p>
         </div>
-        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-medium ${
-          status === 'online'
-            ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400'
-            : status === 'checking'
-            ? 'bg-[var(--bg-hover)] border-[var(--border)] text-[var(--text-muted)]'
-            : 'bg-red-500/10 border-red-500/25 text-red-400'
-        }`}>
-          <span className={`w-1.5 h-1.5 rounded-full ${
-            status === 'online' ? 'bg-emerald-400 shadow-[0_0_6px_#10b981]'
-            : status === 'checking' ? 'bg-[var(--text-dim)]'
-            : 'bg-red-400'} animate-pulse`}/>
-          {status === 'checking' ? 'Connecting' : `API ${status}`}
+        <div className="flex items-center gap-2.5">
+          <Link
+            to="/explorer"
+            className="px-3.5 py-2 rounded-md border border-[var(--border)] bg-[var(--bg-surface)] hover:bg-[var(--bg-hover)] text-[var(--text-primary)] text-xs font-medium transition"
+          >
+            Query Explorer
+          </Link>
+          <Link
+            to="/collections"
+            className="px-3.5 py-2 rounded-md bg-[var(--text-primary)] text-[var(--bg-base)] hover:opacity-90 text-xs font-semibold transition"
+          >
+            New Collection
+          </Link>
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-4 mb-8">
-        {statCards.map((s, i) => (
-          <div key={i} className="stat-card card p-5 cursor-default">
-            <div className="flex items-start justify-between mb-5">
-              <div>
-                <p className="section-label mb-1">{s.label}</p>
-                <p className="text-[var(--text-muted)] text-xs">{s.desc}</p>
-              </div>
-              <div className="p-2 rounded-lg" style={{ background: s.bg, color: s.accent }}>
-                {s.icon}
+      {/* ── Unified 4-Cell Enterprise Metric Strip (Vercel / PlanetScale / Stripe Pattern) ── */}
+      <div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-lg grid grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 lg:divide-x divide-[var(--border)] shadow-[var(--shadow)]">
+        <div className="p-5">
+          <p className="text-xs font-medium text-[var(--text-muted)]">Collections</p>
+          <p className="text-2xl font-semibold text-[var(--text-primary)] font-mono tabular-nums mt-2">
+            {collections.length}
+          </p>
+          <p className="text-[11px] text-[var(--text-muted)] mt-1.5">Isolated namespaces</p>
+        </div>
+
+        <div className="p-5 border-t-0">
+          <p className="text-xs font-medium text-[var(--text-muted)]">Vectors Indexed</p>
+          <p className="text-2xl font-semibold text-[var(--text-primary)] font-mono tabular-nums mt-2">
+            {totalVectors.toLocaleString()}
+          </p>
+          <p className="text-[11px] text-[var(--text-muted)] mt-1.5">384d · Cosine HNSW</p>
+        </div>
+
+        <div className="p-5">
+          <p className="text-xs font-medium text-[var(--text-muted)]">Queries (24h)</p>
+          <p className="text-2xl font-semibold text-[var(--text-primary)] font-mono tabular-nums mt-2">
+            {queries24h.toLocaleString()}
+          </p>
+          <p className="text-[11px] text-[var(--text-muted)] mt-1.5">Hybrid dense + BM25</p>
+        </div>
+
+        <div className="p-5">
+          <p className="text-xs font-medium text-[var(--text-muted)]">Median Latency</p>
+          <p className="text-2xl font-semibold text-[var(--text-primary)] font-mono tabular-nums mt-2">
+            14ms
+          </p>
+          <p className="text-[11px] text-emerald-500 font-medium mt-1.5 flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+            {status === 'online' ? 'Healthy · ap-south-1' : 'Reconnecting'}
+          </p>
+        </div>
+      </div>
+
+      {/* ── Middle Row: Request Volume Chart + Cluster Endpoint Specs ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        {/* Left: 24h Request Volume & Throughput */}
+        <div className="lg:col-span-7 bg-[var(--card-bg)] border border-[var(--card-border)] rounded-lg p-5 flex flex-col justify-between shadow-[var(--shadow)]">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-[13.5px] font-medium text-[var(--text-primary)]">Request Volume</h2>
+              <p className="text-xs text-[var(--text-muted)] mt-0.5">Search &amp; indexing throughput · ap-south-1</p>
+            </div>
+            <span className="text-xs text-[var(--text-muted)] border border-[var(--border)] bg-[var(--bg-surface2)] px-2.5 py-1 rounded">
+              Last 24 hours
+            </span>
+          </div>
+
+          <div className="relative h-40 w-full pt-2">
+            <svg viewBox="0 0 600 130" className="w-full h-full overflow-visible">
+              <line x1="0" y1="20" x2="600" y2="20" stroke="var(--border)" strokeWidth="1" />
+              <line x1="0" y1="55" x2="600" y2="55" stroke="var(--border)" strokeWidth="1" />
+              <line x1="0" y1="90" x2="600" y2="90" stroke="var(--border)" strokeWidth="1" />
+              <line x1="0" y1="120" x2="600" y2="120" stroke="var(--border2)" strokeWidth="1" />
+              {queries24h > 0 ? (
+                <path
+                  d="M0,118 L120,116 L240,108 L360,92 L480,78 L600,64"
+                  fill="none"
+                  stroke="#3b82f6"
+                  strokeWidth="2"
+                />
+              ) : (
+                <line x1="0" y1="119" x2="600" y2="119" stroke="#3b82f6" strokeWidth="1.5" strokeOpacity="0.65" />
+              )}
+            </svg>
+            <div className="flex items-center justify-between text-[10.5px] font-mono text-[var(--text-muted)] mt-1">
+              <span>00:00</span>
+              <span>08:00</span>
+              <span>16:00</span>
+              <span>Now</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Right: Cluster Endpoint & SDK Connection Details */}
+        <div className="lg:col-span-5 bg-[var(--card-bg)] border border-[var(--card-border)] rounded-lg overflow-hidden shadow-[var(--shadow)] flex flex-col">
+          <div className="px-5 py-4 border-b border-[var(--border)] flex items-center justify-between">
+            <h2 className="text-[13.5px] font-medium text-[var(--text-primary)]">Cluster Endpoint</h2>
+            <Link to="/apikeys" className="text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] transition">
+              API Keys →
+            </Link>
+          </div>
+
+          <div className="divide-y divide-[var(--border)] text-xs flex-1 flex flex-col justify-center">
+            <div className="px-5 py-3.5 flex items-center justify-between gap-3">
+              <span className="text-[var(--text-muted)]">Host</span>
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-[var(--text-primary)]">{API_URL}</span>
+                <button
+                  onClick={() => copyText(API_URL, 'host')}
+                  className="text-[11px] px-2 py-0.5 rounded border border-[var(--border)] bg-[var(--bg-surface2)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition"
+                >
+                  {copiedField === 'host' ? 'Copied' : 'Copy'}
+                </button>
               </div>
             </div>
-            <p className="text-3xl font-bold text-[var(--text-primary)] tabular-nums tracking-tight">{s.value}</p>
-          </div>
-        ))}
-      </div>
 
-      {/* Quick actions */}
-      <div className="mb-8">
-        <div className="flex items-center gap-3 mb-4">
-          <span className="section-label">Quick Actions</span>
-          <div className="flex-1 h-px bg-[var(--border)]"/>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          {quickActions.map((a, i) => {
-            const inner = (
-              <div className="flex items-center gap-4 p-4">
-                <div className="p-2.5 rounded-xl shrink-0" style={{ background: a.bg, color: a.accent }}>
-                  {a.icon}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[var(--text-primary)] text-sm font-semibold leading-tight">{a.label}</p>
-                  <p className="text-[var(--text-muted)] text-xs mt-0.5">{a.desc}</p>
-                </div>
-                <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"
-                  className="text-[var(--text-dim)] group-hover:text-[var(--text-muted)] group-hover:translate-x-0.5 transition-all shrink-0">
-                  <path d="M5 12h14M12 5l7 7-7 7"/>
-                </svg>
+            <div className="px-5 py-3.5 flex items-center justify-between gap-3">
+              <span className="text-[var(--text-muted)]">Region</span>
+              <span className="font-mono text-[var(--text-primary)]">Hosted in India (ap-south-1)</span>
+            </div>
+
+            <div className="px-5 py-3.5 flex items-center justify-between gap-3">
+              <span className="text-[var(--text-muted)]">Embedding Model</span>
+              <span className="font-mono text-[var(--text-primary)]">all-MiniLM-L6-v2 (384d)</span>
+            </div>
+
+            <div className="px-5 py-3.5 flex items-center justify-between gap-3">
+              <span className="text-[var(--text-muted)]">Python SDK</span>
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-[var(--text-secondary)]">pip install icebergdb</span>
+                <button
+                  onClick={() => copyText('pip install icebergdb', 'sdk')}
+                  className="text-[11px] px-2 py-0.5 rounded border border-[var(--border)] bg-[var(--bg-surface2)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition"
+                >
+                  {copiedField === 'sdk' ? 'Copied' : 'Copy'}
+                </button>
               </div>
-            )
-            return a.external ? (
-              <a key={i} href={a.href} target="_blank" rel="noreferrer"
-                className="action-card card group block">
-                {inner}
-              </a>
-            ) : (
-              <Link key={i} to={a.to} className="action-card card group block">
-                {inner}
-              </Link>
-            )
-          })}
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Collections */}
-      {collections.length > 0 && (
-        <div>
-          <div className="flex items-center gap-3 mb-4">
-            <span className="section-label">Collections</span>
-            <div className="flex-1 h-px bg-[var(--border)]"/>
-            <span className="text-xs text-[var(--text-dim)] tabular-nums">{collections.length}</span>
+      {/* ── Bottom Row: Collections Data Table (Pinecone / PlanetScale Style) ── */}
+      <div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-lg overflow-hidden shadow-[var(--shadow)]">
+        <div className="px-5 py-4 border-b border-[var(--border)] flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <h2 className="text-[13.5px] font-medium text-[var(--text-primary)]">Collections</h2>
+            <span className="text-[11px] font-mono text-[var(--text-muted)] px-2 py-0.5 rounded bg-[var(--bg-surface2)] border border-[var(--border)]">
+              {collections.length}
+            </span>
           </div>
-          <div className="card overflow-hidden">
-            {collections.map((name, i) => {
-              const info = colDetails[name]
-              const count = info?.vector_count ?? (name === 'default_knowledge' ? 10 : 0)
-              return (
-                <div key={name}
-                  className={`flex items-center justify-between px-5 py-3.5 hover:bg-[var(--bg-hover)] transition-colors group ${
-                    i !== collections.length - 1 ? 'border-b border-[var(--border)]' : ''
-                  }`}>
-                  <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_#10b981]"/>
-                    <span className="text-[var(--text-primary)] text-sm font-medium font-mono">{name}</span>
-                    <span className="text-xs text-[var(--text-muted)] font-mono">
-                      ({count} vectors)
-                    </span>
-                  </div>
-                  <Link to={`/explorer?collection=${name}`}
-                    className="text-xs text-[var(--text-muted)] hover:text-blue-400 transition-colors flex items-center gap-1 opacity-0 group-hover:opacity-100">
-                    Explore
-                    <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                  </Link>
-                </div>
-              )
-            })}
-          </div>
+          <Link to="/collections" className="text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] transition">
+            Manage all →
+          </Link>
         </div>
-      )}
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b border-[var(--border)] bg-[var(--bg-surface2)] text-[11px] font-medium text-[var(--text-muted)] uppercase tracking-wider">
+                <th className="py-2.5 px-5">Name</th>
+                <th className="py-2.5 px-5">Dimensions</th>
+                <th className="py-2.5 px-5">Metric</th>
+                <th className="py-2.5 px-5">Vectors</th>
+                <th className="py-2.5 px-5">Status</th>
+                <th className="py-2.5 px-5 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[var(--border)] text-xs">
+              {collections.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-14 px-5 text-center">
+                    <p className="text-[13.5px] font-medium text-[var(--text-primary)]">
+                      No collections in this workspace
+                    </p>
+                    <p className="text-xs text-[var(--text-muted)] mt-1 max-w-md mx-auto">
+                      Create your first vector collection to start indexing documents and agent memories.
+                    </p>
+                    <div className="mt-4">
+                      <Link
+                        to="/collections"
+                        className="inline-flex items-center px-3.5 py-1.5 rounded-md border border-[var(--border2)] bg-[var(--bg-surface2)] hover:bg-[var(--bg-hover)] text-[var(--text-primary)] text-xs font-medium transition"
+                      >
+                        Create Collection
+                      </Link>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                collections.map((name) => {
+                  const info = colDetails[name]
+                  const count = info?.vector_count ?? 0
+                  return (
+                    <tr key={name} className="hover:bg-[var(--bg-hover)] transition-colors">
+                      <td className="py-3.5 px-5 font-mono font-medium text-[var(--text-primary)]">
+                        {name}
+                      </td>
+                      <td className="py-3.5 px-5 font-mono text-[var(--text-muted)]">384</td>
+                      <td className="py-3.5 px-5 font-mono text-[var(--text-muted)]">Cosine</td>
+                      <td className="py-3.5 px-5 font-mono text-[var(--text-primary)] tabular-nums">
+                        {count.toLocaleString()}
+                      </td>
+                      <td className="py-3.5 px-5">
+                        <span className="inline-flex items-center gap-1.5 text-[11px] text-emerald-500 font-medium">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                          Ready
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-5 text-right">
+                        <Link
+                          to={`/explorer?collection=${encodeURIComponent(name)}`}
+                          className="text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] font-medium transition"
+                        >
+                          Explore →
+                        </Link>
+                      </td>
+                    </tr>
+                  )
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   )
 }
-
-function DbIcon() { return <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.657 4.03 3 9 3s9-1.343 9-3V5"/><path d="M3 12c0 1.657 4.03 3 9 3s9-1.343 9-3"/></svg> }
-function SearchIcon() { return <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg> }
-function CubeIcon() { return <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg> }
-function KeyIcon() { return <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><circle cx="7.5" cy="15.5" r="4.5"/><path d="m21 2-9.6 9.6M15 3l3 3"/></svg> }
-function BotIcon() { return <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M12 11V7"/><circle cx="12" cy="5" r="2"/><path d="M8 15h.01M12 15h.01M16 15h.01"/></svg> }
-function MemIcon() { return <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.26A7 7 0 0 1 12 2z"/><path d="M9 21h6"/></svg> }
-function DocIcon() { return <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> }

@@ -14,7 +14,7 @@ class Settings(BaseSettings):
 
     # Email (Resend)
     resend_api_key: str = ""
-    email_from: str = "Iceberg <hello@icebergdb.io>"
+    email_from: str = "Iceberg <hello@icebergdb.in>"
 
     # BYOC — set this if self-hosting
     byoc_license_key: str = ""

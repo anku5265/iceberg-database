@@ -1,0 +1,36 @@
+{
+  "name": "iceberg-mcp",
+  "version": "1.0.0",
+  "description": "Official Model Context Protocol (MCP) Server for Iceberg DB — Connect Claude Code, Cursor, GitHub Copilot, Gemini & Windsurf to India-hosted (ap-south-1) Vector Search & 4-Tier Agent Memory",
+  "main": "index.js",
+  "bin": {
+    "iceberg-mcp": "bin/iceberg-mcp.js"
+  },
+  "files": [
+    "index.js",
+    "bin/iceberg-mcp.js",
+    "README.md"
+  ],
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "icebergdb",
+    "iceberg-db",
+    "vector-database",
+    "agent-memory",
+    "claude-code",
+    "cursor",
+    "copilot",
+    "rag"
+  ],
+  "author": "Ankush <contact@icebergdb.in> (https://icebergdb.in)",
+  "license": "MIT",
+  "homepage": "https://icebergdb.in",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/anku5265/iceberg-database.git"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

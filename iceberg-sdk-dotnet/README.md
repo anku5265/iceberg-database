@@ -1,6 +1,6 @@
 # Iceberg .NET SDK
 
-Official .NET client for [Iceberg Database](https://icebergdb.vercel.app) — vector search for modern AI applications.
+Official .NET client for [Iceberg Database](https://icebergdb.in) — vector search for modern AI applications.
 
 ## Requirements
 

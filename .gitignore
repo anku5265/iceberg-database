@@ -28,6 +28,8 @@ dist/
 get_pypi_2fa.py
 .npmrc
 FULL_CONVERSATION_CHAT_HISTORY.md
+FULL_CONVERSATION_CHAT_HISTORY.bak.md
+scripts/
 
 # Media & Videos
 *.mp4

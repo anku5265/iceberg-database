@@ -155,3 +155,21 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
+
+/* Mobile-only (< 768px) compact UI scaling */
+@media (max-width: 767px) {
+  html {
+    font-size: 11px !important;
+  }
+  html, body, #root {
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+  .grid > *, .flex > * {
+    min-width: 0;
+  }
+  pre {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+}

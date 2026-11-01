@@ -20,7 +20,7 @@ async def status():
             "description": "Iceberg targets 99.9% monthly uptime",
             "maintenance_window": "Sundays 2-4 AM IST",
         },
-        "regions": ["ap-south-1 (Mumbai)"],
-        "version": "0.1.0",
+        "regions": ["Hosted in India (ap-south-1)"],
+        "version": "1.0.0",
         "ts": int(time.time()),
     }

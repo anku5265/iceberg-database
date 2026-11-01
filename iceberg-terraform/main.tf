@@ -26,7 +26,7 @@ variable "instance_type" {
 }
 
 variable "iceberg_license_key" {
-  description = "Your Iceberg BYOC license key from dashboard.icebergdb.io/byoc"
+  description = "Your Iceberg BYOC license key from dashboard.icebergdb.in/byoc"
   sensitive   = true
 }
 
@@ -145,7 +145,7 @@ resource "aws_instance" "iceberg" {
 
     # Install Iceberg
     ICEBERG_LICENSE=${var.iceberg_license_key} \
-    curl -sSL https://install.icebergdb.io | bash
+    curl -sSL https://install.icebergdb.in | bash
 
     # Override API key
     sed -i "s/MASTER_API_KEY=.*/MASTER_API_KEY=${var.admin_api_key}/" ~/.iceberg/.env

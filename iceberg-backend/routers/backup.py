@@ -1,7 +1,7 @@
 import time
 import json
 from fastapi import APIRouter, Depends, HTTPException
-from core.auth import verify_api_key
+from core.auth import verify_api_key, require_write
 from services import qdrant as qdrant_svc
 from services.storage import upload_bytes, download_bytes, list_files, is_configured
 from pathlib import Path
@@ -9,17 +9,20 @@ from pathlib import Path
 router = APIRouter(prefix="/backup", tags=["Backup"])
 LOCAL_BACKUP_DIR = Path(__file__).parent.parent / "data" / "backups"
 
+
 @router.post("/{collection}")
-async def create_backup(collection: str, user_id: str = Depends(verify_api_key)):
+async def create_backup(collection: str, user_id: str = Depends(require_write)):
     """Backup a collection. Saves to R2 if configured, else local disk."""
     try:
+        scoped = qdrant_svc.resolve_collection(collection, user_id=user_id)
         client = qdrant_svc._primary()
-        points, _ = client.scroll(collection_name=collection, limit=10000, with_payload=True, with_vectors=True)
+        points, _ = client.scroll(collection_name=scoped, limit=10000, with_payload=True, with_vectors=True)
         backup_data = {
             "collection": collection,
+            "scoped_collection": scoped,
             "user_id": user_id,
             "created_at": int(time.time()),
-            "points": [{"id": str(p.id), "vector": p.vector, "payload": p.payload} for p in points]
+            "points": [{"id": str(p.id), "vector": p.vector, "payload": p.payload} for p in points],
         }
         data_bytes = json.dumps(backup_data).encode()
         ts = int(time.time())
@@ -30,7 +33,7 @@ async def create_backup(collection: str, user_id: str = Depends(verify_api_key))
             storage = "r2"
         else:
             LOCAL_BACKUP_DIR.mkdir(parents=True, exist_ok=True)
-            path = LOCAL_BACKUP_DIR / f"{collection}_{ts}.json"
+            path = LOCAL_BACKUP_DIR / f"{scoped}_{ts}.json"
             path.write_bytes(data_bytes)
             url = str(path)
             storage = "local"
@@ -41,10 +44,11 @@ async def create_backup(collection: str, user_id: str = Depends(verify_api_key))
             "points_backed_up": len(points),
             "storage": storage,
             "location": url,
-            "created_at": ts
+            "created_at": ts,
         }
     except Exception as e:
         raise HTTPException(500, str(e))
+
 
 @router.get("")
 async def list_backups(user_id: str = Depends(verify_api_key)):
@@ -56,16 +60,20 @@ async def list_backups(user_id: str = Depends(verify_api_key)):
     files = list(LOCAL_BACKUP_DIR.glob("*.json"))
     return {"backups": [{"key": f.name, "size_kb": f.stat().st_size // 1024} for f in files], "storage": "local"}
 
+
 @router.post("/{collection}/restore/{backup_id}")
-async def restore_backup(collection: str, backup_id: str, user_id: str = Depends(verify_api_key)):
+async def restore_backup(collection: str, backup_id: str, user_id: str = Depends(require_write)):
     """Restore a collection from backup."""
     try:
+        scoped = qdrant_svc.resolve_collection(collection, user_id=user_id)
         ts = backup_id.replace(f"{collection}_", "")
         if is_configured():
             key = f"backups/{user_id}/{collection}/{ts}.json"
             data_bytes = download_bytes(key)
         else:
-            path = LOCAL_BACKUP_DIR / f"{backup_id}.json"
+            path = LOCAL_BACKUP_DIR / f"{scoped}_{ts}.json"
+            if not path.exists():
+                path = LOCAL_BACKUP_DIR / f"{backup_id}.json"
             if not path.exists():
                 raise HTTPException(404, "Backup not found")
             data_bytes = path.read_bytes()
@@ -77,23 +85,21 @@ async def restore_backup(collection: str, backup_id: str, user_id: str = Depends
         from qdrant_client.models import PointStruct
         client = qdrant_svc._primary()
 
-        # Recreate collection
-        qdrant_svc.delete_collection(collection)
-        qdrant_svc.create_collection(collection)
+        qdrant_svc.delete_collection(collection, user_id=user_id)
+        qdrant_svc.create_collection(collection, user_id=user_id)
 
-        # Restore points
         points = [
             PointStruct(id=p["id"], vector=p["vector"], payload=p["payload"])
             for p in backup_data["points"]
         ]
         if points:
-            client.upsert(collection_name=collection, points=points)
+            client.upsert(collection_name=scoped, points=points)
 
         return {
             "restored": True,
             "collection": collection,
             "points_restored": len(points),
-            "from_backup": backup_id
+            "from_backup": backup_id,
         }
     except HTTPException:
         raise

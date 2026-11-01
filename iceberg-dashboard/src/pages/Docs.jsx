@@ -1,11 +1,14 @@
 import { useState } from 'react'
 import { API_URL } from '../lib/config'
+import { CodeBlock } from '../components/CodeBlock'
+import { trackFounderEvent } from '../lib/api'
 
 const NAV = [
   {
     group: 'Getting Started',
     items: [
-      { id: 'quickstart', title: 'Quickstart' },
+      { id: 'quickstart', title: 'Quickstart (2 Min)' },
+      { id: 'cookbook', title: 'Practical Cookbook' },
       { id: 'authentication', title: 'Authentication' },
       { id: 'concepts', title: 'Core Concepts' },
     ]
@@ -13,453 +16,587 @@ const NAV = [
   {
     group: 'API Reference',
     items: [
+      { id: 'memory', title: 'Cognitive Memory (v1)' },
       { id: 'collections', title: 'Collections' },
-      { id: 'indexing', title: 'Indexing' },
-      { id: 'search', title: 'Search' },
-      { id: 'memory', title: 'Agent Memory' },
-      { id: 'assistants', title: 'Assistants' },
+      { id: 'indexing', title: 'Indexing & Files' },
+      { id: 'search', title: 'Hybrid Search' },
+      { id: 'assistants', title: 'No-Code Assistants' },
     ]
   },
   {
-    group: 'SDKs',
+    group: 'Official SDKs (6)',
     items: [
-      { id: 'python', title: 'Python' },
-      { id: 'javascript', title: 'JavaScript' },
-      { id: 'rest', title: 'REST API' },
+      { id: 'python', title: 'Python (PyPI)' },
+      { id: 'javascript', title: 'JavaScript / TS (npm)' },
+      { id: 'go', title: 'Go SDK' },
+      { id: 'rust', title: 'Rust Crate' },
+      { id: 'java', title: 'Java / Spring' },
+      { id: 'dotnet', title: '.NET / C#' },
+      { id: 'frameworks', title: 'LangChain & LlamaIndex' },
+      { id: 'rest', title: 'REST API & cURL' },
     ]
   },
 ]
 
 const CONTENT = {
   quickstart: {
-    title: 'Quickstart',
-    desc: 'Get up and running in under 5 minutes.',
+    title: 'Quickstart — Zero to AI Memory in 2 Minutes',
+    desc: 'Install the official SDK, store cognitive memories or vectors, and recall them with sub-10ms latency.',
     sections: [
       {
-        heading: '1. Sign up and get your API key',
-        text: 'Create an account at dashboard.icebergdb.io. After signup, your API key is automatically generated and saved. Find it under API Keys in the sidebar.',
+        heading: '1. Sign up & get your free API key',
+        text: 'Create a free account at **dashboard.icebergdb.in/signup**. Your `ib_...` API key is generated immediately.',
       },
       {
-        heading: '2. Install the Python SDK',
-        code: `pip install iceberg-db`,
+        heading: '2. Install the Official Python or JS SDK',
+        code: `# Python (PyPI)\npip install icebergdb\n\n# JavaScript / TypeScript (npm)\nnpm install icebergdb`,
         lang: 'bash',
       },
       {
-        heading: '3. Create a collection and index text',
+        heading: '3A. Cognitive AI Memory (Recommended for Agents & Chatbots)',
+        text: 'No need to manually embed vectors or manage collections — pass raw text or conversations and Iceberg automatically extracts facts, resolves contradictions, and applies Ebbinghaus time-decay.',
+        code: `from icebergdb import IcebergMemory
+
+mem = IcebergMemory(api_key="ib_your_api_key")
+
+# 1. Remember facts (Auto-Embedding + Auto-Fact Extraction + Conflict Resolution)
+mem.remember(
+    text="Ankush is the founder of IcebergDB and prefers Python and dark mode.",
+    user_id="user_ankush",
+    importance=0.95
+)
+
+# 2. Recall relevant memories (Hybrid Semantic + BM25 + Cognitive Decay)
+hits = mem.recall(
+    query="What are the user's preferences and role?",
+    user_id="user_ankush",
+    limit=3
+)
+for h in hits["memories"]:
+    print(f"[{h['score']:.3f}] {h['text']}")`,
+        lang: 'python',
+      },
+      {
+        heading: '3B. Vector Collections & Hybrid RAG Search',
+        text: 'Want direct control over collections, document chunks, and PDF uploads? Use the `Client` interface:',
         code: `from iceberg import Client
 
 client = Client(api_key="ib_your_api_key")
 
-# Create a collection
+# Create a collection & index documents
 client.create_collection("my_docs")
+client.index_text("my_docs", "Iceberg is India's sovereign vector & cognitive memory database.")
+client.index_text("my_docs", "Hybrid search combines 384d semantic vectors and Okapi BM25 keyword ranking.")
 
-# Index some text
-client.index_text("my_docs", "Iceberg is India's vector database for AI teams.")
-client.index_text("my_docs", "Hybrid search combines semantic and keyword search.")
-
-# Search
-results = client.search("my_docs", "what is Iceberg?")
+# Hybrid Search (Dense Vector + Keyword RRF)
+results = client.search("my_docs", "what is Iceberg?", search_type="hybrid", alpha=0.7)
 for r in results:
     print(f"{r.score:.2f} — {r.text}")`,
         lang: 'python',
       },
+    ]
+  },
+
+  cookbook: {
+    title: 'Practical Cookbook — Real-World AI Recipes',
+    desc: 'Copy-paste production templates for building stateful AI Chatbots and Autonomous Agents.',
+    sections: [
       {
-        heading: "That's it",
-        text: "You've indexed your first vectors and run a semantic search. Explore the sidebar to learn about collections, hybrid search, agent memory, and more.",
-      }
+        heading: 'Recipe 1: Building an AI Chatbot with Persistent User Memory',
+        text: 'Give any LLM (OpenAI, Gemini, Claude, Groq) permanent memory across sessions so it never forgets the user.',
+        code: `from icebergdb import IcebergMemory
+from openai import OpenAI
+
+memory = IcebergMemory(api_key="ib_your_api_key")
+llm = OpenAI(api_key="sk-...")
+
+def chat_with_memory(user_id: str, user_message: str) -> str:
+    # 1. Recall past memories about this specific user
+    past = memory.recall(query=user_message, user_id=user_id, limit=5)
+    context_str = "\\n".join([f"- {m['text']}" for m in past.get("memories", [])])
+
+    # 2. Inject recalled memories into the system prompt
+    messages = [
+        {"role": "system", "content": f"You are a helpful AI assistant.\\nKnown user memories:\\n{context_str}"},
+        {"role": "user", "content": user_message}
+    ]
+    response = llm.chat.completions.create(model="gpt-4o-mini", messages=messages)
+    reply = response.choices[0].message.content
+
+    # 3. Automatically extract and store new facts from this turn
+    memory.remember(
+        text=f"User said: {user_message}",
+        user_id=user_id,
+        extract_facts=True,
+        resolve_conflicts=True
+    )
+    return reply`,
+        lang: 'python',
+      },
+      {
+        heading: 'Recipe 2: Multi-Agent Scoped Memory (User + Agent + Session Isolation)',
+        text: 'Isolate memories between different agents (`coding_agent`, `support_agent`) while sharing global user context.',
+        code: `from icebergdb import IcebergMemory
+
+mem = IcebergMemory(api_key="ib_your_api_key")
+
+# Store agent-specific episodic memory
+mem.remember(
+    text="Fixed CORS issue on production FastAPI server by allowing dashboard origin.",
+    user_id="team_alpha",
+    agent_id="devops_agent",
+    session_id="incident_42",
+    category="episodic",
+    importance=0.9
+)
+
+# Recall only memories belonging to devops_agent for team_alpha
+res = mem.recall(
+    query="How did we fix the CORS issue?",
+    user_id="team_alpha",
+    agent_id="devops_agent"
+)
+print(res["memories"][0]["text"])`,
+        lang: 'python',
+      },
     ]
   },
 
   authentication: {
-    title: 'Authentication',
-    desc: 'All API requests require an API key.',
+    title: 'Authentication & Scoped RBAC Keys',
+    desc: 'All API requests authenticate via the X-API-Key header.',
     sections: [
       {
-        heading: 'API Key header',
-        text: 'Pass your API key in the X-API-Key header on every request.',
-        code: `curl https://api.icebergdb.io/collections \\
-  -H "X-API-Key: ib_your_api_key"`,
+        heading: 'API Key Header',
+        text: 'Pass your API key in the **X-API-Key** header on every request.',
+        code: `curl https://api.icebergdb.in/collections \\\n  -H "X-API-Key: ib_your_api_key"`,
         lang: 'bash',
       },
       {
-        heading: 'Key roles',
-        text: 'Three permission levels are available:',
+        heading: 'Role-Based Access Control (RBAC)',
+        text: 'Create scoped sub-keys for microservices and frontend clients:',
         list: [
-          '**admin** — full access: create, delete, index, search',
-          '**read_write** — can index and search, cannot delete collections',
-          '**read_only** — search only, no write access',
+          '**admin** — Full access: create/delete collections, manage keys, index & search',
+          '**read_write** — Can index documents, store memories, and search; cannot delete collections',
+          '**read_only** — Search and recall only; safe for restricted worker services',
         ]
       },
       {
-        heading: 'Create additional keys',
-        code: `# Via SDK
-key = client.create_key(name="production", role="read_write")
-print(key.api_key)  # ib_...
-
-# Via REST
-curl -X POST .../auth/keys \\
-  -H "X-API-Key: ib_admin_key" \\
-  -d '{"name": "prod", "role": "read_write"}'`,
-        lang: 'bash',
-      }
+        heading: 'Create Additional Scoped Keys (Python)',
+        code: `from iceberg import Client\n\nclient = Client(api_key="ib_admin_key")\nkey = client.create_key(name="production_worker", role="read_write")\nprint(key["api_key"])`,
+        lang: 'python',
+      },
     ]
   },
 
   concepts: {
-    title: 'Core Concepts',
-    desc: 'Key terms and how Iceberg works under the hood.',
+    title: 'Core Architecture & Concepts',
+    desc: 'How Iceberg combines High-Speed Vector Search, Okapi BM25, and Human-Like Cognitive Memory.',
     sections: [
       {
-        heading: 'Collections',
-        text: 'A collection is a named container for your vectors — like a table in a database. Each collection stores chunks of text along with their vector embeddings.',
+        heading: '1. Cognitive Memory vs Raw Vector Storage',
+        text: 'Standard vector databases (Pinecone, Qdrant) only store dumb float arrays. Iceberg adds a **Cognitive Memory Layer** with automatic fact extraction, contradiction resolution (replacing outdated facts when a user changes their mind), and **Ebbinghaus Memory Decay** (`Score * exp(-lambda * age) * (1 + alpha * importance)`).',
       },
       {
-        heading: 'Chunks',
-        text: 'When you index text or a file, Iceberg automatically splits it into smaller pieces (chunks), embeds each chunk, and stores them. This is what enables granular, accurate search.',
-      },
-      {
-        heading: 'Hybrid Search',
-        text: 'Iceberg combines two search methods: semantic (vector similarity) and keyword (BM25). The alpha parameter controls the blend — 0.0 = pure keyword, 1.0 = pure semantic, 0.5 = balanced.',
-        code: `results = client.search(
-    "my_docs",
-    "return policy",
-    search_type="hybrid",
-    alpha=0.5  # 50% semantic, 50% keyword
-)`,
+        heading: '2. Single-Pass Hybrid Search (Dense 384d + BM25)',
+        text: 'Every document and memory is indexed into both a **384-dimensional Cosine Vector Index** and an **Okapi BM25 Inverted Keyword Index**. Setting `alpha=0.7` blends 70% deep semantic meaning with 30% exact keyword matching.',
+        code: `results = client.search(\n    "my_docs",\n    "DPDP compliance section 4",\n    search_type="hybrid",\n    alpha=0.7\n)`,
         lang: 'python',
       },
       {
-        heading: 'Embeddings',
-        text: 'Iceberg uses multilingual-e5-large (1024 dimensions) to embed text. This model handles English, Hindi, and 90+ other languages.',
+        heading: '3. Multi-Tenant Scoped Isolation',
+        text: 'Every memory and vector supports zero-leakage isolation via `user_id`, `agent_id`, `session_id`, and custom metadata filters.',
+      }
+    ]
+  },
+
+  memory: {
+    title: 'Cognitive Memory API (/v1/memory)',
+    desc: 'Autonomous long-term, episodic, and semantic memory with auto-extraction and conflict resolution.',
+    sections: [
+      {
+        heading: 'Store & Extract Memories (/v1/memory/remember)',
+        code: `from icebergdb import IcebergMemory
+
+mem = IcebergMemory(api_key="ib_your_key")
+
+res = mem.remember(
+    text="I moved from Delhi to Bengaluru last week and switched from React to Vue.",
+    user_id="user_123",
+    agent_id="assistant_v1",
+    category="long_term",       # long_term | episodic | semantic | short_term
+    importance=0.85,            # 0.0 to 1.0 priority weight
+    extract_facts=True,         # Auto-splits into atomic facts
+    resolve_conflicts=True      # Automatically supersedes old "lives in Delhi" fact!
+)
+print(res)`,
+        lang: 'python',
+      },
+      {
+        heading: 'Recall with Cognitive Decay (/v1/memory/recall)',
+        code: `memories = mem.recall(
+    query="Where does the user live and what framework do they use?",
+    user_id="user_123",
+    limit=5,
+    use_decay=True              # Applies Ebbinghaus recency + importance weighting
+)
+
+for m in memories["memories"]:
+    print(f"Score: {m['score']:.3f} | Fact: {m['text']}")`,
+        lang: 'python',
+      },
+      {
+        heading: 'REST cURL Example (/v1/memory/remember)',
+        code: `curl -X POST https://api.icebergdb.in/v1/memory/remember \\\n  -H "X-API-Key: ib_your_key" \\\n  -H "Content-Type: application/json" \\\n  -d '{\n    "text": "User prefers concise code examples in Python",\n    "user_id": "user_123",\n    "importance": 0.9,\n    "extract_facts": true,\n    "resolve_conflicts": true\n  }'`,
+        lang: 'bash',
       }
     ]
   },
 
   collections: {
     title: 'Collections API',
-    desc: 'Create, list, and delete collections.',
+    desc: 'Create, inspect, list, and delete vector collections.',
     sections: [
       {
-        heading: 'Create collection',
-        code: `# Python
-client.create_collection("products")
-
-# REST
-POST /collections
-{
-  "name": "products",
-  "description": "Product catalog"
-}`,
+        heading: 'Create Collection (Python)',
+        code: `from iceberg import Client\nclient = Client(api_key="ib_your_key")\nclient.create_collection("products", description="E-commerce catalog")`,
         lang: 'python',
       },
       {
-        heading: 'List collections',
-        code: `# Python
-collections = client.list_collections()
-# → ['products', 'support_docs', 'faqs']
-
-# REST
-GET /collections`,
-        lang: 'python',
+        heading: 'Create Collection (cURL)',
+        code: `curl -X POST https://api.icebergdb.in/collections \\\n  -H "X-API-Key: ib_your_key" \\\n  -H "Content-Type: application/json" \\\n  -d '{"name": "products", "description": "E-commerce catalog"}'`,
+        lang: 'bash',
       },
       {
-        heading: 'Delete collection',
-        code: `# Python
-client.delete_collection("products")
-
-# REST
-DELETE /collections/{name}`,
+        heading: 'List & Delete Collections',
+        code: `collections = client.list_collections()\nprint(collections)\n\nclient.delete_collection("products")`,
         lang: 'python',
       }
     ]
   },
 
   indexing: {
-    title: 'Indexing',
-    desc: 'Add content to your collections.',
+    title: 'Indexing Text & Uploading Files (PDF, TXT, MD)',
+    desc: 'Automatically chunk, embed (384d), and index text or documents in one call.',
     sections: [
       {
-        heading: 'Index plain text',
-        code: `client.index_text(
-    collection="my_docs",
-    text="Your text content here.",
-    source="manual"  # optional metadata
-)`,
+        heading: 'Index Plain Text',
+        code: `client.index_text(\n    collection="my_docs",\n    text="IcebergDB provides sub-10ms hybrid vector search.",\n    source="architecture_guide"\n)`,
         lang: 'python',
       },
       {
-        heading: 'Upload a file',
-        code: `# Python — local file
-client.upload("my_docs", "policy.pdf")
-
-# Supported: PDF, TXT, MD
-# Iceberg auto-chunks and embeds the file`,
+        heading: 'Upload PDF / Markdown / TXT Files',
+        code: `# Automatically extracts text, splits into overlapping chunks, and embeds\nclient.upload("my_docs", "company_handbook.pdf")`,
         lang: 'python',
       },
       {
-        heading: 'JavaScript',
-        code: `import { Client } from 'iceberg-db'
-const client = new Client({ apiKey: 'ib_your_key' })
-
-// Index text
-await client.indexText('my_docs', 'Content here')
-
-// Upload file (browser)
-const file = fileInput.files[0]
-await client.uploadFile('my_docs', file)`,
-        lang: 'javascript',
-      },
-      {
-        heading: 'REST — index text',
-        code: `curl -X POST .../documents/text \\
-  -H "X-API-Key: ib_key" \\
-  -F "collection=my_docs" \\
-  -F "text=Your content here"`,
+        heading: 'REST File Upload (cURL)',
+        code: `curl -X POST https://api.icebergdb.in/documents/upload \\\n  -H "X-API-Key: ib_your_key" \\\n  -F "collection=my_docs" \\\n  -F "file=@company_handbook.pdf"`,
         lang: 'bash',
       }
     ]
   },
 
   search: {
-    title: 'Search API',
-    desc: 'Query your collections with semantic, keyword, or hybrid search.',
+    title: 'Hybrid, Semantic & Keyword Search API',
+    desc: 'Query your collections with Reciprocal Rank Fusion (Dense Cosine + Okapi BM25).',
     sections: [
       {
-        heading: 'Basic search',
-        code: `results = client.search("my_docs", "return policy")
-
-for r in results:
-    print(f"{r.score:.2f}  {r.text[:80]}")`,
+        heading: 'Search Modes (Hybrid, Semantic, Keyword)',
+        code: `# 1. Hybrid Search (Default — combines Vector Similarity + BM25 Keywords)\nresults = client.search("my_docs", "refund policy", search_type="hybrid", alpha=0.6, top_k=5)\n\n# 2. Pure Semantic Search (Meaning-based)\nresults = client.search("my_docs", "money back guarantee", search_type="semantic")\n\n# 3. Pure Keyword Search (Exact BM25 term match)\nresults = client.search("my_docs", "INV-2026-994", search_type="keyword")`,
         lang: 'python',
       },
       {
-        heading: 'Search modes',
-        code: `# Hybrid (default) — best for most use cases
-results = client.search("docs", "query", search_type="hybrid", alpha=0.5)
-
-# Pure semantic — meaning-based
-results = client.search("docs", "query", search_type="semantic")
-
-# Pure keyword — exact term matching
-results = client.search("docs", "query", search_type="keyword")`,
-        lang: 'python',
-      },
-      {
-        heading: 'Parameters',
-        list: [
-          '**top_k** (int, default 5) — number of results to return',
-          '**search_type** (string) — "hybrid", "semantic", or "keyword"',
-          '**alpha** (float, 0–1) — semantic weight in hybrid mode',
-        ]
-      },
-      {
-        heading: 'REST',
-        code: `POST /search
-{
-  "collection": "my_docs",
-  "query": "affordable laptop",
-  "top_k": 5,
-  "search_type": "hybrid",
-  "alpha": 0.5
-}`,
-        lang: 'json',
-      }
-    ]
-  },
-
-  memory: {
-    title: 'Agent Memory',
-    desc: 'Persistent long-term memory for AI agents.',
-    sections: [
-      {
-        heading: 'Store a memory',
-        code: `client.remember(
-    agent_id="user_123",
-    content="User prefers formal tone. Works at a startup.",
-    memory_type="long_term"  # long_term | short_term | episodic | semantic
-)`,
-        lang: 'python',
-      },
-      {
-        heading: 'Recall memories',
-        code: `memories = client.recall("user_123", "what tone does user prefer?", top_k=3)
-
-for m in memories:
-    print(f"{m.score:.2f}  {m.content}")`,
-        lang: 'python',
-      },
-      {
-        heading: 'Memory types',
-        list: [
-          '**long_term** — permanent, never expires',
-          '**short_term** — expires in 1 hour',
-          '**episodic** — expires in 30 days',
-          '**semantic** — factual knowledge, permanent',
-        ]
-      },
-      {
-        heading: 'REST',
-        code: `# Store
-POST /memory/{agent_id}/remember
-{ "content": "...", "memory_type": "long_term" }
-
-# Recall
-POST /memory/{agent_id}/recall
-{ "query": "...", "top_k": 5 }
-
-# Clear
-DELETE /memory/{agent_id}`,
+        heading: 'REST Search (cURL)',
+        code: `curl -X POST https://api.icebergdb.in/search \\\n  -H "X-API-Key: ib_your_key" \\\n  -H "Content-Type: application/json" \\\n  -d '{\n    "collection": "my_docs",\n    "query": "refund policy",\n    "top_k": 5,\n    "search_type": "hybrid",\n    "alpha": 0.6\n  }'`,
         lang: 'bash',
       }
     ]
   },
 
   assistants: {
-    title: 'Assistants',
-    desc: 'No-code RAG chatbots — upload docs, get a working chatbot.',
+    title: 'No-Code RAG Assistants & Website Widget',
+    desc: 'Deploy a custom AI chatbot trained on your collections in 60 seconds.',
     sections: [
       {
-        heading: 'Create an assistant',
-        text: 'Go to Assistants in the sidebar → New assistant. Set a name, greeting message, and connect your LLM API key (OpenAI or Gemini).',
+        heading: '1. Create an Assistant in the Dashboard',
+        text: 'Open **Assistants** in the sidebar → **New Assistant**. Select your collection and choose any LLM provider (**Iceberg Native AI**, **OpenAI**, **Anthropic Claude**, **Google Gemini**, **Groq Llama 3.3**, or **DeepSeek**).',
       },
       {
-        heading: 'Upload training documents',
-        text: 'Upload PDFs, text files, or markdown. Iceberg automatically chunks and indexes them into your assistant\'s knowledge base.',
-      },
-      {
-        heading: 'Embed on your website',
-        code: `<script src="https://api.icebergdb.io/assistant/{id}/widget.js"></script>`,
+        heading: '2. Embed on Any Website (1-Line Script)',
+        code: `<script src="https://api.icebergdb.in/assistant/YOUR_ASSISTANT_ID/widget.js" async></script>`,
         lang: 'html',
       },
       {
-        heading: 'WhatsApp integration',
-        text: 'Point your WhatsApp Business webhook to the assistant\'s webhook URL. Users can then chat with your assistant directly on WhatsApp.',
-        code: `Webhook URL:
-https://api.icebergdb.io/assistant/{id}/whatsapp`,
+        heading: '3. WhatsApp Business Webhook',
+        code: `https://api.icebergdb.in/assistant/YOUR_ASSISTANT_ID/whatsapp`,
         lang: 'text',
       }
     ]
   },
 
   python: {
-    title: 'Python SDK',
-    desc: 'Official Python client for Iceberg.',
+    title: 'Official Python SDK (PyPI: icebergdb)',
+    desc: 'Published on PyPI — supports both Cognitive Memory (IcebergMemory) and RAG Collections (Client).',
     sections: [
       {
-        heading: 'Install',
-        code: `pip install iceberg-db`,
+        heading: 'Installation',
+        code: `pip install --upgrade icebergdb`,
         lang: 'bash',
       },
       {
-        heading: 'Initialize',
-        code: `from iceberg import Client
+        heading: 'Complete Python Example',
+        code: `from icebergdb import IcebergMemory
+from iceberg import Client
 
-client = Client(
-    api_key="ib_your_key",
-    base_url="https://api.icebergdb.io"  # optional
-)`,
-        lang: 'python',
-      },
-      {
-        heading: 'Full example',
-        code: `from iceberg import Client
+# 1. Cognitive Memory API
+mem = IcebergMemory(api_key="ib_your_key")
+mem.remember("User is building an AI SaaS in Python", user_id="u_1", importance=0.9)
+print(mem.recall("What is the user building?", user_id="u_1"))
 
+# 2. Vector Collections & Hybrid RAG API
 client = Client(api_key="ib_your_key")
-
-# Collections
-client.create_collection("products")
-collections = client.list_collections()
-
-# Index
-client.index_text("products", "Premium wireless headphones — Rs 2999")
-client.upload("products", "catalog.pdf")
-
-# Search
-results = client.search("products", "budget headphones", top_k=5)
-
-# Memory
-client.remember("agent_001", "User is a developer", memory_type="long_term")
-memories = client.recall("agent_001", "who is the user?")`,
+client.create_collection("knowledge_base")
+client.index_text("knowledge_base", "IcebergDB supports 6 official language SDKs.")
+hits = client.search("knowledge_base", "supported languages", top_k=3)
+for h in hits:
+    print(h.score, h.text)`,
         lang: 'python',
       }
     ]
   },
 
   javascript: {
-    title: 'JavaScript SDK',
-    desc: 'Official JS/TS client — works in Node.js, Next.js, Deno, Bun.',
+    title: 'Official JavaScript / TypeScript SDK (npm: icebergdb)',
+    desc: 'Zero-dependency TypeScript client for Node.js, Next.js, Cloudflare Workers, Deno, and Bun.',
     sections: [
       {
-        heading: 'Install',
-        code: `npm install iceberg-db
-# or
-yarn add iceberg-db`,
+        heading: 'Installation',
+        code: `npm install icebergdb`,
         lang: 'bash',
       },
       {
-        heading: 'Initialize',
-        code: `import { Client } from 'iceberg-db'
+        heading: 'TypeScript / Node.js Usage',
+        code: `import { IcebergMemory } from 'icebergdb';
 
-const client = new Client({
+const memory = new IcebergMemory({
   apiKey: process.env.ICEBERG_API_KEY,
-  // baseUrl: 'https://...' — optional
-})`,
-        lang: 'javascript',
-      },
-      {
-        heading: 'Usage',
-        code: `// Create collection
-await client.createCollection('docs')
+});
 
-// Index
-await client.indexText('docs', 'Your content here')
-await client.uploadFile('docs', file)  // browser File object
+// Store cognitive memory
+await memory.remember({
+  text: 'Customer prefers dark mode and monthly GST invoices.',
+  userId: 'cust_99',
+  importance: 0.9,
+});
 
-// Search
-const results = await client.search('docs', 'your query', {
-  topK: 5,
-  searchType: 'hybrid',
-  alpha: 0.5
-})
-
-results.forEach(r => console.log(r.score, r.text))`,
+// Recall relevant memories
+const res = await memory.recall({
+  query: 'billing and UI preferences',
+  userId: 'cust_99',
+  limit: 5,
+});
+console.log(res.memories);`,
         lang: 'javascript',
       }
     ]
   },
 
+  go: {
+    title: 'Official Go SDK (iceberg-sdk-go)',
+    desc: 'High-concurrency, zero-dependency Go client for backend microservices.',
+    sections: [
+      {
+        heading: 'Installation',
+        code: `go get github.com/anku5265/iceberg-database/iceberg-sdk-go`,
+        lang: 'bash',
+      },
+      {
+        heading: 'Go Example',
+        code: `package main
+
+import (
+    "context"
+    "fmt"
+    iceberg "github.com/anku5265/iceberg-database/iceberg-sdk-go"
+)
+
+func main() {
+    client := iceberg.NewClient("ib_your_api_key")
+    ctx := context.Background()
+
+    // Remember a fact
+    _, _ = client.Remember(ctx, iceberg.RememberRequest{
+        Text:       "Service latency SLA is under 10ms p99",
+        UserID:     "infra_team",
+        Importance: 0.95,
+    })
+
+    // Recall memories
+    res, _ := client.Recall(ctx, iceberg.RecallRequest{
+        Query:  "What is our latency SLA?",
+        UserID: "infra_team",
+        Limit:  3,
+    })
+    fmt.Printf("Top Memory: %+v\\n", res.Memories)
+}`,
+        lang: 'go',
+      }
+    ]
+  },
+
+  rust: {
+    title: 'Official Rust SDK (icebergdb crate)',
+    desc: 'Async Tokio + Reqwest strongly-typed Rust SDK for ultra-low-latency systems.',
+    sections: [
+      {
+        heading: 'Installation (Cargo.toml)',
+        code: `[dependencies]\nicebergdb = "0.1"\ntokio = { version = "1", features = ["full"] }`,
+        lang: 'toml',
+      },
+      {
+        heading: 'Rust Usage',
+        code: `use icebergdb::{IcebergClient, RememberRequest, RecallRequest};
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let client = IcebergClient::new("ib_your_api_key");
+
+    client.remember(RememberRequest {
+        text: "Rust worker node connected to India (ap-south-1) cluster".into(),
+        user_id: Some("sys_rust".into()),
+        importance: Some(0.9),
+        ..Default::default()
+    }).await?;
+
+    let hits = client.recall(RecallRequest {
+        query: "which cluster is connected?".into(),
+        user_id: Some("sys_rust".into()),
+        limit: Some(3),
+        ..Default::default()
+    }).await?;
+
+    println!("Recalled: {:?}", hits.memories);
+    Ok(())
+}`,
+        lang: 'rust',
+      }
+    ]
+  },
+
+  java: {
+    title: 'Official Java SDK (Java 11+ / Spring Boot)',
+    desc: 'Native HttpClient-based Java SDK for enterprise Spring Boot and JVM backends.',
+    sections: [
+      {
+        heading: 'Maven Dependency',
+        code: `<dependency>\n  <groupId>in.icebergdb</groupId>\n  <artifactId>iceberg-sdk-java</artifactId>\n  <version>1.0.0</version>\n</dependency>`,
+        lang: 'xml',
+      },
+      {
+        heading: 'Java Example',
+        code: `import in.iceberg.Client;
+import java.util.Map;
+
+public class Main {
+    public static void main(String[] args) throws Exception {
+        IcebergClient client = new IcebergClient("ib_your_api_key");
+
+        client.remember("Enterprise banking user verified KYC", "user_404", 0.95);
+        Map<String, Object> result = client.recall("KYC verification status", "user_404", 5);
+        System.out.println(result);
+    }
+}`,
+        lang: 'java',
+      }
+    ]
+  },
+
+  dotnet: {
+    title: 'Official .NET / C# SDK (IcebergDb)',
+    desc: 'Async/await .NET 8.0+ client for C# enterprise applications.',
+    sections: [
+      {
+        heading: 'Installation',
+        code: `dotnet add package IcebergDb`,
+        lang: 'bash',
+      },
+      {
+        heading: 'C# Usage',
+        code: `using IcebergDb;
+
+var client = new IcebergClient("ib_your_api_key");
+
+await client.RememberAsync(
+    text: "User prefers C# minimal APIs and Azure deployments",
+    userId: "dotnet_dev",
+    importance: 0.9
+);
+
+var recall = await client.RecallAsync("deployment preferences", userId: "dotnet_dev");
+Console.WriteLine(recall);`,
+        lang: 'csharp',
+      }
+    ]
+  },
+
+  frameworks: {
+    title: 'LangChain & LlamaIndex Integrations',
+    desc: 'Drop-in VectorStore and ChatMessageHistory adapters for LangChain and LlamaIndex.',
+    sections: [
+      {
+        heading: 'LangChain Integration',
+        code: `from icebergdb.integrations.langchain import IcebergVectorStore, IcebergChatMessageHistory
+
+# 1. Persistent Chat Memory for LangChain Chains / Agents
+history = IcebergChatMessageHistory(
+    api_key="ib_your_key",
+    user_id="user_ankush",
+    session_id="chat_01"
+)
+history.add_user_message("We are launching Iceberg DB v1.0.0 today.")
+print(history.messages)
+
+# 2. LangChain Retriever
+vectorstore = IcebergVectorStore(api_key="ib_your_key", collection_name="docs")
+docs = vectorstore.similarity_search("IcebergCore launch", k=4)`,
+        lang: 'python',
+      },
+      {
+        heading: 'LlamaIndex Integration',
+        code: `from icebergdb.integrations.llamaindex import IcebergVectorStore
+
+store = IcebergVectorStore(api_key="ib_your_key", collection_name="research_papers")
+store.add_texts(["IcebergCore delivers 32x binary quantization compression."])
+results = store.query("quantization compression ratio", top_k=3)`,
+        lang: 'python',
+      }
+    ]
+  },
+
   rest: {
-    title: 'REST API',
+    title: 'REST API Reference & OpenAPI Playground',
     desc: `Base URL: ${API_URL}`,
     sections: [
       {
-        heading: 'Authentication',
-        code: `X-API-Key: ib_your_api_key`,
-        lang: 'text',
-      },
-      {
-        heading: 'Endpoints',
+        heading: 'Core Endpoints',
         list: [
-          'GET /health — API status',
-          'POST /auth/signup — Create account',
-          'POST /auth/login — Login',
-          'GET /collections — List collections',
-          'POST /collections — Create collection',
-          'DELETE /collections/{name} — Delete collection',
-          'POST /documents/text — Index text',
-          'POST /documents/upload — Upload file',
-          'POST /search — Search',
-          'POST /memory/{id}/remember — Store memory',
-          'POST /memory/{id}/recall — Recall memory',
-          'GET /usage/logs — Activity logs',
-          'GET /usage/stats — Usage stats',
+          '**POST /v1/memory/remember** — Store cognitive memory (auto-extract facts & resolve conflicts)',
+          '**POST /v1/memory/recall** — Recall memories with Ebbinghaus time-decay & hybrid scoring',
+          '**GET /v1/memory/profile/{user_id}** — Retrieve consolidated user memory profile',
+          '**GET /collections** — List all vector collections',
+          '**POST /collections** — Create a new vector collection',
+          '**POST /documents/text** — Chunk, embed, and index plain text',
+          '**POST /documents/upload** — Upload PDF, TXT, or Markdown file',
+          '**POST /search** — Execute Hybrid (Vector + BM25), Semantic, or Keyword search',
+          '**GET /status** — Live server health & uptime telemetry',
         ]
       },
       {
-        heading: 'Interactive docs',
-        text: `Full OpenAPI documentation with live testing is available at:`,
+        heading: 'Interactive Swagger UI Playground',
+        text: 'Test every endpoint live in your browser using the OpenAPI 3.1 Swagger Playground:',
         code: `${API_URL}/docs`,
-        lang: 'text',
+        lang: 'url',
       }
     ]
   },
@@ -475,29 +612,32 @@ function renderBold(text) {
 
 export default function Docs() {
   const [active, setActive] = useState('quickstart')
-  const [copied, setCopied] = useState('')
   const doc = CONTENT[active]
 
-  const copy = (code, id) => {
-    navigator.clipboard.writeText(code)
-    setCopied(id)
-    setTimeout(() => setCopied(''), 2000)
+  const handleSelectTab = (id) => {
+    setActive(id)
+    try {
+      const user = JSON.parse(localStorage.getItem('iceberg_user') || '{}')
+      trackFounderEvent('dashboard_visit', {
+        email: user.email || 'visitor',
+        path: `/docs#${id}`
+      })
+    } catch {}
   }
 
   return (
     <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6 animate-fadeIn font-sans text-[var(--text-primary)]">
-      
       {/* ── 1. Page Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-xl font-bold tracking-tight text-[var(--text-primary)]">Documentation &amp; API Reference</h1>
+            <h1 className="text-xl font-bold tracking-tight text-[var(--text-primary)]">Documentation &amp; SDK Reference</h1>
             <span className="px-2 py-0.5 rounded text-xs font-mono bg-blue-500/10 text-blue-400 border border-blue-500/20">
-              {doc?.title || 'Guides'}
+              {doc?.title?.split('—')[0] || 'Guides'}
             </span>
           </div>
           <p className="text-[var(--text-muted)] text-xs mt-1">
-            Complete architectural guides, SDK references, and interactive API documentation for Iceberg.
+            Official guides, Practical AI Cookbook, Cognitive Memory API, and 6 Native Language SDKs.
           </p>
         </div>
 
@@ -520,11 +660,11 @@ export default function Docs() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
         <div className="p-4 bg-[var(--card-bg)] border border-[var(--border)] rounded-xl space-y-1.5">
           <div className="flex items-center justify-between text-xs text-[var(--text-muted)]">
-            <span>API Version</span>
-            <span className="text-blue-400">Spec</span>
+            <span>Official SDKs</span>
+            <span className="text-blue-400">Native</span>
           </div>
-          <div className="text-xl font-bold font-mono text-[var(--text-primary)]">v1.0.0</div>
-          <p className="text-[11px] text-[var(--text-dim)]">FastAPI OpenAPI 3.1</p>
+          <div className="text-xl font-bold font-mono text-[var(--text-primary)]">6 Languages</div>
+          <p className="text-[11px] text-[var(--text-dim)]">Python, JS, Go, Rust, Java, .NET</p>
         </div>
 
         <div className="p-4 bg-[var(--card-bg)] border border-[var(--border)] rounded-xl space-y-1.5">
@@ -535,16 +675,16 @@ export default function Docs() {
           <div className="text-xs font-bold font-mono text-[var(--text-primary)] truncate" title={API_URL}>
             {API_URL.replace('https://', '')}
           </div>
-          <p className="text-[11px] text-[var(--text-dim)]">Render cloud cluster</p>
+          <p className="text-[11px] text-[var(--text-dim)]">Cognitive Memory + Vector API</p>
         </div>
 
         <div className="p-4 bg-[var(--card-bg)] border border-[var(--border)] rounded-xl space-y-1.5">
           <div className="flex items-center justify-between text-xs text-[var(--text-muted)]">
-            <span>Vector Engine</span>
-            <span className="text-purple-400">Core</span>
+            <span>Cognitive Engine</span>
+            <span className="text-purple-400">v1.0.0</span>
           </div>
-          <div className="text-base font-bold font-mono text-[var(--text-primary)]">384d Cosine</div>
-          <p className="text-[11px] text-[var(--text-dim)]">MiniLM-L6 embeddings</p>
+          <div className="text-base font-bold font-mono text-[var(--text-primary)]">Decay + Conflict</div>
+          <p className="text-[11px] text-[var(--text-dim)]">Auto-fact extraction &amp; scoring</p>
         </div>
 
         <div className="p-4 bg-[var(--card-bg)] border border-[var(--border)] rounded-xl space-y-1.5">
@@ -552,30 +692,28 @@ export default function Docs() {
             <span>Hybrid Pipeline</span>
             <span className="text-amber-400">RRF</span>
           </div>
-          <div className="text-base font-bold font-mono text-[var(--text-primary)]">ANN + BM25</div>
-          <p className="text-[11px] text-[var(--text-dim)]">Dense + Sparse fusion</p>
+          <div className="text-base font-bold font-mono text-[var(--text-primary)]">Dense + BM25</div>
+          <p className="text-[11px] text-[var(--text-dim)]">Single-pass rank fusion</p>
         </div>
       </div>
 
-      {/* ── 3. Split Docs Navigation & Content Hub ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-        
-        {/* Left Sidebar (3 cols) */}
-        <div className="lg:col-span-3 bg-[var(--card-bg)] border border-[var(--border)] rounded-2xl p-4 space-y-5 sticky top-6 shadow-sm">
+      {/* ── 3. Main Split Workspace ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <div className="lg:col-span-3 bg-[var(--card-bg)] border border-[var(--border)] rounded-2xl p-4 space-y-5 shadow-sm">
           {NAV.map((group, gi) => (
             <div key={gi} className="space-y-1.5">
-              <p className="text-[11px] font-mono uppercase tracking-wider text-[var(--text-dim)] px-2 font-semibold">
+              <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--text-dim)] px-3 font-semibold">
                 {group.group}
               </p>
-              <div className="space-y-1">
+              <div className="space-y-0.5">
                 {group.items.map(item => (
                   <button
                     key={item.id}
-                    onClick={() => setActive(item.id)}
+                    onClick={() => handleSelectTab(item.id)}
                     className={`w-full text-left px-3 py-2 rounded-xl text-xs transition flex items-center justify-between ${
                       active === item.id
-                        ? 'bg-blue-600/10 text-blue-400 font-semibold border border-blue-500/20'
-                        : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]'
+                        ? 'bg-blue-600/15 text-blue-400 font-semibold border border-blue-500/20'
+                        : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] border border-transparent'
                     }`}
                   >
                     <span>{item.title}</span>
@@ -603,7 +741,6 @@ export default function Docs() {
           </div>
         </div>
 
-        {/* Right Content Area (9 cols) */}
         <div className="lg:col-span-9 bg-[var(--card-bg)] border border-[var(--border)] rounded-2xl p-6 md:p-8 space-y-6 shadow-sm">
           {doc && (
             <>
@@ -646,22 +783,7 @@ export default function Docs() {
                     )}
 
                     {sec.code && (
-                      <div className="relative group rounded-xl overflow-hidden border border-[var(--border)] shadow-xs">
-                        <div className="flex items-center justify-between bg-[var(--bg-surface)] border-b border-[var(--border)] px-4 py-2">
-                          <span className="text-[10px] font-mono text-[var(--text-dim)] uppercase tracking-wider font-semibold">
-                            {sec.lang}
-                          </span>
-                          <button
-                            onClick={() => copy(sec.code, `${si}`)}
-                            className="text-[11px] text-blue-400 hover:text-blue-300 transition font-medium"
-                          >
-                            {copied === `${si}` ? '✓ Copied' : 'Copy Code'}
-                          </button>
-                        </div>
-                        <pre className="p-4 bg-[var(--input-bg)] text-xs text-[var(--text-secondary)] font-mono overflow-x-auto leading-relaxed select-all">
-                          {sec.code}
-                        </pre>
-                      </div>
+                      <CodeBlock code={sec.code} label={sec.lang || 'code'} />
                     )}
                   </div>
                 ))}
@@ -669,9 +791,7 @@ export default function Docs() {
             </>
           )}
         </div>
-
       </div>
-
     </div>
   )
 }

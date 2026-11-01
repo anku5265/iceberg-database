@@ -1,8 +1,11 @@
+import Footer from '../components/Footer'
+import IcebergLogo from "../components/IcebergLogo"
 ﻿import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Navbar } from '../components/Navbar'
+import { CodeBlock } from '../components/CodeBlock'
 
-const D = import.meta.env.VITE_DASHBOARD_URL || 'http://localhost:3000'
+const D = import.meta.env.VITE_DASHBOARD_URL || 'https://dashboard.icebergdb.in'
 
 export default function ProductDatabase() {
   const [dark] = useState(true)
@@ -12,16 +15,16 @@ export default function ProductDatabase() {
       <Navbar dark={dark} />
 
       {/* Hero */}
-      <section className="container mx-auto px-6 pt-24 pb-16 max-w-5xl">
+      <section className="container mx-auto px-6 pt-12 pb-10 md:pt-24 md:pb-16 max-w-5xl">
         <div className="inline-flex items-center gap-2 text-xs px-3 py-1.5 rounded-full border border-[#222] text-[#666] bg-[#111] mb-6">
           Iceberg Database
         </div>
-        <h1 className="text-5xl md:text-6xl font-extrabold leading-tight tracking-tight mb-6">
+        <h1 className="text-3xl sm:text-4xl md:text-6xl font-extrabold leading-tight tracking-tight mb-6">
           Vector search.<br />
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-blue-600">Built for India.</span>
         </h1>
         <p className="text-lg text-[#777] max-w-2xl mb-10 leading-relaxed">
-          A fully managed vector database hosted in Mumbai. Store embeddings, run semantic search, and build RAG pipelines — without managing any infrastructure.
+          A fully managed vector database hosted in India (ap-south-1). Store embeddings, run semantic search, and build RAG pipelines — without managing any infrastructure.
         </p>
         <div className="flex gap-3">
           <a href={`${D}/signup`} className="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-6 py-3 rounded-md transition text-sm">Start for free</a>
@@ -33,8 +36,8 @@ export default function ProductDatabase() {
       <section className="border-y border-[#111] py-10">
         <div className="container mx-auto px-6 max-w-5xl grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
           {[
-            { v: '<20ms', l: 'p50 query latency' },
-            { v: '500K', l: 'vectors free forever' },
+            { v: '1.95ms', l: 'p50 engine latency' },
+            { v: '100K', l: 'vectors free forever' },
             { v: '∞', l: 'collections on free tier' },
             { v: '3 modes', l: 'semantic · keyword · hybrid' },
           ].map((s, i) => (
@@ -47,11 +50,11 @@ export default function ProductDatabase() {
       </section>
 
       {/* How it works */}
-      <section className="border-b border-[#111] py-20">
+      <section className="border-b border-[#111] py-12 md:py-20">
         <div className="container mx-auto px-6 max-w-5xl">
           <p className="text-xs text-[#555] uppercase tracking-widest mb-3">How it works</p>
           <h2 className="text-3xl font-bold mb-12">Three steps. Zero DevOps.</h2>
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-6">
             {[
               { step: '01', title: 'Create a collection', desc: 'One API call to create a collection. No schema, no config, no cluster sizing. Iceberg handles everything.', code: `client.create_collection("my_docs")` },
               { step: '02', title: 'Index your data', desc: 'Upload PDFs, paste text, or stream data. Iceberg chunks, embeds using MiniLM, and stores — automatically.', code: `client.upload("my_docs", "handbook.pdf")\nclient.index_text("my_docs", "Return policy...")` },
@@ -61,7 +64,7 @@ export default function ProductDatabase() {
                 <div className="text-xs font-mono text-[#444] mb-3">{s.step}</div>
                 <h3 className="font-semibold mb-2">{s.title}</h3>
                 <p className="text-sm text-[#666] leading-relaxed mb-4">{s.desc}</p>
-                <pre className="bg-[#111] border border-[#1a1a1a] rounded-lg p-3 text-xs font-mono text-[#aaa] overflow-x-auto">{s.code}</pre>
+                <CodeBlock code={s.code} label="python" />
               </div>
             ))}
           </div>
@@ -69,7 +72,7 @@ export default function ProductDatabase() {
       </section>
 
       {/* Search types */}
-      <section className="border-b border-[#111] py-20">
+      <section className="border-b border-[#111] py-12 md:py-20">
         <div className="container mx-auto px-6 max-w-5xl">
           <p className="text-xs text-[#555] uppercase tracking-widest mb-3">Search modes</p>
           <h2 className="text-3xl font-bold mb-4">Hybrid search — better recall</h2>
@@ -92,17 +95,17 @@ export default function ProductDatabase() {
       </section>
 
       {/* Features grid */}
-      <section className="border-b border-[#111] py-20">
+      <section className="border-b border-[#111] py-12 md:py-20">
         <div className="container mx-auto px-6 max-w-5xl">
           <p className="text-xs text-[#555] uppercase tracking-widest mb-3">Features</p>
           <h2 className="text-3xl font-bold mb-12">Everything included</h2>
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-2 gap-3 md:gap-6">
             {[
               { title: 'Unlimited collections', desc: 'No artificial index limits. Create as many collections as you need — even on the free tier.' },
               { title: 'Namespaces', desc: 'Logical partitions within a collection. Search all namespaces or scope to one — one agent per namespace, one tenant per namespace.' },
               { title: 'Metadata filters', desc: 'Store arbitrary JSON metadata with each vector. Filter search results by any field — source, date, user_id, category.' },
-              { title: 'Never pauses', desc: 'Free tier stays active forever. Your dev environment is always ready — no cold starts, no idle timeouts.' },
-              { title: 'India hosted', desc: 'All data stored in Mumbai. <20ms latency for Indian users. DPDP Act compliant — no data leaves India.' },
+              { title: 'Built-in Embeddings', desc: 'Generate dense vectors directly inside Iceberg. Zero OpenAI API costs for document embedding.' },
+              { title: 'Hosted in India (ap-south-1)', desc: 'All data hosted in India (ap-south-1). 100% domestic data residency for DPDP Act readiness — no data leaves India.' },
               { title: 'Instant writes', desc: 'Writes are acknowledged in <100ms and searchable within seconds. No manual index rebuilds.' },
             ].map((f, i) => (
               <div key={i} className="flex gap-4 p-5 rounded-xl border border-[#1a1a1a]">
@@ -121,26 +124,12 @@ export default function ProductDatabase() {
       <section className="py-20">
         <div className="container mx-auto px-6 max-w-2xl text-center">
           <h2 className="text-3xl font-bold mb-4">Start building in minutes</h2>
-          <p className="text-[#666] mb-8">Free tier — 500K vectors, unlimited collections, never pauses.</p>
+          <p className="text-[#666] mb-8">Free tier — 100K vectors, unlimited collections, free built-in embeddings.</p>
           <a href={`${D}/signup`} className="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-8 py-3 rounded-md transition">Create free account</a>
         </div>
       </section>
 
       <Footer />
     </div>
-  )
-}
-
-function Footer() {
-  return (
-    <footer className="border-t border-[#111] py-10">
-      <div className="container mx-auto px-6 max-w-6xl flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-[#555]">
-        <Link to="/" className="text-white font-bold text-lg">Iceberg</Link>
-        <div className="flex gap-6">
-          {['Privacy','Terms','Docs','Status'].map(l=><a key={l} href="#" className="hover:text-white transition">{l}</a>)}
-        </div>
-        <div>© 2026 Iceberg</div>
-      </div>
-    </footer>
   )
 }

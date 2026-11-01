@@ -37,7 +37,7 @@ const CONTENT = {
     sections: [
       {
         heading: '1. Sign up and get your API key',
-        text: 'Create an account at dashboard.icebergdb.io. After signup, your API key is automatically generated and saved. Find it under API Keys in the sidebar.',
+        text: 'Create an account at dashboard.icebergdb.in. After signup, your API key is automatically generated and saved. Find it under API Keys in the sidebar.',
       },
       {
         heading: '2. Install the Python SDK',
@@ -77,7 +77,7 @@ for r in results:
       {
         heading: 'API Key header',
         text: 'Pass your API key in the X-API-Key header on every request.',
-        code: `curl https://api.icebergdb.io/collections \\
+        code: `curl https://api.icebergdb.in/collections \\
   -H "X-API-Key: ib_your_api_key"`,
         lang: 'bash',
       },
@@ -328,14 +328,14 @@ DELETE /memory/{agent_id}`,
       },
       {
         heading: 'Embed on your website',
-        code: `<script src="https://api.icebergdb.io/assistant/{id}/widget.js"></script>`,
+        code: `<script src="https://api.icebergdb.in/assistant/{id}/widget.js"></script>`,
         lang: 'html',
       },
       {
         heading: 'WhatsApp integration',
         text: 'Point your WhatsApp Business webhook to the assistant\'s webhook URL. Users can then chat with your assistant directly on WhatsApp.',
         code: `Webhook URL:
-https://api.icebergdb.io/assistant/{id}/whatsapp`,
+https://api.icebergdb.in/assistant/{id}/whatsapp`,
         lang: 'text',
       }
     ]
@@ -356,7 +356,7 @@ https://api.icebergdb.io/assistant/{id}/whatsapp`,
 
 client = Client(
     api_key="ib_your_key",
-    base_url="https://api.icebergdb.io"  # optional
+    base_url="https://api.icebergdb.in"  # optional
 )`,
         lang: 'python',
       },

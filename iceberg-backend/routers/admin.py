@@ -1,9 +1,9 @@
-﻿"""
-Admin endpoints — for Iceberg BYOC management.
+"""
+Admin endpoints — for Iceberg BYOC management and private Founder CLI inspection.
 Only accessible with master API key.
 """
-from fastapi import APIRouter, Depends, HTTPException
-from core.auth import verify_api_key
+from fastapi import APIRouter, Depends, HTTPException, Header
+from core.auth import verify_api_key, require_admin
 from core.remote_access import telemetry
 from core.database import get_conn, get_recent_logs
 import time
@@ -26,6 +26,34 @@ async def admin_status(user_id: str = Depends(verify_api_key)):
         "storage": "r2" if is_configured() else "local",
         "nodes": get_node_status(),
         "uptime_since": int(time.time()),
+    }
+
+@router.get("/users")
+async def admin_list_users(user_id: str = Depends(require_admin)):
+    """Private Founder CLI endpoint — returns all registered users, waitlist, and payments."""
+    conn = get_conn()
+    users = conn.execute(
+        "SELECT id, email, plan, created_at FROM users ORDER BY created_at DESC"
+    ).fetchall()
+    waitlist = conn.execute(
+        "SELECT id, email, created_at FROM waitlist ORDER BY created_at DESC"
+    ).fetchall()
+    payments = conn.execute(
+        "SELECT id, user_id, plan, amount, currency, payment_id, order_id, status, billing_type, created_at FROM payments ORDER BY created_at DESC"
+    ).fetchall()
+    recent_logs = conn.execute(
+        "SELECT * FROM usage_logs ORDER BY created_at DESC LIMIT 50"
+    ).fetchall()
+    conn.close()
+
+    return {
+        "total_users": len(users),
+        "users": [dict(u) for u in users],
+        "total_waitlist": len(waitlist),
+        "waitlist": [dict(w) for w in waitlist],
+        "total_payments": len(payments),
+        "payments": [dict(p) for p in payments],
+        "recent_logs": [dict(l) for l in recent_logs],
     }
 
 @router.post("/tunnel/open")
@@ -61,7 +89,7 @@ async def billing_status(user_id: str = Depends(verify_api_key)):
         "plan": plan,
         "search": status,
         "index": index_status,
-        "upgrade_url": "https://dashboard.icebergdb.io/pricing"
+        "upgrade_url": "https://dashboard.icebergdb.in/settings"
     }
 
 @router.get("/analytics")

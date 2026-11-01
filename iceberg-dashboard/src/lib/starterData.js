@@ -21,7 +21,7 @@ export const REAL_KNOWLEDGE_BASE = [
   },
   {
     title: "Relational Databases (SQL) vs Vector Databases",
-    text: "Relational databases like PostgreSQL and MySQL store structured tabular data and execute keyword/index matches. Vector databases like IcebergDB and Qdrant store high-dimensional mathematical embeddings to perform approximate nearest-neighbor semantic search based on conceptual meaning rather than exact keywords.",
+    text: "Relational databases like PostgreSQL and MySQL store structured tabular data and execute keyword/index matches. Vector databases like IcebergDB store high-dimensional mathematical embeddings to perform approximate nearest-neighbor semantic search based on conceptual meaning rather than exact keywords.",
     category: "Databases"
   },
   {

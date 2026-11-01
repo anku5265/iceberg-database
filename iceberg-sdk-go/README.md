@@ -1,6 +1,6 @@
 # Iceberg Go SDK
 
-Official Go client for [Iceberg Database](https://icebergdb.vercel.app) — high-performance, low-latency vector search engine for AI agents and RAG applications.
+Official Go client for [Iceberg Database](https://icebergdb.in) — high-performance, low-latency vector search engine for AI agents and RAG applications.
 
 ## 📦 Installation
 

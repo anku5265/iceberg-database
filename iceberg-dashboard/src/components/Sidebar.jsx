@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom'
+import IcebergLogo from './IcebergLogo'
 
 const groups = [
   {
@@ -25,24 +26,21 @@ const groups = [
   },
 ]
 
-export default function Sidebar({ open = true }) {
+export default function Sidebar({ open = true, onCloseMobile }) {
   return (
-    <aside className={`${open ? 'w-56' : 'w-[52px]'} shrink-0 h-full bg-[var(--bg-surface)] border-r border-[var(--border)] flex flex-col overflow-hidden transition-all duration-200`}
-      style={{ boxShadow: 'inset -1px 0 0 var(--border)' }}>
+    <aside className={`${open ? 'fixed inset-y-0 left-0 z-40 w-56 md:relative md:z-auto md:w-56 flex' : 'hidden md:flex md:w-[52px]'} shrink-0 h-full bg-[var(--bg-surface)] border-r border-[var(--border)] flex-col overflow-hidden transition-all duration-200`}>
 
-      {/* Logo */}
-      <div className={`flex items-center border-b border-[var(--border)] ${open ? 'px-5 py-4' : 'justify-center py-4'}`}>
+      {/* Logo — fixed h-12 (48px) so bottom border aligns 100% flush with Top Header Bar */}
+      <div className={`h-12 shrink-0 flex items-center border-b border-[var(--border)] ${open ? 'px-4' : 'justify-center'}`}>
         {open ? (
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-md bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center">
-              <span className="text-white text-xs font-black">IB</span>
-            </div>
-            <span className="text-[var(--text-primary)] font-bold text-sm tracking-tight">Iceberg</span>
-            <span className="text-[9px] text-[var(--text-muted)] bg-[var(--bg-hover)] px-1.5 py-0.5 rounded-md border border-[var(--border2)] font-semibold uppercase tracking-wider">beta</span>
+          <div className="flex items-center gap-2.5">
+            <IcebergLogo className="w-7 h-7 shrink-0" />
+            <span className="text-[var(--text-primary)] font-bold text-base tracking-tight">Iceberg</span>
+            <span className="text-[9px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-md border border-emerald-500/20 font-semibold uppercase tracking-wider">v1.0.0</span>
           </div>
         ) : (
-          <div className="w-6 h-6 rounded-md bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center">
-            <span className="text-white text-xs font-black">IB</span>
+          <div title="Iceberg" className="flex items-center justify-center">
+            <IcebergLogo className="w-7 h-7 shrink-0" />
           </div>
         )}
       </div>
@@ -56,7 +54,7 @@ export default function Sidebar({ open = true }) {
             )}
             <div className="space-y-px">
               {group.links.map(l => (
-                <NavLink key={l.to} to={l.to} end={l.to === '/'} title={!open ? l.label : undefined}
+                <NavLink key={l.to} to={l.to} end={l.to === '/'} title={!open ? l.label : undefined} onClick={onCloseMobile}
                   className={({ isActive }) =>
                     `flex items-center gap-2.5 rounded-lg text-sm transition-all duration-100 ${open ? 'px-3 py-2' : 'justify-center py-2.5'} ${
                       isActive

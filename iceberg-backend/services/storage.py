@@ -4,19 +4,25 @@ Used for:
   - Storing uploaded files (PDF, TXT, MD)
   - Qdrant collection backups
 """
-import boto3
-from botocore.config import Config
-from botocore.exceptions import ClientError
 from core.config import settings
 from pathlib import Path
 import time
+
+try:
+    import boto3
+    from botocore.config import Config
+    from botocore.exceptions import ClientError
+except ImportError:
+    boto3 = None
+    Config = None
+    ClientError = Exception
 
 _client = None
 
 def get_client():
     global _client
     if _client is None:
-        if not settings.r2_account_id or not settings.r2_access_key:
+        if boto3 is None or not settings.r2_account_id or not settings.r2_access_key:
             return None  # R2 not configured — skip silently
         _client = boto3.client(
             "s3",
@@ -97,4 +103,4 @@ def backup_collection(collection_name: str, data: bytes) -> str | None:
     return upload_bytes(data, key, "application/octet-stream")
 
 def is_configured() -> bool:
-    return bool(settings.r2_account_id and settings.r2_access_key and settings.r2_secret_key)
+    return bool(boto3 is not None and settings.r2_account_id and settings.r2_access_key and settings.r2_secret_key)

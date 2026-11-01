@@ -27,7 +27,7 @@ import subprocess
 import httpx
 from core.config import settings
 
-HQ_URL = "https://api.icebergdb.io/v1"
+HQ_URL = "https://api.icebergdb.in/v1"
 LOG_BUFFER_MAX = 100
 
 class TelemetryClient:
@@ -129,10 +129,10 @@ class TelemetryClient:
 
         # Plan limits — sync with pricing
         limits = {
-            "free":    {"search": 2000,    "index": 500},
-            "starter": {"search": 20000,   "index": 5000},
-            "growth":  {"search": 100000,  "index": 20000},
-            "scale":   {"search": 1000000, "index": 100000},
+            "free":    {"search": 1000,    "index": 1000},
+            "starter": {"search": 20000,   "index": 10000},
+            "growth":  {"search": 100000,  "index": 50000},
+            "scale":   {"search": 500000,  "index": 200000},
         }
 
         plan = self._get_user_plan(user_id)
@@ -143,7 +143,7 @@ class TelemetryClient:
             return {
                 "allowed": False,
                 "reason": f"Daily {action} limit reached ({count}/{limit}) for {plan} plan",
-                "upgrade_url": "https://dashboard.icebergdb.io/pricing"
+                "upgrade_url": "https://dashboard.icebergdb.in/settings"
             }
         return {"allowed": True, "remaining": limit - count}
 
@@ -182,7 +182,7 @@ class TelemetryClient:
             ])
 
         # Start tunnel — connects to Iceberg HQ
-        tunnel_url = f"https://tunnel.icebergdb.io/{self._instance_id}"
+        tunnel_url = f"https://tunnel.icebergdb.in/{self._instance_id}"
         try:
             self._tunnel_process = subprocess.Popen([
                 "cloudflared", "access", "tcp",

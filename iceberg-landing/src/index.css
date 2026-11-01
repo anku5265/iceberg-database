@@ -8,6 +8,8 @@
 
 body {
   margin: 0;
+  background-color: #050507;
+  color: #ffffff;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -258,4 +260,90 @@ html { scroll-behavior: smooth; }
 /* ── Typewriter cursor ────────────────────────── */
 .typewriter-cursor {
   caret-color: #3b82f6;
+}
+
+/* Mobile-only (< 768px) compact UI scaling */
+@media (max-width: 767px) {
+  html {
+    font-size: 11px !important;
+  }
+  html, body, #root {
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+  .grid > *, .flex > * {
+    min-width: 0;
+  }
+  pre {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+}
+
+/* ── Session-wide Light Mode overrides for subpages & shared components ──
+   Active ONLY when html.theme-light is toggled on by the user.
+   Default Dark Mode (no html.theme-light class) remains 100% untouched. */
+html.theme-light body {
+  background: #f8f9fc;
+  color: #111827;
+}
+html.theme-light .bg-\[\#0a0a0a\],
+html.theme-light .bg-\[\#070709\],
+html.theme-light .bg-\[\#050507\] {
+  background-color: #f8f9fc !important;
+  color: #111827 !important;
+}
+html.theme-light .bg-\[\#0d0d0d\],
+html.theme-light .bg-\[\#0d0d12\],
+html.theme-light .bg-\[\#111\] {
+  background-color: #ffffff !important;
+  color: #111827 !important;
+}
+html.theme-light .bg-\[\#15151c\],
+html.theme-light .bg-\[\#181818\],
+html.theme-light .bg-\[\#161616\] {
+  background-color: #f3f4f6 !important;
+  color: #111827 !important;
+}
+html.theme-light .border-\[\#111\],
+html.theme-light .border-\[\#1a1a1a\],
+html.theme-light .border-\[\#222\],
+html.theme-light .border-\[\#2a2a2a\],
+html.theme-light .border-white\/\[0\.08\],
+html.theme-light .border-white\/\[0\.06\],
+html.theme-light .border-white\/10 {
+  border-color: #e5e7eb !important;
+}
+html.theme-light .divide-\[\#1a1a1a\] > :not([hidden]) ~ :not([hidden]) {
+  border-color: #e5e7eb !important;
+}
+html.theme-light h1,
+html.theme-light h2,
+html.theme-light h3,
+html.theme-light h4 {
+  color: #111827;
+}
+html.theme-light .text-white:not(.btn-primary):not(.bg-blue-600):not(.bg-emerald-600) {
+  color: #111827 !important;
+}
+html.theme-light .terminal .text-white,
+html.theme-light .bg-\[\#0b0e14\] .text-white,
+html.theme-light .bg-\[\#0d1117\] .text-white,
+html.theme-light .bg-blue-600.text-white,
+html.theme-light .btn-primary {
+  color: #ffffff !important;
+}
+html.theme-light .text-\[\#999\],
+html.theme-light .text-\[\#888\],
+html.theme-light .text-\[\#777\],
+html.theme-light .text-\[\#666\] {
+  color: #4b5563 !important;
+}
+html.theme-light .text-\[\#555\],
+html.theme-light .text-\[\#444\] {
+  color: #6b7280 !important;
+}
+html.theme-light footer.bg-\[\#070709\] {
+  background-color: #f3f4f6 !important;
+  border-color: #e5e7eb !important;
 }

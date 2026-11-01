@@ -108,7 +108,7 @@ export default function ProfileMenu() {
           </div>
 
           <div className="px-4 py-2 border-t border-[var(--border)]">
-            <div className="text-[var(--text-dim)] text-xs">v0.1.0</div>
+            <div className="text-[var(--text-dim)] text-xs">v1.0.0</div>
           </div>
         </div>
       )}

@@ -5,7 +5,7 @@
 
 Official Node.js, JavaScript, and TypeScript client for **Iceberg Vector Database** — high-performance vector search and RAG engine built for AI agents and production enterprise workflows.
 
-Created by **Ankush** | [Iceberg Database](https://iceberg-dashboard.vercel.app)
+Created by **Ankush** | [Iceberg Database](https://dashboard.icebergdb.in)
 
 ---
 
@@ -35,7 +35,7 @@ import { Client } from 'icebergdb'
 // Initialize the Iceberg Client
 const client = new Client({
   apiKey: process.env.ICEBERG_API_KEY || 'your_api_key_here',
-  // baseUrl: 'https://api.icebergdb.io' // Optional custom host
+  // baseUrl: 'https://api.icebergdb.in' // Optional custom host
 })
 
 async function main() {
@@ -66,7 +66,7 @@ main().catch(console.error)
 
 ### `new Client(options)`
 - `apiKey` *(string, required)*: Your Iceberg API authentication key.
-- `baseUrl` *(string, optional)*: Default `https://api.icebergdb.io`.
+- `baseUrl` *(string, optional)*: Default `https://api.icebergdb.in`.
 
 ### Collections
 - `client.createCollection(name, description?)`: Create a new vector collection.
@@ -83,4 +83,4 @@ main().catch(console.error)
 
 ## 🛡️ License
 
-MIT © [Ankush](https://github.com/anku5265) & [Iceberg DB](https://iceberg-dashboard.vercel.app)
+MIT © [Ankush](https://github.com/anku5265) & [Iceberg DB](https://dashboard.icebergdb.in)

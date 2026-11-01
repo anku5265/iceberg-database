@@ -572,7 +572,7 @@ export default function HomePage({ ProductDropdown }) {
             <a href={`${D}/docs`} className="hover:text-white transition">Docs</a>
             <a href="#benchmarks" className="hover:text-white transition">Benchmarks</a>
             <a href="#pricing" className="hover:text-white transition">Pricing</a>
-            <a href="mailto:engineering@icebergdb.io" className="hover:text-white transition">Security</a>
+            <a href="mailto:engineering@icebergdb.in" className="hover:text-white transition">Security</a>
             <span className="text-[#3c3d4c]">&copy; 2026 Iceberg</span>
           </div>
         </div>

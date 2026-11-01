@@ -10,7 +10,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from core.database import init_db
-from routers import collections, documents, search, usage, waitlist, auth, projects, nodes, admin, memory, assistant, backup, status
+from routers import collections, documents, search, usage, waitlist, auth, projects, nodes, admin, memory, assistant, backup, status, billing
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -29,8 +29,8 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Iceberg API",
-    description="Vector search infrastructure for Indian AI teams",
-    version="0.1.0",
+    description="Vector search infrastructure — Hosted in India (ap-south-1)",
+    version="1.0.0",
     lifespan=lifespan,
 )
 
@@ -54,19 +54,20 @@ app.include_router(memory.router)
 app.include_router(assistant.router)
 app.include_router(backup.router)
 app.include_router(status.router)
+app.include_router(billing.router)
 
 @app.api_route("/", methods=["GET", "HEAD"])
 def root():
     from services import storage
     return {
         "product": "Iceberg",
-        "version": "0.1.0",
+        "version": "1.0.0",
         "status": "running",
+        "region": "Hosted in India (ap-south-1)",
         "storage": "r2" if storage.is_configured() else "local"
     }
 
 @app.api_route("/health", methods=["GET", "HEAD"])
 def health():
     from services import storage
-    return {"status": "ok", "storage": "r2" if storage.is_configured() else "local"}
-
+    return {"status": "ok", "version": "1.0.0", "storage": "r2" if storage.is_configured() else "local"}

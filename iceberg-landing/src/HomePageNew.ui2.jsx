@@ -153,7 +153,7 @@ export default function HomePage({ ProductDropdown }) {
   const [langTab, setLangTab] = useState('rust')
   const [activeTelemetryTab, setActiveTelemetryTab] = useState('metrics')
 
-  const copyCommand = (cmd = 'curl -fsSL https://get.icebergdb.io | sh') => {
+  const copyCommand = (cmd = 'curl -fsSL https://get.icebergdb.in | sh') => {
     navigator.clipboard?.writeText(cmd)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
@@ -272,12 +272,12 @@ export default function HomePage({ ProductDropdown }) {
           {/* Single-Line Shell Command */}
           <div className="flex items-center justify-center gap-3 mb-10">
             <div
-              onClick={() => copyCommand('$ curl -fsSL https://get.icebergdb.io | sh')}
+              onClick={() => copyCommand('$ curl -fsSL https://get.icebergdb.in | sh')}
               className="group inline-flex items-center gap-3 px-4 py-2 rounded-lg bg-[#0a0a0c] border border-[#232328] font-mono text-xs text-[#a1a1aa] hover:border-[#383842] transition cursor-pointer select-all shadow-sm"
               title="Click to copy install command"
             >
               <span className="text-[#52525b]">$</span>
-              <span className="text-[#ededed]">curl -fsSL https://get.icebergdb.io | sh</span>
+              <span className="text-[#ededed]">curl -fsSL https://get.icebergdb.in | sh</span>
               <span className="text-[11px] text-[#71717a] pl-2 border-l border-[#27272a] group-hover:text-white transition">
                 {copied ? <span className="text-emerald-400">copied</span> : 'copy'}
               </span>
@@ -349,7 +349,7 @@ export default function HomePage({ ProductDropdown }) {
                     <code>
                       <span className="text-[#e4e4e7]">// High-throughput SIMD vector similarity search</span>{'\n'}
                       <span className="text-purple-400">use</span> iceberg_rs::&#123;Client, Query&#125;;{'\n\n'}
-                      <span className="text-purple-400">let</span> client = Client::<span className="text-blue-400">connect</span>(<span className="text-emerald-300">"ap-south-1.icebergdb.io"</span>).<span className="text-purple-400">await</span>?;{'\n'}
+                      <span className="text-purple-400">let</span> client = Client::<span className="text-blue-400">connect</span>(<span className="text-emerald-300">"ap-south-1.icebergdb.in"</span>).<span className="text-purple-400">await</span>?;{'\n'}
                       <span className="text-purple-400">let</span> matches = client.<span className="text-blue-400">search</span>(<span className="text-emerald-300">"orderbook_signals"</span>){'\n'}
                       {'    '}.<span className="text-blue-400">vector</span>(&amp;query_embedding){'\n'}
                       {'    '}.<span className="text-blue-400">filter</span>(doc! &#123; <span className="text-emerald-300">"symbol"</span>: <span className="text-emerald-300">"NIFTY"</span> &#125;){'\n'}
@@ -383,7 +383,7 @@ export default function HomePage({ ProductDropdown }) {
                   <pre className="text-[#a1a1aa]">
                     <code>
                       <span className="text-[#e4e4e7]"># Edge HTTP REST API Endpoint</span>{'\n'}
-                      curl -X POST https://api.icebergdb.io/v1/search \{'\n'}
+                      curl -X POST https://api.icebergdb.in/v1/search \{'\n'}
                       {'  '}-H <span className="text-emerald-300">"Authorization: Bearer ib_live_secret"</span> \{'\n'}
                       {'  '}-H <span className="text-emerald-300">"Content-Type: application/json"</span> \{'\n'}
                       {'  '}-d <span className="text-emerald-300">'&#123;{'\n'}
@@ -732,7 +732,7 @@ export default function HomePage({ ProductDropdown }) {
             <a href={`${D}/docs`} className="hover:text-white transition">Docs</a>
             <a href="#benchmarks" className="hover:text-white transition">Benchmarks</a>
             <a href="#pricing" className="hover:text-white transition">Pricing</a>
-            <a href="mailto:engineering@icebergdb.io" className="hover:text-white transition">Security</a>
+            <a href="mailto:engineering@icebergdb.in" className="hover:text-white transition">Security</a>
             <span className="text-[#3f3f46]">&copy; 2026 Iceberg</span>
           </div>
         </div>

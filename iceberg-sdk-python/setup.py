@@ -10,7 +10,7 @@ if os.path.exists(readme_path):
 
 setup(
     name="icebergdb",
-    version="0.1.1",
+    version="1.0.0",
     description="Iceberg — High-performance serverless vector database for AI agents and RAG applications",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -18,9 +18,11 @@ setup(
     author_email="icebergdb.official@gmail.com",
     maintainer="Iceberg DB",
     maintainer_email="icebergdb.official@gmail.com",
-    url="https://iceberg-dashboard.vercel.app",
+    url="https://icebergdb.in",
     project_urls={
-        "Documentation": "https://iceberg-dashboard.vercel.app/docs",
+        "Homepage": "https://icebergdb.in",
+        "Dashboard": "https://dashboard.icebergdb.in",
+        "Documentation": "https://icebergdb.in/docs",
         "Source": "https://github.com/anku5265/iceberg-database",
         "Bug Tracker": "https://github.com/anku5265/iceberg-database/issues",
     },
@@ -47,7 +49,7 @@ setup(
         "llm",
     ],
     classifiers=[
-        "Development Status :: 4 - Beta",
+        "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",
         "Intended Audience :: Science/Research",
         "Topic :: Database",

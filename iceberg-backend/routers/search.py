@@ -8,20 +8,23 @@ from core.database import log_usage
 
 router = APIRouter(prefix="/search", tags=["Search"])
 
+
 @router.post("", response_model=SearchResponse)
 async def search(body: SearchRequest, user_id: str = Depends(verify_api_key)):
     """
-    Hybrid search — Dense (semantic) + BM25 (keyword) combined.
+    Hybrid search — Dense (semantic) + BM25 (keyword) combined via RRF.
 
     search_type: "hybrid" | "semantic" | "keyword"
     alpha:       0.0=keyword, 0.5=balanced, 1.0=semantic
     namespace:   optional — filter within a namespace
     """
+    if not body.query or not body.query.strip():
+        return SearchResponse(results=[], query=body.query or "", collection=body.collection, total=0)
+
     try:
         t0 = time.time()
         query_vector = embed_query(body.query)
 
-        # Namespace filter — merge with user filters
         filters = dict(body.filters or {})
         if body.namespace:
             filters["_namespace"] = body.namespace
@@ -33,6 +36,7 @@ async def search(body: SearchRequest, user_id: str = Depends(verify_api_key)):
                 top_k=body.top_k,
                 score_threshold=body.score_threshold,
                 filters=filters or None,
+                user_id=user_id,
             )
         elif body.search_type == "keyword":
             raw_results = qdrant_svc.hybrid_search_vectors(
@@ -40,9 +44,10 @@ async def search(body: SearchRequest, user_id: str = Depends(verify_api_key)):
                 query=body.query,
                 query_vector=query_vector,
                 top_k=body.top_k,
-                score_threshold=body.score_threshold,
+                score_threshold=0.0,
                 filters=filters or None,
                 alpha=0.0,
+                user_id=user_id,
             )
         else:
             raw_results = qdrant_svc.hybrid_search_vectors(
@@ -53,19 +58,23 @@ async def search(body: SearchRequest, user_id: str = Depends(verify_api_key)):
                 score_threshold=body.score_threshold,
                 filters=filters or None,
                 alpha=body.alpha,
+                user_id=user_id,
             )
 
         duration_ms = int((time.time() - t0) * 1000)
         log_usage(user_id, "search", body.collection, body.query, duration_ms)
 
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
     results = [
         SearchResult(
+            id=r.get("id"),
             text=r["text"],
             score=round(r["score"], 4),
-            metadata={k: v for k, v in r.get("metadata", {}).items() if not k.startswith("_")}
+            metadata={k: v for k, v in r.get("metadata", {}).items() if not k.startswith("_")},
         )
         for r in raw_results
     ]

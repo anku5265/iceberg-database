@@ -7,9 +7,9 @@ Complete guide to deploy Iceberg — Backend (Railway), Dashboard (Vercel), Land
 ```
 User Browser
     ↓
-Landing Page (Vercel) → icebergdb.io
+Landing Page (Vercel) → icebergdb.in
     ↓
-Dashboard (Vercel) → dashboard.icebergdb.io
+Dashboard (Vercel) → dashboard.icebergdb.in
     ↓
 Backend API (Railway) → iceberg-api.railway.app
     ↓
@@ -23,7 +23,7 @@ Qdrant (embedded) + SQLite + Cloudflare R2
 1. GitHub account
 2. Railway account (sign up with GitHub)
 3. Vercel account (sign up with GitHub)
-4. Domain (optional but recommended): `icebergdb.io`
+4. Domain (optional but recommended): `icebergdb.in`
 5. Cloudflare R2 account (optional — for file storage)
 
 ---
@@ -102,7 +102,7 @@ After adding env vars, trigger redeploy:
 ### Step 4: Custom Domain (Optional)
 
 - Vercel Dashboard → Settings → Domains
-- Add `dashboard.icebergdb.io`
+- Add `dashboard.icebergdb.in`
 - Update DNS records as shown by Vercel
 
 ---
@@ -120,13 +120,13 @@ After adding env vars, trigger redeploy:
 ### Step 2: Configure Environment Variables
 
 ```
-VITE_DASHBOARD_URL=https://dashboard.icebergdb.io
+VITE_DASHBOARD_URL=https://dashboard.icebergdb.in
 VITE_API_URL=https://YOUR_RAILWAY_URL.railway.app
 ```
 
 ### Step 3: Custom Domain
 
-- Add `icebergdb.io` and `www.icebergdb.io`
+- Add `icebergdb.in` and `www.icebergdb.in`
 - Update DNS records
 
 ---
@@ -141,9 +141,9 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:3000",
         "http://localhost:5173",
-        "https://dashboard.icebergdb.io",
-        "https://icebergdb.io",
-        "https://www.icebergdb.io",
+        "https://dashboard.icebergdb.in",
+        "https://icebergdb.in",
+        "https://www.icebergdb.in",
         "https://*.vercel.app",
     ],
     allow_origin_regex=r"https://.*\.vercel\.app",
@@ -173,8 +173,8 @@ CNAME   www           cname.vercel-dns.com
 ## Verification Checklist
 
 - [ ] Backend health check: `curl https://YOUR_RAILWAY_URL/health`
-- [ ] Landing page loads: `https://icebergdb.io`
-- [ ] Dashboard loads: `https://dashboard.icebergdb.io`
+- [ ] Landing page loads: `https://icebergdb.in`
+- [ ] Dashboard loads: `https://dashboard.icebergdb.in`
 - [ ] Signup works on dashboard
 - [ ] Create collection works
 - [ ] Search works
@@ -243,4 +243,4 @@ npm run dev
 ## Support
 
 - Issues: Create GitHub issue
-- Email: hello@icebergdb.io
+- Email: hello@icebergdb.in

@@ -66,7 +66,7 @@ export default function Admin() {
               <Row label="Plan" value={<Badge color="blue">{billing.plan}</Badge>} />
               <Row label="Searches today" value={`${billing.search?.remaining ?? '—'} remaining`} />
               <Row label="Index remaining" value={`${billing.index?.remaining ?? '—'} remaining`} />
-              <a href="https://dashboard.icebergdb.io/pricing"
+              <a href="https://dashboard.icebergdb.in/pricing"
                 className="mt-3 block text-xs text-blue-400 hover:text-blue-300 transition">
                 Upgrade plan →
               </a>

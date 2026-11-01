@@ -1,8 +1,11 @@
+import Footer from '../components/Footer'
+import IcebergLogo from "../components/IcebergLogo"
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Navbar } from '../components/Navbar'
+import { CodeBlock } from '../components/CodeBlock'
 
-const D = import.meta.env.VITE_DASHBOARD_URL || 'http://localhost:3000'
+const D = import.meta.env.VITE_DASHBOARD_URL || 'https://dashboard.icebergdb.in'
 
 export default function ProductDashboard() {
   const [dark] = useState(true)
@@ -11,9 +14,9 @@ export default function ProductDashboard() {
     <div className="min-h-screen bg-[#0a0a0a] text-white">
       <Navbar dark={dark} />
 
-      <section className="container mx-auto px-6 pt-24 pb-16 max-w-5xl">
+      <section className="container mx-auto px-6 pt-12 pb-10 md:pt-24 md:pb-16 max-w-5xl">
         <div className="inline-flex items-center gap-2 text-xs px-3 py-1.5 rounded-full border border-[#222] text-[#666] bg-[#111] mb-6">Iceberg Dashboard</div>
-        <h1 className="text-5xl md:text-6xl font-extrabold leading-tight tracking-tight mb-6">
+        <h1 className="text-3xl sm:text-4xl md:text-6xl font-extrabold leading-tight tracking-tight mb-6">
           Your vector DB.<br />
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-blue-600">Fully visible.</span>
         </h1>
@@ -27,11 +30,11 @@ export default function ProductDashboard() {
       </section>
 
       {/* Features */}
-      <section className="border-y border-[#111] py-20">
+      <section className="border-y border-[#111] py-12 md:py-20">
         <div className="container mx-auto px-6 max-w-5xl">
           <p className="text-xs text-[#555] uppercase tracking-widest mb-3">What's inside</p>
           <h2 className="text-3xl font-bold mb-12">Everything you need, one place</h2>
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-2 gap-3 md:gap-6">
             {[
               {
                 title: 'Collections',
@@ -77,23 +80,15 @@ export default function ProductDashboard() {
       </section>
 
       {/* vs terminal */}
-      <section className="border-b border-[#111] py-20">
+      <section className="border-b border-[#111] py-12 md:py-20">
         <div className="container mx-auto px-6 max-w-5xl">
           <p className="text-xs text-[#555] uppercase tracking-widest mb-3">Philosophy</p>
           <h2 className="text-3xl font-bold mb-4">Dashboard or terminal — your call</h2>
           <p className="text-[#666] mb-12 max-w-2xl">Some developers prefer code. Others prefer UI. Iceberg supports both — full REST API and SDKs for code, dashboard for everything else.</p>
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-6">
             <div className="rounded-xl border border-[#1a1a1a] p-6">
-              <p className="text-xs text-[#555] mb-4">For developers</p>
-              <pre className="text-xs font-mono text-[#aaa] leading-6">{`# Create collection
-curl -X POST https://api.icebergdb.io/collections \\
-  -H "X-API-Key: ib_your_key" \\
-  -d '{"name": "my_docs"}'
-
-# Search
-curl -X POST https://api.icebergdb.io/search \\
-  -H "X-API-Key: ib_your_key" \\
-  -d '{"collection":"my_docs","query":"returns"}'`}</pre>
+              <p className="text-xs text-[#555] mb-3">For developers</p>
+              <CodeBlock label="cURL REST API" code={`# Create collection\ncurl -X POST https://api.icebergdb.in/collections \\\n  -H "X-API-Key: ib_your_key" \\\n  -d '{"name": "my_docs"}'\n\n# Search\ncurl -X POST https://api.icebergdb.in/search \\\n  -H "X-API-Key: ib_your_key" \\\n  -d '{"collection":"my_docs","query":"returns"}'`} />
             </div>
             <div className="rounded-xl border border-[#1a1a1a] p-6">
               <p className="text-xs text-[#555] mb-4">For everyone else</p>
@@ -119,17 +114,5 @@ curl -X POST https://api.icebergdb.io/search \\
       </section>
       <Footer />
     </div>
-  )
-}
-
-function Footer() {
-  return (
-    <footer className="border-t border-[#111] py-10">
-      <div className="container mx-auto px-6 max-w-6xl flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-[#555]">
-        <Link to="/" className="text-white font-bold text-lg">Iceberg</Link>
-        <div className="flex gap-6">{['Privacy','Terms','Docs','Status'].map(l=><a key={l} href="#" className="hover:text-white transition">{l}</a>)}</div>
-        <div>© 2026 Iceberg</div>
-      </div>
-    </footer>
   )
 }

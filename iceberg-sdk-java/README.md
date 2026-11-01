@@ -1,6 +1,6 @@
 # Iceberg Java SDK
 
-Official Java client for [Iceberg](https://icebergdb.io) — vector search for Indian AI teams.
+Official Java client for [Iceberg](https://icebergdb.in) — vector search for Indian AI teams.
 
 ## Requirements
 

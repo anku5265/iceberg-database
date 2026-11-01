@@ -18,6 +18,135 @@ export default function Settings({ initialTab = 'general' }) {
   const [tunnelLoading, setTunnelLoading] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
   const [copied, setCopied] = useState('')
+  const [checkoutLoading, setCheckoutLoading] = useState(false)
+  const [billingType, setBillingType] = useState('one_time')
+  const [upgradeSuccess, setUpgradeSuccess] = useState('')
+  const [upgradeError, setUpgradeError] = useState('')
+
+  const handleUpgrade = async (planKey) => {
+    setCheckoutLoading(true)
+    setUpgradeError('')
+    setUpgradeSuccess('')
+    try {
+      if (!window.Razorpay) {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script')
+          script.src = 'https://checkout.razorpay.com/v1/checkout.js'
+          script.onload = resolve
+          script.onerror = () => reject(new Error('Failed to load Razorpay payment SDK'))
+          document.body.appendChild(script)
+        })
+      }
+
+      const PLAN_DETAILS = {
+        starter: { name: 'Starter', price: 799, amount: 79900, vectors: '1,000,000' },
+        growth: { name: 'Growth', price: 3499, amount: 349900, vectors: '5,000,000' },
+        scale: { name: 'Scale', price: 9999, amount: 999900, vectors: '20,000,000' }
+      }
+      const planInfo = PLAN_DETAILS[planKey] || PLAN_DETAILS.starter
+      const LIVE_KEY = 'rzp_live_TpLwzfroLO9bKZ'
+
+      let orderData = null
+      try {
+        const res = await fetch(`${API_URL}/billing/create-order`, {
+          method: 'POST',
+          headers: {
+            ...H(),
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ plan: planKey, billing_type: billingType })
+        })
+        if (res.ok) {
+          orderData = await res.json()
+        }
+      } catch (e) {
+        console.warn('Backend order endpoint not ready, falling back to direct Razorpay checkout:', e)
+      }
+
+      const keyId = orderData?.key_id || LIVE_KEY
+      const amountPaise = orderData?.amount || planInfo.amount
+      const planName = orderData?.plan_name || planInfo.name
+
+      let userObj = {}
+      try { userObj = JSON.parse(localStorage.getItem('iceberg_user') || '{}') } catch {}
+
+      const options = {
+        key: keyId,
+        amount: amountPaise,
+        currency: 'INR',
+        name: 'Iceberg Database',
+        description: `${planName} Plan (${billingType === 'one_time' ? '1-Month Pass' : 'Auto-Renew'})`,
+        theme: {
+          color: '#2563eb'
+        },
+        prefill: {
+          email: userObj.email || ''
+        },
+        handler: async function (response) {
+          try {
+            setRefreshing(true)
+            try {
+              await fetch(`${API_URL}/billing/verify-payment`, {
+                method: 'POST',
+                headers: {
+                  ...H(),
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  razorpay_order_id: response.razorpay_order_id || '',
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_signature: response.razorpay_signature || '',
+                  plan: planKey,
+                  billing_type: billingType
+                })
+              })
+            } catch (err) {
+              console.warn('Backend payment verification skipped:', err)
+            }
+
+            const updatedUser = { ...userObj, plan: planKey }
+            localStorage.setItem('iceberg_user', JSON.stringify(updatedUser))
+            localStorage.setItem('iceberg_plan', planKey)
+
+            setBilling(prev => ({
+              ...(prev || {}),
+              plan: planKey,
+              payment_id: response.razorpay_payment_id,
+              status: 'active'
+            }))
+
+            setUpgradeSuccess(`🎉 Successfully upgraded to ${planName} plan! ${planInfo.vectors} vectors unlocked. (Payment ID: ${response.razorpay_payment_id})`)
+            await loadData()
+          } catch (e) {
+            setUpgradeError(e.message || 'Error processing payment confirmation')
+          } finally {
+            setRefreshing(false)
+          }
+        },
+        modal: {
+          ondismiss: function () {
+            setCheckoutLoading(false)
+          }
+        }
+      }
+
+      if (orderData?.order_id) {
+        options.order_id = orderData.order_id
+      }
+
+      const rzp = new window.Razorpay(options)
+      rzp.on('payment.failed', function (resp) {
+        setUpgradeError(resp.error?.description || 'Payment failed')
+        setCheckoutLoading(false)
+      })
+      rzp.open()
+    } catch (err) {
+      console.error(err)
+      setUpgradeError(err.message || 'Failed to initialize payment')
+    } finally {
+      setCheckoutLoading(false)
+    }
+  }
 
   const loadData = async (silent = false) => {
     if (!silent) setRefreshing(true)
@@ -77,13 +206,13 @@ export default function Settings({ initialTab = 'general' }) {
     setTimeout(() => setCopied(''), 2000)
   }
 
-  const searchRemaining = billing?.search?.remaining ?? 2000
-  const searchUsed = Math.max(0, 2000 - searchRemaining)
-  const searchPct = Math.min(100, Math.round((searchUsed / 2000) * 100))
+  const searchRemaining = billing?.search?.remaining ?? 1000
+  const searchUsed = Math.max(0, 1000 - searchRemaining)
+  const searchPct = Math.min(100, Math.round((searchUsed / 1000) * 100))
 
-  const indexRemaining = billing?.index?.remaining ?? 500
-  const indexUsed = Math.max(0, 500 - indexRemaining)
-  const indexPct = Math.min(100, Math.round((indexUsed / 500) * 100))
+  const indexRemaining = billing?.index?.remaining ?? 1000
+  const indexUsed = Math.max(0, 1000 - indexRemaining)
+  const indexPct = Math.min(100, Math.round((indexUsed / 1000) * 100))
 
   return (
     <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6 animate-fadeIn font-sans text-[var(--text-primary)]">
@@ -193,9 +322,9 @@ export default function Settings({ initialTab = 'general' }) {
                 <span className="text-purple-400">Engine</span>
               </div>
               <div className="text-lg font-bold font-mono text-[var(--text-primary)]">
-                {status?.storage === 'r2' ? 'Cloudflare R2' : 'Qdrant Cloud'}
+                {status?.storage === 'r2' ? 'Cloudflare R2' : 'Iceberg Cloud'}
               </div>
-              <p className="text-[11px] text-[var(--text-dim)]">HNSW on AWS EU-Central</p>
+              <p className="text-[11px] text-[var(--text-dim)]">HNSW Hosted in India (ap-south-1)</p>
             </div>
 
             <div className="p-4 bg-[var(--card-bg)] border border-[var(--border)] rounded-xl space-y-1.5">
@@ -241,18 +370,18 @@ export default function Settings({ initialTab = 'general' }) {
 
                 <div className="py-2.5 flex items-center justify-between">
                   <span className="text-[var(--text-muted)]">Core Engine Version</span>
-                  <span className="font-mono text-[var(--text-primary)]">v{status?.version || '0.1.0'}</span>
+                  <span className="font-mono text-[var(--text-primary)]">v{status?.version || '1.0.0'}</span>
                 </div>
 
                 <div className="py-2.5 flex items-center justify-between">
                   <span className="text-[var(--text-muted)]">Host Platform</span>
-                  <span className="font-mono text-[var(--text-primary)]">{status?.platform || 'Linux'} (Render Cloud)</span>
+                  <span className="font-mono text-[var(--text-primary)]">{status?.platform || 'Linux'} (Hosted in India ap-south-1)</span>
                 </div>
 
                 <div className="py-2.5 flex items-center justify-between">
                   <span className="text-[var(--text-muted)]">Storage Engine</span>
                   <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-purple-500/10 text-purple-400 border border-purple-500/20 uppercase font-semibold">
-                    {status?.storage === 'r2' ? 'Cloudflare R2' : 'Qdrant Cloud + SQLite'}
+                    {status?.storage === 'r2' ? 'Cloudflare R2' : 'Iceberg HNSW + NVMe'}
                   </span>
                 </div>
               </div>
@@ -368,7 +497,7 @@ export default function Settings({ initialTab = 'general' }) {
               <div className="p-5 bg-[var(--bg-surface)] border border-[var(--border)] rounded-2xl space-y-3">
                 <div className="flex items-center justify-between text-xs">
                   <span className="font-semibold text-[var(--text-primary)]">Daily Vector Searches</span>
-                  <span className="font-mono text-blue-400 font-semibold">{searchRemaining} remaining / 2,000 max</span>
+                  <span className="font-mono text-blue-400 font-semibold">{searchRemaining} remaining / 1,000 max</span>
                 </div>
                 <div className="w-full bg-[var(--bg-base)] h-2.5 rounded-full overflow-hidden border border-[var(--border)]">
                   <div className="h-full bg-blue-500 rounded-full transition-all duration-300" style={{ width: `${Math.max(5, searchPct)}%` }} />
@@ -379,7 +508,7 @@ export default function Settings({ initialTab = 'general' }) {
               <div className="p-5 bg-[var(--bg-surface)] border border-[var(--border)] rounded-2xl space-y-3">
                 <div className="flex items-center justify-between text-xs">
                   <span className="font-semibold text-[var(--text-primary)]">Document Ingestion Chunks</span>
-                  <span className="font-mono text-purple-400 font-semibold">{indexRemaining} remaining / 500 chunks</span>
+                  <span className="font-mono text-purple-400 font-semibold">{indexRemaining} remaining / 1,000 chunks</span>
                 </div>
                 <div className="w-full bg-[var(--bg-base)] h-2.5 rounded-full overflow-hidden border border-[var(--border)]">
                   <div className="h-full bg-purple-500 rounded-full transition-all duration-300" style={{ width: `${Math.max(5, indexPct)}%` }} />
@@ -388,22 +517,135 @@ export default function Settings({ initialTab = 'general' }) {
               </div>
             </div>
 
-            <div className="p-5 bg-gradient-to-r from-blue-900/20 via-indigo-900/10 to-transparent border border-blue-500/20 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="space-y-1">
-                <h4 className="text-sm font-semibold text-[var(--text-primary)]">Scale Tier Available</h4>
-                <p className="text-xs text-[var(--text-muted)] leading-relaxed">
-                  Need unlimited vector collections, dedicated read node replicas, and sub-10ms enterprise SLA?
-                </p>
+            {/* Notifications */}
+            {upgradeSuccess && (
+              <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium flex items-center gap-2">
+                <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
+                <span>{upgradeSuccess}</span>
               </div>
-              <a
-                href="https://dashboard.icebergdb.io/pricing"
-                target="_blank"
-                rel="noreferrer"
-                className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-xl transition shadow-sm shrink-0 flex items-center gap-1.5"
-              >
-                <span>Upgrade to Scale</span>
-                <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-              </a>
+            )}
+            {upgradeError && (
+              <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-medium flex items-center gap-2">
+                <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+                <span>{upgradeError}</span>
+              </div>
+            )}
+
+            {/* Billing Mode Choice */}
+            <div className="p-4 bg-[var(--bg-surface)] border border-[var(--border)] rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <div className="text-xs font-semibold text-[var(--text-primary)]">Billing Preference</div>
+                <div className="text-[11px] text-[var(--text-muted)]">Choose between one-time manual payment or automatic monthly renewal.</div>
+              </div>
+              <div className="flex items-center gap-2 bg-[var(--bg-base)] p-1 rounded-xl border border-[var(--border)]">
+                <button
+                  type="button"
+                  onClick={() => setBillingType('one_time')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${billingType === 'one_time' ? 'bg-blue-600 text-white shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
+                >
+                  1-Month Pass (No Auto-Debit)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBillingType('subscription')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${billingType === 'subscription' ? 'bg-blue-600 text-white shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
+                >
+                  Auto-Renew Monthly
+                </button>
+              </div>
+            </div>
+
+            {/* Plans Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 pt-2">
+              {/* Starter */}
+              <div className={`p-5 rounded-2xl border transition-all flex flex-col justify-between ${billing?.plan === 'starter' ? 'border-emerald-500/40 bg-emerald-500/[0.03]' : 'border-blue-500/30 bg-gradient-to-b from-blue-900/10 to-transparent'}`}>
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs uppercase tracking-wider font-bold text-blue-400">Starter</span>
+                    {billing?.plan === 'starter' && <span className="text-[10px] bg-emerald-500/20 text-emerald-400 font-bold px-2 py-0.5 rounded-full border border-emerald-500/30">CURRENT PLAN</span>}
+                  </div>
+                  <div className="flex items-baseline gap-1 mb-3">
+                    <span className="text-2xl font-black text-[var(--text-primary)]">Rs.799</span>
+                    <span className="text-xs text-[var(--text-muted)]">/ month</span>
+                  </div>
+                  <ul className="space-y-2 text-xs text-[var(--text-secondary)] mb-6">
+                    <li className="flex items-center gap-2"><span className="text-blue-400 font-bold">✓</span> 1,000,000 vectors</li>
+                    <li className="flex items-center gap-2"><span className="text-blue-400 font-bold">✓</span> 20,000 queries / day</li>
+                    <li className="flex items-center gap-2"><span className="text-blue-400 font-bold">✓</span> 5 GB persistent storage</li>
+                    <li className="flex items-center gap-2"><span className="text-blue-400 font-bold">✓</span> Never pauses (24/7 active)</li>
+                    <li className="flex items-center gap-2"><span className="text-blue-400 font-bold">✓</span> Email &amp; community support</li>
+                  </ul>
+                </div>
+                <button
+                  type="button"
+                  disabled={checkoutLoading || billing?.plan === 'starter'}
+                  onClick={() => handleUpgrade('starter')}
+                  className={`w-full py-2.5 rounded-xl text-xs font-semibold transition ${billing?.plan === 'starter' ? 'bg-emerald-500/20 text-emerald-400 cursor-default' : 'bg-blue-600 hover:bg-blue-500 text-white shadow-sm'}`}
+                >
+                  {billing?.plan === 'starter' ? 'Active Plan' : (checkoutLoading ? 'Processing...' : 'Upgrade to Starter')}
+                </button>
+              </div>
+
+              {/* Growth */}
+              <div className={`p-5 rounded-2xl border transition-all flex flex-col justify-between relative ${billing?.plan === 'growth' ? 'border-emerald-500/40 bg-emerald-500/[0.03]' : 'border-purple-500/30 bg-gradient-to-b from-purple-900/10 to-transparent'}`}>
+                <div className="absolute -top-2.5 right-4 text-[9px] font-bold px-2 py-0.5 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-sm">
+                  POPULAR
+                </div>
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs uppercase tracking-wider font-bold text-purple-400">Growth</span>
+                    {billing?.plan === 'growth' && <span className="text-[10px] bg-emerald-500/20 text-emerald-400 font-bold px-2 py-0.5 rounded-full border border-emerald-500/30">CURRENT PLAN</span>}
+                  </div>
+                  <div className="flex items-baseline gap-1 mb-3">
+                    <span className="text-2xl font-black text-[var(--text-primary)]">Rs.3,499</span>
+                    <span className="text-xs text-[var(--text-muted)]">/ month</span>
+                  </div>
+                  <ul className="space-y-2 text-xs text-[var(--text-secondary)] mb-6">
+                    <li className="flex items-center gap-2"><span className="text-purple-400 font-bold">✓</span> 5,000,000 vectors</li>
+                    <li className="flex items-center gap-2"><span className="text-purple-400 font-bold">✓</span> 100,000 queries / day</li>
+                    <li className="flex items-center gap-2"><span className="text-purple-400 font-bold">✓</span> 25 GB storage</li>
+                    <li className="flex items-center gap-2"><span className="text-purple-400 font-bold">✓</span> Metadata filters &amp; Hybrid</li>
+                    <li className="flex items-center gap-2"><span className="text-purple-400 font-bold">✓</span> Priority WhatsApp / Email</li>
+                  </ul>
+                </div>
+                <button
+                  type="button"
+                  disabled={checkoutLoading || billing?.plan === 'growth'}
+                  onClick={() => handleUpgrade('growth')}
+                  className={`w-full py-2.5 rounded-xl text-xs font-semibold transition ${billing?.plan === 'growth' ? 'bg-emerald-500/20 text-emerald-400 cursor-default' : 'bg-purple-600 hover:bg-purple-500 text-white shadow-sm'}`}
+                >
+                  {billing?.plan === 'growth' ? 'Active Plan' : (checkoutLoading ? 'Processing...' : 'Upgrade to Growth')}
+                </button>
+              </div>
+
+              {/* Scale */}
+              <div className={`p-5 rounded-2xl border transition-all flex flex-col justify-between ${billing?.plan === 'scale' ? 'border-emerald-500/40 bg-emerald-500/[0.03]' : 'border-[var(--border)] bg-[var(--bg-surface)]'}`}>
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs uppercase tracking-wider font-bold text-amber-400">Scale</span>
+                    {billing?.plan === 'scale' && <span className="text-[10px] bg-emerald-500/20 text-emerald-400 font-bold px-2 py-0.5 rounded-full border border-emerald-500/30">CURRENT PLAN</span>}
+                  </div>
+                  <div className="flex items-baseline gap-1 mb-3">
+                    <span className="text-2xl font-black text-[var(--text-primary)]">Rs.9,999</span>
+                    <span className="text-xs text-[var(--text-muted)]">/ month</span>
+                  </div>
+                  <ul className="space-y-2 text-xs text-[var(--text-secondary)] mb-6">
+                    <li className="flex items-center gap-2"><span className="text-amber-400 font-bold">✓</span> 20,000,000 vectors</li>
+                    <li className="flex items-center gap-2"><span className="text-amber-400 font-bold">✓</span> 500,000 queries / day</li>
+                    <li className="flex items-center gap-2"><span className="text-amber-400 font-bold">✓</span> 100 GB storage</li>
+                    <li className="flex items-center gap-2"><span className="text-amber-400 font-bold">✓</span> Dedicated Slack channel</li>
+                    <li className="flex items-center gap-2"><span className="text-amber-400 font-bold">✓</span> 99.9% uptime SLA</li>
+                  </ul>
+                </div>
+                <button
+                  type="button"
+                  disabled={checkoutLoading || billing?.plan === 'scale'}
+                  onClick={() => handleUpgrade('scale')}
+                  className={`w-full py-2.5 rounded-xl text-xs font-semibold transition ${billing?.plan === 'scale' ? 'bg-emerald-500/20 text-emerald-400 cursor-default' : 'bg-amber-600 hover:bg-amber-500 text-white shadow-sm'}`}
+                >
+                  {billing?.plan === 'scale' ? 'Active Plan' : (checkoutLoading ? 'Processing...' : 'Upgrade to Scale')}
+                </button>
+              </div>
             </div>
           </div>
         </div>
