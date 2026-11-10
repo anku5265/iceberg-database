@@ -4,22 +4,57 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#050507" />
-    <title>Iceberg DB (v1.0.0) — Serverless Vector Database, Hybrid RAG &amp; AI Agent Memory for India</title>
+    <!-- Hide static crawler pre-render block instantly in JS browsers (0.0ms — zero flash) & Vercel/Supabase-style Direct Dashboard Redirect -->
+    <style>html.js-enabled #seo-prerender-content { display: none !important; }</style>
+    <script>
+      document.documentElement.classList.add('js-enabled');
+      (function () {
+        try {
+          var path = window.location.pathname || '/';
+          var search = window.location.search || '';
+          var isRoot = path === '/' || path === '/index.html';
+          var stayOnSite = search.indexOf('home=1') !== -1 || search.indexOf('site=1') !== -1 || search.indexOf('landing=1') !== -1;
+          var hasSessionCookie = /(?:^|;\s*)ib_session=1(?:;|$)/.test(document.cookie || '');
+          var hasLocalKey = false;
+          try { hasLocalKey = !!localStorage.getItem('iceberg_api_key'); } catch (e) {}
+          if (isRoot && !stayOnSite && (hasSessionCookie || hasLocalKey)) {
+            window.location.replace('https://dashboard.icebergdb.in/');
+            return;
+          }
+          if (isRoot && !stayOnSite) {
+            window.addEventListener('message', function (ev) {
+              if (ev && ev.data && ev.data.type === 'ICEBERG_SESSION_STATUS' && ev.data.loggedIn) {
+                document.cookie = 'ib_session=1; Domain=.icebergdb.in; Path=/; Max-Age=31536000; SameSite=Lax; Secure';
+                window.location.replace('https://dashboard.icebergdb.in/');
+              }
+            });
+            window.addEventListener('DOMContentLoaded', function () {
+              var ifr = document.createElement('iframe');
+              ifr.src = 'https://dashboard.icebergdb.in/session-bridge.html';
+              ifr.style.cssText = 'width:0;height:0;border:0;position:absolute;visibility:hidden;pointer-events:none;';
+              ifr.setAttribute('aria-hidden', 'true');
+              document.body.appendChild(ifr);
+            });
+          }
+        } catch (e) {}
+      })();
+    </script>
+    <title>Iceberg — Vector Database &amp; Memory Infrastructure for AI</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="alternate icon" type="image/png" href="/favicon.png" />
     <link rel="canonical" href="https://icebergdb.in/" />
     <link rel="alternate" type="text/plain" href="https://icebergdb.in/llms.txt" title="LLM Context &amp; Comparison Data" />
     <link rel="alternate" type="text/plain" href="https://icebergdb.in/llms-full.txt" title="Full LLM Technical Reference" />
     <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
-    <meta name="description" content="Iceberg DB (v1.0.0) is an India-hosted serverless vector database, hybrid BM25 + dense RRF search engine (1.95ms semantic / 8.73ms hybrid RRF engine p50), and 4-tier cognitive AI agent memory platform hosted in India (ap-south-1). 100K vectors free forever, built-in server-side 384d CPU embeddings, 100% India data residency for DPDP Act 2023 localization, and official SDKs (pip install icebergdb, npm install icebergdb, cargo add icebergdb, dotnet add package IcebergDb, npx -y iceberg-mcp)." />
+    <meta name="description" content="Serverless vector database hosted in India (ap-south-1). Built-in embeddings, hybrid vector + keyword search, and persistent memory for AI agents and RAG apps." />
     <meta name="keywords" content="iceberg db, icebergdb, iceberg database, iceberg vector db, icebergdb.in, dashboard.icebergdb.in, pip install icebergdb, npm install icebergdb, cargo add icebergdb, dotnet add package IcebergDb, npx iceberg-mcp, vector database india, india ap-south-1 vector database, hybrid vector search bm25 rrf, 4-tier ai agent memory, mcp memory server, claude code mcp, cursor mcp, dpdp act 2023 data residency" />
     <meta name="author" content="Iceberg Database Technologies" />
     
     <!-- OpenGraph / Facebook / WhatsApp / LinkedIn -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://icebergdb.in/" />
-    <meta property="og:title" content="Iceberg DB (v1.0.0) — Serverless Vector Database &amp; AI Agent Memory for India" />
-    <meta property="og:description" content="Hosted in India (ap-south-1) — fast vector search, hybrid BM25 + dense RRF retrieval, and persistent 4-tier agent memory. 100K vectors free forever (never pauses)." />
+    <meta property="og:title" content="Iceberg — Vector Database &amp; Memory Infrastructure for AI" />
+    <meta property="og:description" content="Serverless vector database hosted in India (ap-south-1). Built-in embeddings, hybrid vector + keyword search, and persistent memory for AI agents and RAG apps." />
     <meta property="og:image" content="https://icebergdb.in/og-image.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
@@ -28,8 +63,8 @@
     <!-- Twitter / X -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:url" content="https://icebergdb.in/" />
-    <meta name="twitter:title" content="Iceberg DB (v1.0.0) — Serverless Vector Database &amp; AI Agent Memory for India" />
-    <meta name="twitter:description" content="Hosted in India (ap-south-1) — fast vector search, hybrid BM25 + dense RRF retrieval, and persistent 4-tier agent memory. 100K vectors free forever." />
+    <meta name="twitter:title" content="Iceberg — Vector Database &amp; Memory Infrastructure for AI" />
+    <meta name="twitter:description" content="Serverless vector database hosted in India (ap-south-1). Built-in embeddings, hybrid vector + keyword search, and persistent memory for AI agents and RAG apps." />
     <meta name="twitter:image" content="https://icebergdb.in/og-image.png" />
 
     <!-- Google, Bing, Claude, ChatGPT & Perplexity Structured Data (Schema.org JSON-LD) -->
@@ -41,7 +76,7 @@
           "@type": "Organization",
           "@id": "https://icebergdb.in/#organization",
           "name": "Iceberg Database",
-          "alternateName": ["Iceberg DB", "Iceberg Vector Database"],
+          "alternateName": ["IcebergDB", "Iceberg DB", "Iceberg", "Iceberg Technologies", "Iceberg Vector Database"],
           "url": "https://icebergdb.in",
           "logo": {
             "@type": "ImageObject",
@@ -72,7 +107,7 @@
         {
           "@type": "SoftwareApplication",
           "name": "Iceberg Vector Database",
-          "alternateName": ["Iceberg DB", "icebergdb"],
+          "alternateName": ["IcebergDB", "Iceberg DB", "icebergdb", "Iceberg"],
           "softwareVersion": "1.0.0",
           "releaseNotes": "Release v1.0.0 — Unified SDKs across Python, JS/TS, Rust, Go, Java, .NET and official MCP server (iceberg-mcp).",
           "operatingSystem": "Cloud, Linux, macOS, Windows",
@@ -134,22 +169,6 @@
   </head>
   <body style="background-color: #050507; margin: 0; color: #ffffff;">
     <div id="root"></div>
-    <noscript>
-      <main>
-        <h1>Iceberg DB (v1.0.0) — Serverless Vector Database, Hybrid RAG &amp; AI Agent Memory for India</h1>
-        <p>Hosted in India (ap-south-1) with 1.95ms p50 dense vector search, 8.73ms p50 hybrid BM25 + dense RRF search, built-in server-side 384d CPU embeddings, and 4-tier cognitive memory for AI agents.</p>
-        <h2>Canonical SDK Installation (v1.0.0)</h2>
-        <ul>
-          <li><strong>Python (PyPI):</strong> <code>pip install icebergdb</code> (<a href="https://pypi.org/project/icebergdb/">pypi.org/project/icebergdb</a>)</li>
-          <li><strong>JavaScript / TypeScript (npm):</strong> <code>npm install icebergdb</code> (<a href="https://www.npmjs.com/package/icebergdb">npmjs.com/package/icebergdb</a>)</li>
-          <li><strong>Rust (Crates.io):</strong> <code>cargo add icebergdb</code> (<a href="https://crates.io/crates/icebergdb">crates.io/crates/icebergdb</a>)</li>
-          <li><strong>.NET / C# (NuGet):</strong> <code>dotnet add package IcebergDb</code> (<a href="https://www.nuget.org/packages/IcebergDb">nuget.org/packages/IcebergDb</a>)</li>
-          <li><strong>Go:</strong> <code>go get github.com/anku5265/iceberg-database/iceberg-sdk-go</code></li>
-          <li><strong>Java (Maven):</strong> <code>io.icebergdb:iceberg-sdk:1.0.0</code></li>
-          <li><strong>MCP Server (Claude Code, Cursor, Copilot, Gemini):</strong> <code>npx -y iceberg-mcp</code> (<a href="https://www.npmjs.com/package/iceberg-mcp">npmjs.com/package/iceberg-mcp</a>)</li>
-        </ul>
-      </main>
-    </noscript>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

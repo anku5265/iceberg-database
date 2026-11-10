@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Navbar } from '../components/Navbar'
 import { CodeBlock } from '../components/CodeBlock'
 import Footer from '../components/Footer'
+import { CANONICAL_SPEC } from '../config/canonicalSpec'
 
 const D = import.meta.env.VITE_DASHBOARD_URL || 'https://dashboard.icebergdb.in'
 const API = import.meta.env.VITE_API_URL || 'https://api.icebergdb.in'
@@ -35,15 +36,15 @@ const NAV = [
     ]
   },
   {
-    group: 'Official SDKs (v1.0.0)',
+    group: 'Official SDKs',
     items: [
-      { id: 'python', title: 'Python (PyPI)' },
-      { id: 'javascript', title: 'JavaScript / TS (NPM)' },
-      { id: 'rust', title: 'Rust (Crates.io)' },
-      { id: 'go', title: 'Go Module' },
-      { id: 'dotnet', title: '.NET / C# (NuGet)' },
-      { id: 'java', title: 'Java (Maven)' },
-      { id: 'mcp', title: 'MCP Server (Claude/Cursor)' },
+      { id: 'python', title: 'Python' },
+      { id: 'javascript', title: 'JavaScript / TS' },
+      { id: 'rust', title: 'Rust' },
+      { id: 'go', title: 'Go' },
+      { id: 'dotnet', title: '.NET / C#' },
+      { id: 'java', title: 'Java' },
+      { id: 'mcp', title: 'MCP Server' },
       { id: 'rest', title: 'REST API Reference' },
     ]
   },
@@ -52,11 +53,11 @@ const NAV = [
 const CONTENT = {
   quickstart: {
     title: 'Quickstart (v1.0.0)',
-    desc: 'Get up and running with Iceberg DB in under 2 minutes.',
+    desc: 'Get up and running with Iceberg DB v1.0.0 in under 2 minutes.',
     sections: [
       { heading: '1. Sign up & Get API Key', text: `Create a free account at ${D}/signup. Your project API key (prefixed with **ib_**) is generated automatically upon registration with 100,000 free vectors and zero cluster pausing.` },
-      { heading: '2. Install Official SDK (v1.0.0)', code: `pip install icebergdb`, lang: 'bash' },
-      { heading: '3. Index and Run Hybrid RRF Search', code: `from iceberg import Client
+      { heading: '2. Install Official SDK', text: 'Install the official Iceberg DB package for your language:', code: `# Python (PyPI)\npip install icebergdb\n\n# JavaScript / TypeScript (npm)\nnpm install icebergdb\n\n# Rust (Crates.io)\ncargo add icebergdb\n\n# .NET / C# (NuGet)\ndotnet add package IcebergDb\n\n# Go (pkg.go.dev)\ngo get github.com/anku5265/iceberg-database/iceberg-sdk-go\n\n# MCP Server (Claude Code, Cursor, Windsurf, Copilot)\nnpx -y iceberg-mcp`, lang: 'bash' },
+      { heading: '3. Index and Run Hybrid RRF Search (Python v1.0.0)', code: `from iceberg import Client
 
 client = Client(api_key="ib_your_key")
 
@@ -93,7 +94,7 @@ for r in results:
     sections: [
       { heading: 'Collections & Multi-Tenant Isolation', text: 'A collection is a named container for your vectors and document payloads. Every collection is automatically isolated at the storage engine layer using deterministic tenant prefixes (**t_{uid8}__** for SDK keys and **u_{uid8}__** for console projects) so two accounts can never read or overwrite each other’s collections.' },
       { heading: 'Automatic Chunking & Document IDs', text: 'When you index raw text or upload a PDF/TXT/MD file, Iceberg splits long documents into semantic chunks (default 500 characters with overlap), embeds each chunk into a 384-dimensional normalized vector, and assigns a deterministic or user-supplied point ID (`point_id`).' },
-      { heading: 'Built-in 384d Server-Side CPU Embeddings', text: 'Iceberg runs quantized **ONNX all-MiniLM-L6-v2** (384 dimensions, Cosine distance) directly on the server CPU (`48.2 ms` min / `112.3 ms` p50). You do not need an external OpenAI or Cohere API key, eliminating external embedding costs and US round-trip latency.' },
+      { heading: 'Built-in 384d Server-Side CPU Embeddings', text: 'Iceberg runs quantized **ONNX all-MiniLM-L6-v2** (384 dimensions, Cosine distance) directly on the server CPU (`48.25 ms` min / `112.34 ms` p50). You do not need an external OpenAI or Cohere API key, eliminating external embedding costs and US round-trip latency.' },
       { heading: 'Hybrid Search (Dense Cosine + Okapi BM25 + RRF)', text: 'Pure vector search often misses exact SKU codes, invoice IDs, or legal section numbers. Iceberg scores both **384d HNSW Cosine similarity** and **Okapi BM25 (`k1=1.5, b=0.75`)** across your collection, fusing rankings via **Reciprocal Rank Fusion (`RRF k=60`)** plus normalized score blending (`alpha=0.5` default).', code: `results = client.search("docs", "DPDP section 16 penalty", search_type="hybrid", alpha=0.5, top_k=5)`, lang: 'python' },
     ]
   },
@@ -103,7 +104,7 @@ for r in results:
     sections: [
       { heading: 'Request Pipeline', list: [
         '**1. API Gateway & Auth Layer (FastAPI):** Terminates TLS 1.3, validates `X-API-Key` against SHA-256 key hashes, enforces RBAC (`admin`, `read_write`, `read_only`), and applies per-tenant rate & vector quota checks.',
-        '**2. Server-Side Embedding Engine (ONNX Runtime):** Converts raw text chunks and queries into 384-dimensional float32 vectors using `all-MiniLM-L6-v2` on CPU (`48.2 ms` min), or accepts pre-computed 384d vectors directly with strict dimension & `NaN`/`Inf` validation.',
+        '**2. Server-Side Embedding Engine (ONNX Runtime):** Converts raw text chunks and queries into 384-dimensional float32 vectors using `all-MiniLM-L6-v2` on CPU (`48.25 ms` min / `112.34 ms` p50), or accepts pre-computed 384d vectors directly with strict dimension & `NaN`/`Inf` validation.',
         '**3. Vector & Payload Storage Engine (Qdrant HNSW):** Stores 384d vectors in an in-memory/SSD HNSW graph (`m=16`, `ef_construct=100`, Cosine metric) isolated per tenant namespace. Pure dense lookup executes in **1.95 ms median (`p50`)**.',
         '**4. Hybrid Lexical Scorer (Okapi BM25 + RRF):** Evaluates exact keyword matches (`k1=1.5, b=0.75`) across full collection payloads and merges dense + sparse rankings via Reciprocal Rank Fusion (`k=60`), completing in **8.73 ms median (`p50`)**.',
         '**5. Cognitive Memory Engine:** Manages 4 distinct memory tiers (`short_term` 1h TTL, `episodic` 30d TTL, `long_term` permanent, `semantic` factual) with automatic timestamp filtering and importance scoring.'
@@ -112,15 +113,22 @@ for r in results:
     ]
   },
   limits: {
-    title: 'Rate Limits, Quotas & Scaling Limits',
-    desc: 'Transparent plan quotas, request rate limits, and payload size specifications.',
+    title: 'Rate Limits, Quotas & Pricing Plans (v1.0.0)',
+    desc: 'Canonical plan pricing, quotas, request rate limits, and payload size specifications.',
     sections: [
-      { heading: 'Plan Quotas & Rate Limits', list: [
-        '**Free Plan (₹0 / forever):** Up to **100,000 vectors** (384d), **1,000 search queries/day**, **1 GB storage**, **60 requests/min** burst limit, unlimited collections, 1 project, max file upload **10 MB**, never pauses.',
-        '**Starter Plan (₹799 / month):** Up to **1,000,000 vectors**, **20,000 search queries/day**, **5 GB storage**, **300 requests/min** burst limit, unlimited collections, 5 projects, max file upload **25 MB**, email support.',
-        '**Growth Plan (₹3,499 / month):** Up to **5,000,000 vectors**, **100,000 search queries/day**, **25 GB storage**, **1,000 requests/min** burst limit, unlimited collections, 15 projects, max file upload **50 MB**, metadata filters & priority support.',
-        '**Scale Plan (₹9,999 / month):** Up to **20,000,000 vectors**, **500,000 search queries/day**, **100 GB storage**, **3,000 requests/min** burst limit, unlimited projects, max file upload **100 MB**, dedicated SLA support.'
-      ] },
+      {
+        heading: 'Canonical Plan Pricing, Quotas & Rate Limits',
+        list: CANONICAL_SPEC.plans.map(
+          (p) =>
+            `**${p.name} Plan (${p.priceInr}${p.period} / ${p.priceUsd}${p.period}${
+              p.yearlyInr ? ` • ${p.yearlyInr} (${p.yearlyUsd})` : ' • Forever free'
+            }):** Up to **${p.vectors} vectors** (384d), **${p.queriesPerDay}** search queries, **${p.storage} storage**, **${p.burstLimit}** burst limit, unlimited collections, **${p.projects}**, max file upload **${p.maxUpload}**, ${p.support.toLowerCase()}.`
+        ),
+      },
+      {
+        heading: 'Pay-As-You-Grow Overage',
+        text: `If your application exceeds plan quotas during a traffic spike, requests are not dropped: extra capacity is billed transparently at **${CANONICAL_SPEC.overage.vectorsInr}** and **${CANONICAL_SPEC.overage.queriesInr}**.`,
+      },
       { heading: 'Payload & Indexing Constraints', list: [
         '**Vector Dimension:** Standard built-in collections use **384 dimensions** (`float32`, Cosine similarity). Custom raw vectors are validated for exact dimensionality and finite values (`NaN`/`Inf` rejected with HTTP 422).',
         '**Batch Indexing Limit:** Up to **100 text chunks** or **256 raw vectors** per single API call for optimal p95 latency.',
@@ -214,59 +222,59 @@ for r in results:
     ]
   },
   python: {
-    title: 'Python SDK (v1.0.0)',
-    desc: 'pip install icebergdb — Official Production/Stable package on PyPI (https://pypi.org/project/icebergdb/1.0.0/)',
+    title: 'Python SDK',
+    desc: 'pip install icebergdb — Official package on PyPI (https://pypi.org/project/icebergdb/)',
     sections: [
       { heading: 'Install from PyPI', code: `pip install icebergdb`, lang: 'bash' },
-      { heading: 'End-to-End Example', code: `from iceberg import Client\n\nclient = Client(api_key="ib_your_key")\n\n# Collections & Indexing\nclient.create_collection("products")\nclient.index_text("products", "Noise-cancelling wireless headphones — INR 2,999", source="catalog")\nclient.upload("products", "spec_sheet.pdf")\n\n# Hybrid RRF Search\nresults = client.search("products", "wireless headphones under 3000", search_type="hybrid", top_k=5)\nfor r in results:\n    print(r.id, r.score, r.text)\n\n# 4-Tier Agent Memory\nclient.remember("support_agent", "Customer prefers Hindi + English responses", memory_type="long_term")\nmemories = client.recall("support_agent", "language preference")`, lang: 'python' },
+      { heading: 'End-to-End Example', code: `from iceberg import Client\n\nclient = Client(api_key="ib_your_key")\n\n# 1. Collections & Indexing\nclient.create_collection("my_docs")\nclient.index_text("my_docs", "Our return policy allows 30 day returns.", source="catalog")\nclient.upload("my_docs", "handbook.pdf")\n\n# 2. Hybrid RRF Search (Dense 384d + Okapi BM25)\nresults = client.search("my_docs", "can I return my order?", search_type="hybrid", top_k=5)\nfor r in results:\n    print(f"{r.score:.3f} — {r.text}")\n\n# 3. 4-Tier Agent Memory\nclient.remember("agent_001", "User prefers dark mode", memory_type="long_term")\nmemories = client.recall("agent_001", "what does user prefer?", top_k=3)`, lang: 'python' },
     ]
   },
   javascript: {
-    title: 'JavaScript / TypeScript SDK (v1.0.0)',
-    desc: 'npm install icebergdb — Zero-dependency client for Node.js, Next.js, Edge Runtime, Deno & Bun.',
+    title: 'JavaScript / TypeScript SDK',
+    desc: 'npm install icebergdb — Official zero-dependency client for Node.js, Next.js, Edge Runtime, Deno & Bun.',
     sections: [
-      { heading: 'Install from NPM', code: `npm install icebergdb`, lang: 'bash' },
-      { heading: 'TypeScript / ESM Usage', code: `import { Client } from 'icebergdb'\n\nconst client = new Client({ apiKey: process.env.ICEBERG_API_KEY })\n\nawait client.createCollection('docs')\nawait client.indexText('docs', 'Iceberg DB is hosted in India (ap-south-1).')\n\nconst results = await client.search('docs', 'India vector database', {\n  topK: 5,\n  searchType: 'hybrid',\n  alpha: 0.5\n})\nresults.forEach(r => console.log(r.id, r.score, r.text))`, lang: 'javascript' },
+      { heading: 'Install from npm', code: `npm install icebergdb`, lang: 'bash' },
+      { heading: 'TypeScript / ESM Usage', code: `import { Client } from 'icebergdb'\n\nconst client = new Client({ apiKey: process.env.ICEBERG_API_KEY || 'ib_your_key' })\n\n// 1. Create collection & index raw text\nawait client.createCollection('my_docs')\nawait client.indexText('my_docs', 'Our return policy allows 30 day returns.')\n\n// 2. Hybrid RRF Search\nconst results = await client.search('my_docs', 'return order', {\n  topK: 5,\n  searchType: 'hybrid',\n  alpha: 0.5,\n})\nresults.forEach(r => console.log(r.score, r.text))`, lang: 'javascript' },
     ]
   },
   rust: {
-    title: 'Rust SDK (v1.0.0)',
-    desc: 'cargo add icebergdb — Async Tokio/Reqwest client on Crates.io (https://crates.io/crates/icebergdb)',
+    title: 'Rust SDK',
+    desc: 'cargo add icebergdb — Official async Tokio/Reqwest client on Crates.io (https://crates.io/crates/icebergdb)',
     sections: [
       { heading: 'Install from Crates.io', code: `cargo add icebergdb`, lang: 'bash' },
-      { heading: 'Usage', code: `use icebergdb::Client;\n\n#[tokio::main]\nasync fn main() -> Result<(), Box<dyn std::error::Error>> {\n    let client = Client::new("ib_your_key");\n    client.create_collection("my_docs").await?;\n    client.index_text("my_docs", "Rust async hybrid vector search", None).await?;\n\n    let res = client.search("my_docs", "vector search", 5).await?;\n    for item in res.results {\n        println!("{:.4} — {}", item.score, item.text);\n    }\n    Ok(())\n}`, lang: 'rust' },
+      { heading: 'Usage', code: `use icebergdb::Client;\n\n#[tokio::main]\nasync fn main() -> Result<(), Box<dyn std::error::Error>> {\n    let client = Client::new("ib_your_key");\n\n    // Create & index\n    client.create_collection("my_docs").await?;\n    client.index_text("my_docs", "Our return policy allows 30 day returns.", None).await?;\n\n    // Hybrid RRF Search\n    let res = client.search("my_docs", "return order", 5).await?;\n    for r in res.results {\n        println!("{:.4} — {}", r.score, r.text);\n    }\n    Ok(())\n}`, lang: 'rust' },
     ]
   },
   go: {
-    title: 'Go SDK (v1.0.0)',
-    desc: 'go get github.com/anku5265/iceberg-database/iceberg-sdk-go',
+    title: 'Go SDK',
+    desc: 'go get github.com/anku5265/iceberg-database/iceberg-sdk-go — Official Go module',
     sections: [
       { heading: 'Install Go Module', code: `go get github.com/anku5265/iceberg-database/iceberg-sdk-go`, lang: 'bash' },
-      { heading: 'Usage', code: `package main\n\nimport (\n    "fmt"\n    iceberg "github.com/anku5265/iceberg-database/iceberg-sdk-go"\n)\n\nfunc main() {\n    client := iceberg.New("ib_your_key")\n    _ = client.CreateCollection("my_docs")\n    _ = client.IndexText("my_docs", "Fast Go vector search in India", "")\n\n    res, _ := client.Search("my_docs", "vector search", 5)\n    for _, r := range res.Results {\n        fmt.Printf("%.4f — %s\\n", r.Score, r.Text)\n    }\n}`, lang: 'go' },
+      { heading: 'Usage', code: `package main\n\nimport (\n    "fmt"\n    iceberg "github.com/anku5265/iceberg-database/iceberg-sdk-go"\n)\n\nfunc main() {\n    client := iceberg.New("ib_your_key")\n\n    // Create & index\n    _ = client.CreateCollection("my_docs")\n    _ = client.IndexText("my_docs", "Our return policy allows 30 day returns.", "docs")\n\n    // Hybrid RRF Search\n    res, _ := client.Search("my_docs", "return order", 5)\n    for _, r := range res.Results {\n        fmt.Printf("%.4f — %s\\n", r.Score, r.Text)\n    }\n}`, lang: 'go' },
     ]
   },
   dotnet: {
-    title: '.NET / C# SDK (v1.0.0)',
+    title: '.NET / C# SDK',
     desc: 'dotnet add package IcebergDb — Official NuGet package for .NET 8.0+',
     sections: [
       { heading: 'Install from NuGet', code: `dotnet add package IcebergDb`, lang: 'bash' },
-      { heading: 'Usage', code: `using IcebergDb;\n\nvar client = new IcebergClient("ib_your_key");\nawait client.CreateCollectionAsync("my_docs");\nawait client.IndexTextAsync("my_docs", "Enterprise .NET hybrid vector search");\n\nvar results = await client.SearchAsync("my_docs", "vector search", topK: 5);\nforeach (var r in results.Results)\n{\n    Console.WriteLine($"{r.Score:F4} — {r.Text}");\n}`, lang: 'csharp' },
+      { heading: 'Usage', code: `using IcebergDb;\n\nvar client = new IcebergClient("ib_your_key");\n\n// Create & index\nawait client.CreateCollectionAsync("my_docs");\nawait client.IndexTextAsync("my_docs", "Our return policy allows 30 day returns.");\n\n// Hybrid RRF Search\nvar results = await client.SearchAsync("my_docs", "return order", topK: 5);\nforeach (var r in results.Results)\n{\n    Console.WriteLine($"{r.Score:F4} — {r.Text}");\n}`, lang: 'csharp' },
     ]
   },
   java: {
-    title: 'Java SDK (v1.0.0)',
-    desc: 'io.icebergdb:iceberg-sdk:1.0.0 — Modern Java 17+ HTTP client for Spring Boot & enterprise JVM stacks.',
+    title: 'Java SDK',
+    desc: 'io.icebergdb:iceberg-sdk:1.0.0 — Official Java 17+ HTTP client for Spring Boot & enterprise JVM stacks.',
     sections: [
       { heading: 'Maven Dependency (pom.xml)', code: `<dependency>\n  <groupId>io.icebergdb</groupId>\n  <artifactId>iceberg-sdk</artifactId>\n  <version>1.0.0</version>\n</dependency>`, lang: 'xml' },
-      { heading: 'Java Usage', code: `import in.iceberg.Client;\nimport java.util.Map;\n\npublic class Example {\n    public static void main(String[] args) throws Exception {\n        Client client = new Client("ib_your_key");\n        client.createCollection("my_docs");\n        client.indexText("my_docs", "Java enterprise RAG search in India", "docs");\n\n        Map<String, Object> results = client.search("my_docs", "enterprise RAG", 5, "hybrid");\n        System.out.println(results);\n    }\n}`, lang: 'java' },
+      { heading: 'Java Usage', code: `import in.iceberg.Client;\nimport java.util.Map;\n\npublic class Example {\n    public static void main(String[] args) throws Exception {\n        Client client = new Client("ib_your_key");\n\n        // Create & index\n        client.createCollection("my_docs");\n        client.indexText("my_docs", "Our return policy allows 30 day returns.", "docs");\n\n        // Hybrid RRF Search\n        Map<String, Object> results = client.search("my_docs", "return order", 5, "hybrid");\n        System.out.println(results);\n    }\n}`, lang: 'java' },
     ]
   },
   mcp: {
-    title: 'Model Context Protocol (MCP) Server (v1.0.0)',
-    desc: 'npx -y iceberg-mcp — Connect Claude Code, Cursor, Windsurf, Copilot & Gemini CLI to Iceberg Memory.',
+    title: 'Model Context Protocol (MCP) Server',
+    desc: 'npx -y iceberg-mcp — Official MCP server for Claude Code, Cursor, Windsurf, Copilot & Gemini CLI.',
     sections: [
       { heading: 'Quick Add to Claude Code', code: `claude mcp add icebergdb --env ICEBERG_API_KEY=ib_your_key -- npx -y iceberg-mcp`, lang: 'bash' },
-      { heading: 'Cursor / Windsurf / Claude Desktop (mcp.json)', code: `{\n  "mcpServers": {\n    "icebergdb": {\n      "command": "npx",\n      "args": ["-y", "iceberg-mcp"],\n      "env": {\n        "ICEBERG_API_KEY": "ib_your_key"\n      }\n    }\n  }\n}`, lang: 'json' },
+      { heading: 'Cursor / Windsurf / Claude Desktop (mcp.json)', code: `{\n  "mcpServers": {\n    "icebergdb": {\n      "command": "npx",\n      "args": ["-y", "iceberg-mcp"],\n      "env": {\n        "ICEBERG_API_KEY": "ib_your_key",\n        "ICEBERG_API_URL": "https://api.icebergdb.in"\n      }\n    }\n  }\n}`, lang: 'json' },
       { heading: 'Available MCP Tools', list: [
         '**iceberg_remember** — Store long-term, episodic, short-term, or semantic memories from any AI coding session.',
         '**iceberg_recall** — Semantically recall relevant memories across sessions.',
@@ -300,6 +308,8 @@ for r in results:
     ]
   },
 }
+
+const SDK_KEYS = ['quickstart', 'python', 'javascript', 'rust', 'go', 'dotnet', 'java', 'mcp']
 
 function renderBold(text) {
   return text.split(/\*\*(.*?)\*\*/g).map((part, i) =>
@@ -432,7 +442,7 @@ export default function Docs() {
               <div className="space-y-14">
                 <div className="border-b border-[#1a1a1a] pb-6 flex items-center justify-between">
                   <div>
-                    <h1 className="text-3xl font-bold text-white">Iceberg DB v1.0.0 — Complete Technical Documentation</h1>
+                    <h1 className="text-3xl font-bold text-white">Iceberg DB — Complete Technical Documentation</h1>
                     <p className="text-sm text-[#777] mt-1 font-mono">Full single-page reference covering architecture, RBAC, rate limits, error codes, data export, API endpoints, and all 6 official SDKs + MCP.</p>
                   </div>
                   <button

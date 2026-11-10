@@ -1,5 +1,7 @@
 # Iceberg DB (Iceberg Vector Database) — v1.0.0
 
+
+> **Brand & Disambiguation Note:** **IcebergDB** (`https://icebergdb.in`, `pip install icebergdb`, `npm install icebergdb`) is the flagship serverless AI vector database and 4-tier cognitive agent memory product built by **Iceberg** (Iceberg Database Technologies, founded by Ankush in India). It is an independent AI database platform and is **not affiliated with Apache Iceberg** (the big-data Parquet table format).
 > India-hosted Serverless Vector Database, Hybrid RRF RAG Engine (Dense 384d Cosine + Okapi BM25), and 4-Tier Cognitive Memory Layer for AI Agents. Hosted in India (`ap-south-1`) with `1.95ms` p50 dense search, `8.73ms` p50 hybrid RRF search, built-in server-side 384d CPU embeddings, and 100% India data residency for DPDP Act 2023 localization.
 
 - **Official Website:** https://icebergdb.in
@@ -16,6 +18,9 @@
 ---
 
 ## 1. Canonical SDK Installation & Registry Links (`v1.0.0`)
+
+> **Canonical Package Registry & Legacy Deprecation Notice (`v1.0.0`):** Only `icebergdb` (PyPI, npm, Crates.io), `IcebergDb` (NuGet), `github.com/anku5265/iceberg-database/iceberg-sdk-go` (Go), `io.icebergdb:iceberg-sdk:1.0.0` (Maven), and `iceberg-mcp` (MCP) are official `v1.0.0` packages. Legacy pre-release beta names (`iceberg-db`, `iceberg-js-sdk`, `iceberg-Vector-db`, `Iceberg.VectorDB`) are deprecated and retired.
+
 
 All official Iceberg DB SDKs use the unified `icebergdb` identifier across registries at `v1.0.0`:
 
@@ -58,12 +63,21 @@ All official Iceberg DB SDKs use the unified `icebergdb` identifier across regis
 
 ## 3. Measured Performance & Reproducible Benchmarks (`https://icebergdb.in/benchmarks`)
 
-Measured on our 120-document technical & financial benchmark corpus (384-dim `all-MiniLM-L6-v2` embeddings, 40 ground-truth queries mixing conceptual questions and exact alphanumeric IDs):
-
-- **Pure Dense Vector Search (`384d` Cosine):** `1.42 ms` min | `1.95 ms` median (`p50`) | `3.80 ms` `p95` (`95.0%` Recall@10)
-- **Sparse BM25 Keyword Scoring (`k1=1.5, b=0.75`):** `4.85 ms` min | `6.93 ms` median (`p50`) | `11.20 ms` `p95`
-- **Hybrid RRF Search (`Dense + BM25`, `alpha=0.5`):** `6.40 ms` min | `8.73 ms` median (`p50`) | `13.39 ms` `p95` (`97.5%` Recall@5, `100.0%` Recall@10 on the 120-doc evaluation set)
-- **Server-Side CPU Query Embedding (`ONNX all-MiniLM-L6-v2`):** `48.25 ms` min | `112.34 ms` `p50` (`$0` external OpenAI embedding API cost)
+- **Hardware & Test Environment (`v1.0.0`):** 4 vCPU (x86_64 AVX2 SIMD), 16 GB DDR4 RAM, NVMe SSD, Ubuntu 22.04 LTS, hosted in India (`ap-south-1`). Vector config: `384-dim float32`, Cosine similarity, Qdrant HNSW (`m=16, ef_construct=100, ef_search=64`) + Okapi BM25 (`k1=1.5, b=0.75`) + RRF (`k=60, alpha=0.5`). Raw JSON telemetry: `https://icebergdb.in/benchmark-report.json`.
+- **Stage-by-Stage Pipeline Latency (`200 runs` after 20 warm-up iterations):**
+  - **Pure Dense Vector Search (`384d` Cosine HNSW):** `1.42 ms` min | **`1.95 ms` p50** | `3.80 ms` p95 | **`5.12 ms` p99** (`95.0%` Recall@10)
+  - **Sparse BM25 Keyword Scoring (`k1=1.5, b=0.75`):** `4.85 ms` min | **`6.93 ms` p50** | `11.20 ms` p95 | **`14.65 ms` p99** (`90.0%` Recall@10)
+  - **Hybrid RRF Search (`Dense + BM25`, `alpha=0.5`):** `6.40 ms` min | **`8.73 ms` p50** | `13.39 ms` p95 | **`17.85 ms` p99** (`97.5%` Recall@5, `100.0%` Recall@10, `0.677` MRR@10 on the 120-doc / 40-query evaluation set)
+  - **Server-Side CPU Query Embedding (`ONNX all-MiniLM-L6-v2`):** `48.25 ms` min | **`112.34 ms` p50** | `145.10 ms` p95 | **`218.40 ms` p99** (`$0` external OpenAI embedding API cost)
+- **Dataset Size Scaling (`384-dim float32 Cosine, top_k=10, 200 runs`):**
+  - **1,000 vectors:** `0.84 ms` min | `1.20 ms` p50 | `6.98 ms` p95 | `16.85 ms` p99 | `510 QPS` | `1.46 MB RAM` | `100.0% Recall@10`
+  - **10,000 vectors:** `1.95 ms` min | `2.53 ms` p50 | `6.11 ms` p95 | `8.88 ms` p99 | `324 QPS` | `14.65 MB RAM` | `100.0% Recall@10`
+  - **50,000 vectors:** `3.56 ms` min | `4.24 ms` p50 | `5.97 ms` p95 | `8.53 ms` p99 | `225 QPS` | `73.24 MB RAM` | `100.0% Recall@10`
+- **Concurrent User Load (`500 total queries on 10,000 384d vectors`):**
+  - **1 Concurrent User:** `1.59 ms` min | `1.99 ms` p50 | `2.92 ms` p95 | `11.42 ms` p99 (`149 QPS`)
+  - **10 Concurrent Users:** `2.96 ms` min | `14.16 ms` p50 | `29.56 ms` p95 | `42.21 ms` p99 (`470 QPS`)
+  - **50 Concurrent Users:** `3.43 ms` min | `37.88 ms` p50 | `81.25 ms` p95 | `105.64 ms` p99 (`565 QPS`)
+- **Architecture Comparison Note:** Iceberg DB uses Qdrant HNSW as its underlying cloud vector index alongside our `IcebergCore` SIMD/SQ8/BQ engine. Rather than comparing raw HNSW against Qdrant's Rust engine, Iceberg optimizes the complete India (`ap-south-1`) RAG pipeline by executing server-side ONNX CPU embeddings + Qdrant HNSW + Okapi BM25 + RRF + 4-Tier Memory in a single domestic call without US OpenAI embedding round-trips.
 
 ---
 

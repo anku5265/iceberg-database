@@ -25,7 +25,7 @@ export default function ProductAssistant() {
         </p>
         <div className="flex gap-3">
           <a href={`${D}/signup`} className="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-6 py-3 rounded-md transition text-sm">Create assistant</a>
-          <a href={`${D}/docs`} className="border border-[#222] hover:border-[#444] text-[#999] hover:text-white font-medium px-6 py-3 rounded-md transition text-sm">View docs</a>
+          <a href="/docs" className="border border-[#222] hover:border-[#444] text-[#999] hover:text-white font-medium px-6 py-3 rounded-md transition text-sm">View docs</a>
         </div>
       </section>
 

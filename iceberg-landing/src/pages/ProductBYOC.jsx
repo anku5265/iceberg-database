@@ -25,7 +25,7 @@ export default function ProductBYOC() {
         </p>
         <div className="flex gap-3">
           <a href="mailto:contact@icebergdb.in" className="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-6 py-3 rounded-md transition text-sm">Contact sales</a>
-          <a href={`${D}/docs`} className="border border-[#222] hover:border-[#444] text-[#999] hover:text-white font-medium px-6 py-3 rounded-md transition text-sm">Setup guide</a>
+          <a href="/docs" className="border border-[#222] hover:border-[#444] text-[#999] hover:text-white font-medium px-6 py-3 rounded-md transition text-sm">Setup guide</a>
         </div>
       </section>
 

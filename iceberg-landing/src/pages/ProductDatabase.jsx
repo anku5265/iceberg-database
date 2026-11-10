@@ -1,6 +1,6 @@
 import Footer from '../components/Footer'
 import IcebergLogo from "../components/IcebergLogo"
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Navbar } from '../components/Navbar'
 import { CodeBlock } from '../components/CodeBlock'
@@ -28,7 +28,7 @@ export default function ProductDatabase() {
         </p>
         <div className="flex gap-3">
           <a href={`${D}/signup`} className="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-6 py-3 rounded-md transition text-sm">Start for free</a>
-          <a href={`${D}/docs`} className="border border-[#222] hover:border-[#444] text-[#999] hover:text-white font-medium px-6 py-3 rounded-md transition text-sm">View docs</a>
+          <a href="/docs" className="border border-[#222] hover:border-[#444] text-[#999] hover:text-white font-medium px-6 py-3 rounded-md transition text-sm">View docs</a>
         </div>
       </section>
 
@@ -36,7 +36,7 @@ export default function ProductDatabase() {
       <section className="border-y border-[#111] py-10">
         <div className="container mx-auto px-6 max-w-5xl grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
           {[
-            { v: '1.95ms', l: 'p50 engine latency' },
+            { v: '1.95 ms', l: 'dense p50 (8.73 ms hybrid)' },
             { v: '100K', l: 'vectors free forever' },
             { v: '∞', l: 'collections on free tier' },
             { v: '3 modes', l: 'semantic · keyword · hybrid' },

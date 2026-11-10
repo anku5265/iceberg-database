@@ -17,7 +17,9 @@ import Privacy from './pages/Privacy'
 import Terms from './pages/Terms'
 import Status from './pages/Status'
 import Contact from './pages/Contact'
+import About from './pages/About'
 import Benchmarks from './pages/Benchmarks'
+import Pricing from './pages/Pricing'
 
 const D = import.meta.env.VITE_DASHBOARD_URL || 'https://dashboard.icebergdb.in'
 const API = import.meta.env.VITE_API_URL || 'https://api.icebergdb.in'
@@ -119,6 +121,20 @@ function BackupIcon() { return <svg width="18" height="18" fill="none" stroke="c
 function NsIcon() { return <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z"/></svg> }
 
 export default function App() {
+  useEffect(() => {
+    try {
+      const path = window.location.pathname || '/'
+      const search = window.location.search || ''
+      const isRoot = path === '/' || path === '/index.html'
+      const stayOnSite = search.includes('home=1') || search.includes('site=1') || search.includes('landing=1')
+      const hasSessionCookie = /(?:^|;\s*)ib_session=1(?:;|$)/.test(document.cookie || '')
+      const hasLocalKey = !!localStorage.getItem('iceberg_api_key')
+      if (isRoot && !stayOnSite && (hasSessionCookie || hasLocalKey)) {
+        window.location.replace(D)
+      }
+    } catch {}
+  }, [])
+
   return (
     <Routes>
       <Route path="/" element={<HomePageComponent ProductDropdown={ProductDropdown} />} />
@@ -138,8 +154,9 @@ export default function App() {
       <Route path="/terms" element={<Terms />} />
       <Route path="/status" element={<Status />} />
       <Route path="/contact" element={<Contact />} />
-      <Route path="/about" element={<Contact />} />
+      <Route path="/about" element={<About />} />
       <Route path="/benchmarks" element={<Benchmarks />} />
+      <Route path="/pricing" element={<Pricing />} />
     </Routes>
   )
 }

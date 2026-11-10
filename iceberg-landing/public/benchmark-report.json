@@ -1,0 +1,170 @@
+{
+  "version": "1.0.0",
+  "generated_at_utc": "2026-11-06T07:38:59Z",
+  "environment": {
+    "region": "Hosted in India (ap-south-1)",
+    "cpu": "4 vCPU (x86_64 AVX2 SIMD)",
+    "ram": "16 GB DDR4 RAM",
+    "storage": "NVMe SSD",
+    "os": "Ubuntu 22.04 LTS (Linux x86_64)",
+    "python_version": "3.11.9",
+    "vector_dimension": "384-dim float32 (Cosine similarity)",
+    "hnsw_parameters": "m=16, ef_construct=100, ef_search=64",
+    "bm25_parameters": "Okapi BM25 (k1=1.5, b=0.75)",
+    "rrf_parameters": "Reciprocal Rank Fusion (RRF k=60, alpha=0.5 default)",
+    "embedding_model": "Quantized ONNX Runtime (all-MiniLM-L6-v2, 384-dim CPU)",
+    "warmup_and_runs": "20 warm-up iterations + 200 to 500 measured benchmark runs per test"
+  },
+  "pipeline_stages_ms": [
+    {
+      "stage": "1. Pure Dense Vector Lookup (384d Cosine HNSW)",
+      "runs": 200,
+      "min_ms": 1.42,
+      "p50_ms": 1.95,
+      "p95_ms": 3.8,
+      "p99_ms": 5.12,
+      "notes": "Post-embedding 384d HNSW Cosine graph lookup (top_k=10)"
+    },
+    {
+      "stage": "2. Sparse BM25 Keyword Scoring (k1=1.5, b=0.75)",
+      "runs": 200,
+      "min_ms": 4.85,
+      "p50_ms": 6.93,
+      "p95_ms": 11.2,
+      "p99_ms": 14.65,
+      "notes": "Inverted index lexical term-frequency scoring across collection"
+    },
+    {
+      "stage": "3. Hybrid RRF Search (Dense + BM25, k=60, alpha=0.5)",
+      "runs": 200,
+      "min_ms": 6.4,
+      "p50_ms": 8.73,
+      "p95_ms": 13.39,
+      "p99_ms": 17.85,
+      "notes": "Combined dense Cosine + Okapi BM25 Reciprocal Rank Fusion"
+    },
+    {
+      "stage": "4. Server-Side CPU Query Embedding (ONNX all-MiniLM-L6-v2)",
+      "runs": 200,
+      "min_ms": 48.25,
+      "p50_ms": 112.34,
+      "p95_ms": 145.1,
+      "p99_ms": 218.4,
+      "notes": "Built-in 384d CPU embedding ($0 external OpenAI key cost)"
+    },
+    {
+      "stage": "5. Full E2E HTTPS /search (Internet RTT + CPU Embed + Hybrid RRF)",
+      "runs": 30,
+      "min_ms": 269.7,
+      "p50_ms": 685.1,
+      "p95_ms": 1023.9,
+      "p99_ms": 1184.5,
+      "notes": "External client HTTPS round-trip + server-side ONNX CPU embed + Hybrid RRF"
+    }
+  ],
+  "dataset_scaling": [
+    {
+      "vectors": 1000,
+      "dimension": 384,
+      "metric": "Cosine (float32)",
+      "runs": 200,
+      "min_ms": 0.84,
+      "p50_ms": 1.2,
+      "p95_ms": 6.98,
+      "p99_ms": 16.85,
+      "qps": 510,
+      "upsert_vec_per_sec": 19811,
+      "ram_mb": 1.46,
+      "recall_at_10": "100.0%"
+    },
+    {
+      "vectors": 10000,
+      "dimension": 384,
+      "metric": "Cosine (float32)",
+      "runs": 200,
+      "min_ms": 1.95,
+      "p50_ms": 2.53,
+      "p95_ms": 6.11,
+      "p99_ms": 8.88,
+      "qps": 324,
+      "upsert_vec_per_sec": 16234,
+      "ram_mb": 14.65,
+      "recall_at_10": "100.0%"
+    },
+    {
+      "vectors": 50000,
+      "dimension": 384,
+      "metric": "Cosine (float32)",
+      "runs": 200,
+      "min_ms": 3.56,
+      "p50_ms": 4.24,
+      "p95_ms": 5.97,
+      "p99_ms": 8.53,
+      "qps": 225,
+      "upsert_vec_per_sec": 18288,
+      "ram_mb": 73.24,
+      "recall_at_10": "100.0%"
+    }
+  ],
+  "concurrency_scaling": [
+    {
+      "concurrent_users": 1,
+      "dataset_vectors": 10000,
+      "total_queries": 500,
+      "min_ms": 1.59,
+      "p50_ms": 1.99,
+      "p95_ms": 2.92,
+      "p99_ms": 11.42,
+      "throughput_qps": 149
+    },
+    {
+      "concurrent_users": 10,
+      "dataset_vectors": 10000,
+      "total_queries": 500,
+      "min_ms": 2.96,
+      "p50_ms": 14.16,
+      "p95_ms": 29.56,
+      "p99_ms": 42.21,
+      "throughput_qps": 470
+    },
+    {
+      "concurrent_users": 50,
+      "dataset_vectors": 10000,
+      "total_queries": 500,
+      "min_ms": 3.43,
+      "p50_ms": 37.88,
+      "p95_ms": 81.25,
+      "p99_ms": 105.64,
+      "throughput_qps": 565
+    }
+  ],
+  "retrieval_quality_120_docs_40_queries": [
+    {
+      "mode": "Iceberg Hybrid RRF (Dense + BM25)",
+      "params": "search_type='hybrid', alpha=0.5, k=60",
+      "recall_at_1": "47.5%",
+      "recall_at_5": "97.5%",
+      "recall_at_10": "100.0%",
+      "mrr_at_10": 0.677,
+      "engine_p50_ms": 8.73
+    },
+    {
+      "mode": "Pure Semantic (Dense 384d Cosine)",
+      "params": "search_type='semantic', alpha=1.0",
+      "recall_at_1": "32.5%",
+      "recall_at_5": "90.0%",
+      "recall_at_10": "95.0%",
+      "mrr_at_10": 0.502,
+      "engine_p50_ms": 1.95
+    },
+    {
+      "mode": "Pure Keyword (Okapi BM25)",
+      "params": "search_type='keyword', alpha=0.0",
+      "recall_at_1": "30.0%",
+      "recall_at_5": "85.0%",
+      "recall_at_10": "90.0%",
+      "mrr_at_10": 0.525,
+      "engine_p50_ms": 6.93
+    }
+  ]
+}

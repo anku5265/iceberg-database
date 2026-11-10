@@ -94,7 +94,7 @@ export default function ProductMemory() {
         </p>
         <div className="flex gap-3">
           <a href={`${D}/signup`} className="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-6 py-3 rounded-md transition text-sm">Get started</a>
-          <a href={`${D}/docs`} className="border border-[#222] hover:border-[#444] text-[#999] hover:text-white font-medium px-6 py-3 rounded-md transition text-sm">API reference</a>
+          <a href="/docs" className="border border-[#222] hover:border-[#444] text-[#999] hover:text-white font-medium px-6 py-3 rounded-md transition text-sm">API reference</a>
         </div>
       </section>
 
@@ -227,6 +227,63 @@ export default function ProductMemory() {
                   ))}
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Ebbinghaus Forgetting Curve & Underlying Storage Architecture */}
+      <section className="border-b border-[#111] py-12 md:py-20">
+        <div className="container mx-auto px-6 max-w-5xl">
+          <p className="text-xs text-blue-400 font-mono uppercase tracking-widest mb-2">Under the Hood • Cognitive Memory Architecture (v1.0.0)</p>
+          <h2 className="text-3xl font-bold mb-4">How 4-Tier Storage &amp; Ebbinghaus Decay Actually Work</h2>
+          <p className="text-sm text-[#888] max-w-3xl mb-10 leading-relaxed">
+            Iceberg Memory is not a wrapper around a prompt cache. Every agent memory is stored as an isolated 384-dimensional Cosine HNSW point + Okapi BM25 entry inside a tenant-scoped agent collection (<code className="text-white">u_&#123;uid8&#125;__memory_&#123;agent_id&#125;</code>) with deterministic TTL filtering and mathematical Ebbinghaus retention scoring.
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div className="rounded-xl border border-[#1a1a1a] bg-[#0d0d12] p-6">
+              <div className="text-xs font-mono text-emerald-400 uppercase tracking-wider mb-2">1. Ebbinghaus Forgetting Curve Formula</div>
+              <h3 className="text-lg font-bold text-white mb-2">Mathematical Memory Retention (<code className="text-blue-400">POST /memory/decay</code>)</h3>
+              <p className="text-xs text-[#888] leading-relaxed mb-4">
+                When you run <code className="text-white">POST /memory/decay</code> or recall memories with decay weighting, Iceberg computes each memory&apos;s live retention score <code className="text-white">R(t)</code> using the Ebbinghaus exponential decay equation reinforced by recall frequency:
+              </p>
+              <pre className="text-xs font-mono bg-[#08080c] border border-white/[0.08] rounded-lg p-4 text-emerald-300 overflow-x-auto mb-3 leading-relaxed">
+{`# Ebbinghaus Retention Equation (v1.0.0 Engine):
+t = (now_utc - last_accessed_at) in hours
+S = base_stability * (1.0 + 0.5 * access_count)
+R(t) = exp(-t / S)
+
+# Final Ranked Recall Score:
+final_score = 0.75 * hybrid_rrf_score + 0.25 * R(t)`}
+              </pre>
+              <p className="text-xs text-[#777] leading-relaxed">
+                Memories that an agent recalls frequently increase their stability factor <code className="text-white">S</code> and resist decay, while stale, unreferenced <code className="text-white">short_term</code> and <code className="text-white">episodic</code> memories naturally decay below the pruning threshold (<code className="text-white">R(t) &lt; 0.15</code>) and are garbage-collected.
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-[#1a1a1a] bg-[#0d0d12] p-6">
+              <div className="text-xs font-mono text-purple-400 uppercase tracking-wider mb-2">2. Per-Memory Point Storage Schema</div>
+              <h3 className="text-lg font-bold text-white mb-2">Exact Payload &amp; TTL Enforcement Schema</h3>
+              <p className="text-xs text-[#888] leading-relaxed mb-4">
+                Every <code className="text-white">client.remember()</code> call embeds the text on our domestic CPU nodes (<code className="text-white">all-MiniLM-L6-v2</code>, 384d) and persists the following structured payload in <code className="text-white">ap-south-1</code>:
+              </p>
+              <pre className="text-xs font-mono bg-[#08080c] border border-white/[0.08] rounded-lg p-4 text-blue-300 overflow-x-auto mb-3 leading-relaxed">
+{`{
+  "point_id": "mem_9f82c1a0",
+  "agent_id": "agent_001",
+  "memory_type": "episodic",        // short_term | episodic | long_term | semantic
+  "vector_dim": 384,                // float32 Cosine HNSW + Okapi BM25
+  "created_at": 1762439400,
+  "last_accessed_at": 1762443000,
+  "expires_at": 1765031400,         // +3600s (1h) or +2592000s (30d) or null
+  "access_count": 4,
+  "retention_score": 0.942
+}`}
+              </pre>
+              <p className="text-xs text-[#777] leading-relaxed">
+                During <code className="text-white">client.recall()</code>, expired entries (<code className="text-white">expires_at &lt; now_utc</code>) are filtered out deterministically before ranking, and surviving matches increment <code className="text-white">access_count += 1</code>.
+              </p>
             </div>
           </div>
         </div>

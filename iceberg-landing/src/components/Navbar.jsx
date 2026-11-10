@@ -79,14 +79,14 @@ export function MobileNavDrawer({ open, setOpen }) {
   if (!open) return null
   const themeQuery = !dark ? '?theme=light' : ''
   return (
-    <div className={`md:hidden border-t px-4 py-5 space-y-5 max-h-[82vh] overflow-y-auto ${dark ? 'border-white/[0.08] bg-[#0a0a0f]' : 'border-black/[0.08] bg-white'}`}>
+    <div className={`md:hidden border-t px-4 py-5 space-y-5 max-h-[82vh] overflow-y-auto ${dark ? 'border-white/[0.1] bg-[#0c0d10]' : 'border-black/[0.1] bg-white'}`}>
       <div>
-        <p className="text-[10px] text-[#666] uppercase tracking-widest font-semibold mb-2.5 px-1">Products</p>
+        <p className="text-[10px] text-[#777] uppercase tracking-widest font-semibold mb-2.5 px-1">Products</p>
         <div className="grid grid-cols-1 gap-1">
           {PRODUCTS_LIST.map(p => (
             <Link key={p.name} to={p.to} onClick={() => setOpen(false)}
-              className={`flex items-center gap-3 p-2.5 rounded-lg transition ${dark ? 'hover:bg-white/[0.05]' : 'hover:bg-black/[0.04]'}`}>
-              <span className="text-blue-500 flex-shrink-0">{p.icon}</span>
+              className={`flex items-center gap-3 p-2.5 rounded transition ${dark ? 'hover:bg-white/[0.05]' : 'hover:bg-black/[0.04]'}`}>
+              <span className="text-[#3b82f6] flex-shrink-0">{p.icon}</span>
               <div>
                 <div className={`text-sm font-medium leading-tight ${dark ? 'text-white' : 'text-[#111827]'}`}>{p.name}</div>
                 <div className="text-xs text-[#777]">{p.desc}</div>
@@ -96,13 +96,13 @@ export function MobileNavDrawer({ open, setOpen }) {
         </div>
       </div>
 
-      <div className={`border-t pt-4 ${dark ? 'border-white/[0.06]' : 'border-black/[0.08]'}`}>
-        <p className="text-[10px] text-[#666] uppercase tracking-widest font-semibold mb-2.5 px-1">Capabilities</p>
+      <div className={`border-t pt-4 ${dark ? 'border-white/[0.08]' : 'border-black/[0.08]'}`}>
+        <p className="text-[10px] text-[#777] uppercase tracking-widest font-semibold mb-2.5 px-1">Capabilities</p>
         <div className="grid grid-cols-1 gap-1">
           {CAPS_LIST.map(c => (
             <Link key={c.name} to={c.to} onClick={() => setOpen(false)}
-              className={`flex items-center gap-3 p-2.5 rounded-lg transition ${dark ? 'hover:bg-white/[0.05]' : 'hover:bg-black/[0.04]'}`}>
-              <span className="text-blue-500 flex-shrink-0">{c.icon}</span>
+              className={`flex items-center gap-3 p-2.5 rounded transition ${dark ? 'hover:bg-white/[0.05]' : 'hover:bg-black/[0.04]'}`}>
+              <span className="text-[#3b82f6] flex-shrink-0">{c.icon}</span>
               <div>
                 <div className={`text-sm font-medium leading-tight ${dark ? 'text-white' : 'text-[#111827]'}`}>{c.name}</div>
                 <div className="text-xs text-[#777]">{c.desc}</div>
@@ -112,16 +112,17 @@ export function MobileNavDrawer({ open, setOpen }) {
         </div>
       </div>
 
-      <div className={`border-t pt-4 flex flex-wrap gap-2 ${dark ? 'border-white/[0.06]' : 'border-black/[0.08]'}`}>
-        <Link to="/docs" onClick={() => setOpen(false)} className={`px-3.5 py-2 rounded-lg text-xs font-medium ${dark ? 'bg-white/[0.04] text-white' : 'bg-black/[0.04] text-[#111827]'}`}>Documentation</Link>
-        <a href="/#pricing" onClick={() => setOpen(false)} className={`px-3.5 py-2 rounded-lg text-xs font-medium ${dark ? 'bg-white/[0.04] text-white' : 'bg-black/[0.04] text-[#111827]'}`}>Pricing</a>
-        <Link to="/status" onClick={() => setOpen(false)} className={`px-3.5 py-2 rounded-lg text-xs font-medium ${dark ? 'bg-white/[0.04] text-white' : 'bg-black/[0.04] text-[#111827]'}`}>Status</Link>
-        <Link to="/contact" onClick={() => setOpen(false)} className={`px-3.5 py-2 rounded-lg text-xs font-medium ${dark ? 'bg-white/[0.04] text-white' : 'bg-black/[0.04] text-[#111827]'}`}>Contact</Link>
+      <div className={`border-t pt-4 flex flex-wrap gap-2 ${dark ? 'border-white/[0.08]' : 'border-black/[0.08]'}`}>
+        <Link to="/docs" onClick={() => setOpen(false)} className={`px-3.5 py-2 text-xs font-medium border ${dark ? 'border-white/10 bg-white/[0.03] text-white' : 'border-black/10 bg-black/[0.03] text-[#111827]'}`}>Documentation</Link>
+        <Link to="/pricing" onClick={() => setOpen(false)} className={`px-3.5 py-2 text-xs font-medium border ${dark ? 'border-white/10 bg-white/[0.03] text-white' : 'border-black/10 bg-black/[0.03] text-[#111827]'}`}>Pricing</Link>
+        <Link to="/benchmarks" onClick={() => setOpen(false)} className={`px-3.5 py-2 text-xs font-medium border ${dark ? 'border-white/10 bg-white/[0.03] text-white' : 'border-black/10 bg-black/[0.03] text-[#111827]'}`}>Benchmarks</Link>
+        <Link to="/status" onClick={() => setOpen(false)} className={`px-3.5 py-2 text-xs font-medium border ${dark ? 'border-white/10 bg-white/[0.03] text-white' : 'border-black/10 bg-black/[0.03] text-[#111827]'}`}>Status</Link>
+        <Link to="/contact" onClick={() => setOpen(false)} className={`px-3.5 py-2 text-xs font-medium border ${dark ? 'border-white/10 bg-white/[0.03] text-white' : 'border-black/10 bg-black/[0.03] text-[#111827]'}`}>Contact</Link>
       </div>
 
-      <div className={`border-t pt-4 grid grid-cols-2 gap-2.5 ${dark ? 'border-white/[0.06]' : 'border-black/[0.08]'}`}>
-        <a href={`${D}/login${themeQuery}`} className={`py-2.5 text-center rounded-lg border text-xs font-medium ${dark ? 'border-white/15 text-white' : 'border-black/15 text-[#111827]'}`}>Sign in</a>
-        <a href={`${D}/signup${themeQuery}`} className="py-2.5 text-center rounded-lg bg-blue-600 text-xs font-semibold text-white">Start free →</a>
+      <div className={`border-t pt-4 grid grid-cols-2 gap-2.5 ${dark ? 'border-white/[0.08]' : 'border-black/[0.08]'}`}>
+        <a href={`${D}/login${themeQuery}`} className={`py-2.5 text-center border text-xs font-medium ${dark ? 'border-white/15 text-white' : 'border-black/15 text-[#111827]'}`}>Log in</a>
+        <a href={`${D}/signup${themeQuery}`} className={`py-2.5 text-center text-xs font-semibold ${dark ? 'bg-white text-[#0a0b0d]' : 'bg-[#0a0b0d] text-white'}`}>Start for free</a>
       </div>
     </div>
   )
@@ -130,55 +131,110 @@ export function MobileNavDrawer({ open, setOpen }) {
 export function Navbar() {
   const [dark, setDark] = useSessionTheme()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [hasSession] = useState(() => {
+    try {
+      return /(?:^|;\s*)ib_session=1(?:;|$)/.test(document.cookie || '') || !!localStorage.getItem('iceberg_api_key')
+    } catch {
+      return false
+    }
+  })
   const themeQuery = !dark ? '?theme=light' : ''
+  const gridLine = dark ? 'border-white/[0.12]' : 'border-black/[0.1]'
+  const textLink = dark ? 'text-[#e4e4e7] hover:text-white' : 'text-[#27272a] hover:text-black'
+
   return (
-    <nav className={`sticky top-0 z-50 border-b ${dark ? 'border-white/[0.06] bg-[#0a0a0a]/90' : 'border-black/[0.08] bg-white/95'} backdrop-blur-md`}>
-      <div className="container mx-auto px-4 md:px-6 py-3 flex items-center justify-between max-w-6xl">
-        <div className="flex items-center gap-8">
-          <Link to="/" className="flex items-center gap-2.5 md:gap-3 no-underline group">
-            <IcebergLogo className="w-8 h-8 md:w-9 md:h-9 transition-transform group-hover:scale-105" />
-            <span className={`text-lg md:text-xl font-bold tracking-tight ${dark ? 'text-white' : 'text-[#111827]'}`}>Iceberg</span>
-          </Link>
-          <div className="hidden md:flex items-center gap-1 text-sm">
-            <ProductDropdown dark={dark} />
-            {[['Developers','/#code'],['Benchmarks','/benchmarks'],['Pricing','/#pricing'],['Docs','/docs'],['Contact','/contact']].map(([l,h]) => (
-              <a key={l} href={h} className={`${dark ? 'text-[#888] hover:text-white hover:bg-white/5' : 'text-[#4b5563] hover:text-black hover:bg-black/5'} px-3 py-1.5 rounded-md transition`}>{l}</a>
-            ))}
+    <header className="sticky top-0 z-50">
+      {/* Main Architectural Grid Navbar */}
+      <nav className={`border-b ${gridLine} ${dark ? 'bg-[#0a0b0d]' : 'bg-white'}`}>
+        <div className={`max-w-[1220px] mx-auto px-4 sm:px-8 h-[68px] flex items-center justify-between border-x ${gridLine}`}>
+          <div className="flex items-center gap-8">
+            <Link to="/" className="flex items-center gap-2.5 no-underline group">
+              <IcebergLogo className="w-7 h-7 transition-transform group-hover:scale-105" />
+              <span className={`text-[19px] font-semibold tracking-tight ${dark ? 'text-white' : 'text-[#111827]'}`}>Iceberg</span>
+            </Link>
+            <div className="hidden md:flex items-center gap-2 text-[14px]">
+              <ProductDropdown dark={dark} />
+              {[['Developers','/#code'],['Benchmarks','/benchmarks'],['Docs','/docs'],['Pricing','/pricing']].map(([l,h]) => (
+                <a key={l} href={h} className={`${textLink} px-3.5 py-1.5 transition font-normal`}>{l}</a>
+              ))}
+            </div>
+          </div>
+
+          {/* Right Side: 5-Cell Segmented Action Box (Pure Ice-White CTA) */}
+          <div className={`flex items-center border ${gridLine} ${dark ? 'bg-[#0a0b0d]' : 'bg-white'}`}>
+            <a
+              href="/#demo"
+              title="Search"
+              aria-label="Search"
+              className={`hidden sm:flex h-10 w-10 items-center justify-center border-r ${gridLine} transition ${textLink}`}
+            >
+              <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path strokeLinecap="round" d="m20 20-4-4"/></svg>
+            </a>
+
+            <button
+              onClick={() => setDark(!dark)}
+              title={dark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+              aria-label="Toggle theme"
+              className={`h-10 w-10 flex items-center justify-center border-r ${gridLine} transition cursor-pointer ${textLink}`}
+            >
+              {dark ? (
+                <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.7" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+              ) : (
+                <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.7" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+              )}
+            </button>
+
+            <Link
+              to="/contact"
+              className={`hidden sm:inline-flex items-center h-10 px-4 text-[13px] font-normal border-r ${gridLine} transition ${textLink}`}
+            >
+              Contact
+            </Link>
+
+            {hasSession ? (
+              <a
+                href={`${D}/`}
+                className={`inline-flex items-center h-10 px-4 text-[13px] font-semibold transition whitespace-nowrap ${
+                  dark ? 'bg-white hover:bg-[#e0f2fe] text-[#0a0b0d]' : 'bg-[#0a0b0d] hover:bg-[#18181b] text-white'
+                }`}
+              >
+                Dashboard
+              </a>
+            ) : (
+              <>
+                <a
+                  href={`${D}/login${themeQuery}`}
+                  className={`hidden sm:inline-flex items-center h-10 px-4 text-[13px] font-normal border-r ${gridLine} transition whitespace-nowrap ${textLink}`}
+                >
+                  Log in
+                </a>
+                <a
+                  href={`${D}/signup${themeQuery}`}
+                  className={`inline-flex items-center h-10 px-4 text-[13px] font-semibold transition whitespace-nowrap ${
+                    dark ? 'bg-white hover:bg-[#e0f2fe] text-[#0a0b0d]' : 'bg-[#0a0b0d] hover:bg-[#18181b] text-white'
+                  }`}
+                >
+                  Start for free
+                </a>
+              </>
+            )}
+
+            <button
+              onClick={() => setMobileOpen(!mobileOpen)}
+              className={`md:hidden h-10 w-10 flex items-center justify-center border-l ${gridLine} transition ${textLink}`}
+              aria-label="Toggle Menu"
+            >
+              {mobileOpen ? (
+                <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+              ) : (
+                <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+              )}
+            </button>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <a href={`${D}/login${themeQuery}`} className={`hidden sm:inline-block text-sm ${dark ? 'text-[#888] hover:text-white' : 'text-[#4b5563] hover:text-black'} px-3 py-1.5 transition`}>Sign in</a>
-          <a href={`${D}/signup${themeQuery}`} className="btn-primary text-xs md:text-sm font-semibold px-3 md:px-4 py-1.5 rounded-md transition whitespace-nowrap">
-            <span className="md:hidden">Start free</span>
-            <span className="hidden md:inline">Start your project</span>
-          </a>
-          <button
-            onClick={() => setDark(!dark)}
-            title={dark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-            aria-label="Toggle theme"
-            className={`p-2 rounded-lg border transition ${dark ? 'border-[#1f1f1f] hover:border-[#333] text-[#888] hover:text-white' : 'border-[#d1d5db] hover:border-[#9ca3af] text-[#4b5563] hover:text-black bg-white'}`}
-          >
-            {dark ? (
-              <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
-            ) : (
-              <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-            )}
-          </button>
-          <button
-            onClick={() => setMobileOpen(!mobileOpen)}
-            className={`md:hidden p-2 rounded-lg border transition ${dark ? 'border-white/10 text-white/80 hover:text-white hover:bg-white/5' : 'border-black/10 text-black/80 hover:text-black hover:bg-black/5'}`}
-            aria-label="Toggle Menu"
-          >
-            {mobileOpen ? (
-              <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-            ) : (
-              <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
-            )}
-          </button>
-        </div>
-      </div>
-      <MobileNavDrawer open={mobileOpen} setOpen={setMobileOpen} dark={dark} />
-    </nav>
+        <MobileNavDrawer open={mobileOpen} setOpen={setMobileOpen} dark={dark} />
+      </nav>
+    </header>
   )
 }
 
@@ -193,44 +249,43 @@ function ProductDropdown({ dark = true }) {
 
   return (
     <div ref={ref} className="relative">
-      <button onClick={() => setOpen(!open)} className={`flex items-center gap-1 px-3 py-1.5 rounded-md transition text-sm ${
+      <button onClick={() => setOpen(!open)} className={`flex items-center px-3.5 py-1.5 transition text-[14px] cursor-pointer ${
         dark
-          ? (open ? 'text-white bg-white/5' : 'text-[#888] hover:text-white hover:bg-white/5')
-          : (open ? 'text-black bg-black/5' : 'text-[#4b5563] hover:text-black hover:bg-black/5')
+          ? (open ? 'text-white' : 'text-[#e4e4e7] hover:text-white')
+          : (open ? 'text-black' : 'text-[#27272a] hover:text-black')
       }`}>
-        Product
-        <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" className={`transition-transform ${open ? 'rotate-180' : ''}`}><path d="m6 9 6 6 6-6"/></svg>
+        Products
       </button>
       {open && (
-        <div className={`absolute top-full left-0 mt-2 w-[560px] rounded-xl shadow-2xl p-5 z-50 border ${
-          dark ? 'bg-[#111] border-[#222] shadow-black/50' : 'bg-white border-[#e5e7eb] shadow-black/10'
+        <div className={`absolute top-full left-0 mt-2 w-[560px] shadow-2xl p-5 z-50 border ${
+          dark ? 'bg-[#0e0f13] border-white/[0.12] shadow-black/60' : 'bg-white border-black/[0.12] shadow-black/10'
         }`}>
           <div className="mb-5">
-            <p className="text-xs text-[#555] uppercase tracking-widest mb-3 px-1">Products</p>
+            <p className="text-[11px] font-mono text-[#71717a] uppercase tracking-widest mb-3 px-1">Products</p>
             <div className="grid grid-cols-2 gap-1">
               {PRODUCTS_LIST.map(p => (
                 <Link key={p.name} to={p.to} onClick={() => setOpen(false)}
-                  className={`flex items-start gap-3 p-3 rounded-lg transition group ${dark ? 'hover:bg-white/[0.04]' : 'hover:bg-black/[0.04]'}`}>
-                  <span className="text-[#555] group-hover:text-blue-500 transition mt-0.5 flex-shrink-0">{p.icon}</span>
+                  className={`flex items-start gap-3 p-3 transition group ${dark ? 'hover:bg-white/[0.04]' : 'hover:bg-black/[0.04]'}`}>
+                  <span className="text-[#71717a] group-hover:text-[#3b82f6] transition mt-0.5 flex-shrink-0">{p.icon}</span>
                   <div>
                     <span className={`text-sm font-medium block ${dark ? 'text-white' : 'text-[#111827]'}`}>{p.name}</span>
-                    <span className="text-xs text-[#666]">{p.desc}</span>
+                    <span className="text-xs text-[#71717a]">{p.desc}</span>
                   </div>
                 </Link>
               ))}
             </div>
           </div>
-          <div className={`border-t mb-4 ${dark ? 'border-[#1a1a1a]' : 'border-[#e5e7eb]'}`}/>
+          <div className={`border-t mb-4 ${dark ? 'border-white/[0.08]' : 'border-black/[0.08]'}`}/>
           <div>
-            <p className="text-xs text-[#555] uppercase tracking-widest mb-3 px-1">Capabilities</p>
+            <p className="text-[11px] font-mono text-[#71717a] uppercase tracking-widest mb-3 px-1">Capabilities</p>
             <div className="grid grid-cols-2 gap-1">
               {CAPS_LIST.map(c => (
                 <Link key={c.name} to={c.to} onClick={() => setOpen(false)}
-                  className={`flex items-start gap-3 p-3 rounded-lg transition group ${dark ? 'hover:bg-white/[0.04]' : 'hover:bg-black/[0.04]'}`}>
-                  <span className="text-[#555] group-hover:text-blue-500 transition mt-0.5 flex-shrink-0">{c.icon}</span>
+                  className={`flex items-start gap-3 p-3 transition group ${dark ? 'hover:bg-white/[0.04]' : 'hover:bg-black/[0.04]'}`}>
+                  <span className="text-[#71717a] group-hover:text-[#3b82f6] transition mt-0.5 flex-shrink-0">{c.icon}</span>
                   <div>
                     <div className={`text-sm font-medium ${dark ? 'text-white' : 'text-[#111827]'}`}>{c.name}</div>
-                    <div className="text-xs text-[#666]">{c.desc}</div>
+                    <div className="text-xs text-[#71717a]">{c.desc}</div>
                   </div>
                 </Link>
               ))}
