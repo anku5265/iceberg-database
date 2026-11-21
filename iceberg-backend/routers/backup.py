@@ -12,17 +12,18 @@ LOCAL_BACKUP_DIR = Path(__file__).parent.parent / "data" / "backups"
 
 @router.post("/{collection}")
 async def create_backup(collection: str, user_id: str = Depends(require_write)):
-    """Backup a collection. Saves to R2 if configured, else local disk."""
+    """Backup a collection (supports both IcebergCore Rust Engine and Qdrant Cloud)."""
     try:
-        scoped = qdrant_svc.resolve_collection(collection, user_id=user_id)
-        client = qdrant_svc._primary()
-        points, _ = client.scroll(collection_name=scoped, limit=10000, with_payload=True, with_vectors=True)
+        scoped, meta_info, points = qdrant_svc.export_backup_points(collection, user_id=user_id)
         backup_data = {
             "collection": collection,
             "scoped_collection": scoped,
             "user_id": user_id,
+            "dimension": meta_info.get("dimension", 384),
+            "metric": meta_info.get("metric", "cosine"),
+            "quantization": meta_info.get("quantization", "float32"),
             "created_at": int(time.time()),
-            "points": [{"id": str(p.id), "vector": p.vector, "payload": p.payload} for p in points],
+            "points": points,
         }
         data_bytes = json.dumps(backup_data).encode()
         ts = int(time.time())
@@ -82,23 +83,12 @@ async def restore_backup(collection: str, backup_id: str, user_id: str = Depends
             raise HTTPException(404, "Backup not found")
 
         backup_data = json.loads(data_bytes)
-        from qdrant_client.models import PointStruct
-        client = qdrant_svc._primary()
-
-        qdrant_svc.delete_collection(collection, user_id=user_id)
-        qdrant_svc.create_collection(collection, user_id=user_id)
-
-        points = [
-            PointStruct(id=p["id"], vector=p["vector"], payload=p["payload"])
-            for p in backup_data["points"]
-        ]
-        if points:
-            client.upsert(collection_name=scoped, points=points)
+        restored_count = qdrant_svc.restore_backup_points(collection, backup_data, user_id=user_id)
 
         return {
             "restored": True,
             "collection": collection,
-            "points_restored": len(points),
+            "points_restored": restored_count,
             "from_backup": backup_id,
         }
     except HTTPException:

@@ -9,5 +9,7 @@ async def stats(user_id: str = Depends(verify_api_key)):
     return get_usage_stats(user_id)
 
 @router.get("/logs")
-async def logs(limit: int = 50, user_id: str = Depends(verify_api_key)):
-    return {"logs": get_recent_logs(user_id, limit)}
+async def logs(limit: int = 1000, user_id: str = Depends(verify_api_key)):
+    safe_limit = max(1, min(int(limit or 1000), 5000))
+    items = get_recent_logs(user_id, safe_limit)
+    return {"logs": items, "total": len(items)}

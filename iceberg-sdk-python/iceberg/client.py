@@ -75,6 +75,12 @@ class MemoryItem:
         return f"MemoryItem(score={self.score:.3f}, type={self.type!r}, content={self.content[:60]!r})"
 
 
+class ServerlessSpec:
+    def __init__(self, cloud: str = "aws", region: str = "ap-south-1"):
+        self.cloud = cloud
+        self.region = region
+
+
 class Client:
     """
     Iceberg Official Python SDK (https://icebergdb.in) — v1.0.0
@@ -94,6 +100,7 @@ class Client:
         timeout: float = 30.0,
         max_retries: int = 3,
         backoff_factor: float = 0.5,
+        integration: Optional[str] = None,
     ):
         raw_key = api_key or os.environ.get("ICEBERG_API_KEY", "")
         if raw_key in ("ib_your_key", "ib_live_...", "ib_key", "ib_admin_key"):
@@ -108,6 +115,8 @@ class Client:
         headers = {}
         if self.api_key:
             headers["X-API-Key"] = self.api_key
+        if integration:
+            headers["X-Iceberg-Integration"] = str(integration)
 
         self._client = httpx.Client(
             headers=headers,
@@ -196,16 +205,55 @@ class Client:
 
     # ── Collections ──────────────────────────────────────────────────────────
 
-    def create_collection(self, name: str, description: str = "") -> dict:
-        """Create a new vector collection (idempotent if collection already exists)."""
-        r = self._request("POST", "/collections", allow_409=True, json={"name": name, "description": description})
+    def create_collection(
+        self,
+        name: str,
+        description: str = "",
+        dimension: int = 384,
+        metric: str = "cosine",
+        quantization: str = "float32",
+    ) -> dict:
+        """Create a new vector collection (supports 384/768/1024/1536/3072d, 4 metrics, and SQ8/Binary quantization)."""
+        r = self._request(
+            "POST",
+            "/collections",
+            allow_409=True,
+            json={
+                "name": name,
+                "description": description,
+                "dimension": dimension,
+                "metric": metric,
+                "quantization": quantization,
+            },
+        )
         if r.status_code == 409:
             return {"name": name, "status": "already_exists"}
         return r.json()
 
+    def create_index_for_model(
+        self,
+        name: str,
+        cloud: str = "aws",
+        region: str = "ap-south-1",
+        embed: Optional[dict] = None,
+        wait_until_ready: bool = True,
+        description: str = "",
+    ) -> dict:
+        """Create a collection configured for Iceberg's integrated server-side embedding model."""
+        model_name = (embed or {}).get("model", "all-MiniLM-L6-v2")
+        desc = description or f"Hosted in {region} ({cloud}) · Integrated {model_name}"
+        return self.create_collection(name=name, description=desc)
+
     def list_collections(self) -> list[str]:
         """List all collection names."""
         return self._get("/collections").get("collections", [])
+
+    def has_index(self, name: str) -> bool:
+        """Check whether an index/collection with the given name already exists."""
+        try:
+            return name in self.list_collections()
+        except Exception:
+            return False
 
     def delete_collection(self, name: str) -> dict:
         """Delete a collection and all its vectors."""
@@ -220,8 +268,86 @@ class Client:
         return self._post(f"/collections/{name}/clear")
 
     def collection_info(self, name: str) -> dict:
-        """Get info about a collection (vector count, status)."""
+        """Get info about a collection (vector count, dimension, metric, status)."""
         return self._get(f"/collections/{name}")
+
+    def collection_stats(self, name: str) -> dict:
+        """Get detailed engine statistics (RAM bytes, quantization compression ratio, namespaces, BM25 terms)."""
+        return self._get(f"/collections/{name}/stats")
+
+    # ── Native Multi-Dimension Vector Batch Operations ───────────────────────
+
+    def upsert_vectors(
+        self,
+        collection: str,
+        vectors: List[Dict[str, Any]],
+        namespace: str = "",
+    ) -> dict:
+        """Batch upsert pre-computed embeddings (384, 768, 1024, 1536, 3072d) with metadata & namespaces."""
+        return self._post(
+            "/vectors/upsert",
+            json={"collection": collection, "vectors": vectors, "namespace": namespace},
+        )
+
+    def query_vectors(
+        self,
+        collection: str,
+        vector: Optional[List[float]] = None,
+        query_text: Optional[str] = None,
+        top_k: int = 5,
+        filter: Optional[Dict[str, Any]] = None,
+        namespace: str = "",
+        search_type: str = "semantic",
+        alpha: float = 0.5,
+        score_threshold: float = 0.0,
+        include_values: bool = False,
+        include_metadata: bool = True,
+        use_cognitive_decay: bool = False,
+        decay_lambda: float = 0.015,
+    ) -> dict:
+        """Query multi-dimension vectors with optional hybrid BM25 RRF, rich filters, and cognitive decay."""
+        return self._post(
+            "/vectors/query",
+            json={
+                "collection": collection,
+                "vector": vector,
+                "query_text": query_text,
+                "top_k": top_k,
+                "filter": filter,
+                "namespace": namespace,
+                "search_type": search_type,
+                "alpha": alpha,
+                "score_threshold": score_threshold,
+                "include_values": include_values,
+                "include_metadata": include_metadata,
+                "use_cognitive_decay": use_cognitive_decay,
+                "decay_lambda": decay_lambda,
+            },
+        )
+
+    def fetch_vectors(self, collection: str, ids: List[str]) -> dict:
+        """Fetch multiple points/vectors by ID."""
+        return self._post("/vectors/fetch", json={"collection": collection, "ids": ids})
+
+    def delete_vectors(
+        self,
+        collection: str,
+        ids: Optional[List[str]] = None,
+        filter: Optional[Dict[str, Any]] = None,
+        namespace: str = "",
+        delete_all: bool = False,
+    ) -> dict:
+        """Delete vectors by IDs, rich metadata filter, namespace, or delete_all."""
+        return self._post(
+            "/vectors/delete",
+            json={
+                "collection": collection,
+                "ids": ids,
+                "filter": filter,
+                "namespace": namespace,
+                "delete_all": delete_all,
+            },
+        )
 
     # ── Indexing & Point-Level CRUD ──────────────────────────────────────────
 

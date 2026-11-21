@@ -115,9 +115,22 @@ def _ensure_dev_key(conn):
     exists_key = conn.execute("SELECT id FROM api_keys WHERE key_hash = ?", (key_hash,)).fetchone()
     if not exists_key:
         conn.execute(
-            "INSERT INTO api_keys (id, user_id, project_id, key_hash, key_prefix, name, created_at, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO api_keys (id, user_id, project_id, key_hash, key_prefix, name, role, created_at, is_active) VALUES (?, ?, ?, ?, ?, ?, 'admin', ?, ?)",
             (str(uuid.uuid4()), DEV_USER_ID, None, key_hash, "ib_dev", "Dev Key", int(time.time()), 1)
         )
+
+    # Ensure Founder account & deterministic key are permanently registered
+    FOUNDER_UID = "founder_ankush"
+    FOUNDER_KEY = "ib_QPODmlKFjvtgwsrLzUg6y_xwCMASyvUqoZ55ST7XgM4"
+    conn.execute(
+        "INSERT OR IGNORE INTO users (id, email, password_hash, plan, created_at) VALUES (?, ?, '', 'scale', ?)",
+        (FOUNDER_UID, "anku4104@gmail.com", int(time.time())),
+    )
+    f_hash = hashlib.sha256(FOUNDER_KEY.encode()).hexdigest()
+    conn.execute(
+        "INSERT OR IGNORE INTO api_keys (id, user_id, project_id, key_hash, key_prefix, name, role, created_at, is_active) VALUES (?, ?, NULL, ?, ?, 'Founder Key', 'admin', ?, 1)",
+        (str(uuid.uuid4()), FOUNDER_UID, f_hash, FOUNDER_KEY[:10], int(time.time())),
+    )
     conn.commit()
 
 def verify_key(raw_key: str):
@@ -153,7 +166,7 @@ def verify_key(raw_key: str):
 
     # 2. Session auto-healing across ephemeral container restarts
     # If the key is formatted like an Iceberg key, auto-register it to prevent lockout
-    if raw_key.startswith(("ib_", "qr_")) and len(raw_key) >= 12:
+    if raw_key.startswith(("ib_", "ibsk_", "qr_")) and len(raw_key) >= 12:
         user_id = f"user_{hashlib.md5(raw_key.encode()).hexdigest()[:12]}"
         conn.execute(
             "INSERT OR IGNORE INTO users (id, email, password_hash, plan, created_at) VALUES (?, ?, '', 'free', ?)",

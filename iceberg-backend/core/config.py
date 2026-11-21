@@ -20,7 +20,12 @@ class Settings(BaseSettings):
     byoc_license_key: str = ""
     byoc_mode: bool = False
 
+    # Billing (Razorpay)
+    razorpay_key_id: str = ""
+    razorpay_key_secret: str = ""
+
     class Config:
         env_file = ".env"
+        extra = "ignore"
 
 settings = Settings()

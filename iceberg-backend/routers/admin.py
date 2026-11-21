@@ -19,7 +19,7 @@ async def admin_status(user_id: str = Depends(verify_api_key)):
 
     return {
         "instance_id": telemetry._instance_id,
-        "version": "0.1.0",
+        "version": "1.0.0",
         "platform": platform.system(),
         "tunnel_open": getattr(telemetry, '_tunnel_open', False),
         "tunnel_opened_at": getattr(telemetry, '_tunnel_opened_at', None),

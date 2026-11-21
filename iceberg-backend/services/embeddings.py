@@ -1,5 +1,23 @@
+import os
+import shutil
 from fastembed import TextEmbedding
 import concurrent.futures
+
+if os.name == "nt":
+    _orig_symlink = os.symlink
+    def _safe_symlink(src, dst, *args, **kwargs):
+        try:
+            return _orig_symlink(src, dst, *args, **kwargs)
+        except OSError as e:
+            if getattr(e, "winerror", None) == 1314:
+                src_abs = os.path.normpath(os.path.join(os.path.dirname(dst), src)) if not os.path.isabs(src) else src
+                if os.path.isdir(src_abs):
+                    shutil.copytree(src_abs, dst, dirs_exist_ok=True)
+                else:
+                    shutil.copy2(src_abs, dst)
+            else:
+                raise
+    os.symlink = _safe_symlink
 
 MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 VECTOR_SIZE = 384

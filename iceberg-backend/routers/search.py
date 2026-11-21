@@ -13,23 +13,35 @@ router = APIRouter(prefix="/search", tags=["Search"])
 async def search(body: SearchRequest, user_id: str = Depends(verify_api_key)):
     """
     Hybrid search — Dense (semantic) + BM25 (keyword) combined via RRF.
-
-    search_type: "hybrid" | "semantic" | "keyword"
-    alpha:       0.0=keyword, 0.5=balanced, 1.0=semantic
-    namespace:   optional — filter within a namespace
+    Supports built-in 384d CPU embeddings AND custom BYO query vectors (768/1024/1536/3072d).
     """
-    if not body.query or not body.query.strip():
+    has_query = bool(body.query and body.query.strip())
+    has_vec = bool(body.vector)
+    if not has_query and not has_vec:
         return SearchResponse(results=[], query=body.query or "", collection=body.collection, total=0)
 
     try:
         t0 = time.time()
-        query_vector = embed_query(body.query)
+        if has_vec:
+            query_vector = body.vector
+        elif body.search_type == "keyword":
+            # Check if collection is non-384d; keyword search on Rust engine doesn't even need a vector!
+            try:
+                info = qdrant_svc.get_collection_info(body.collection, user_id=user_id)
+                col_dim = info.get("dimension", 384)
+            except Exception:
+                col_dim = 384
+            query_vector = embed_query(body.query) if col_dim == 384 else None
+        else:
+            query_vector = embed_query(body.query)
 
         filters = dict(body.filters or {})
         if body.namespace:
             filters["_namespace"] = body.namespace
 
         if body.search_type == "semantic":
+            if query_vector is None:
+                raise ValueError("Semantic search requires either 'query' (384d) or 'vector'")
             raw_results = qdrant_svc.search_vectors(
                 collection=body.collection,
                 query_vector=query_vector,
@@ -37,6 +49,8 @@ async def search(body: SearchRequest, user_id: str = Depends(verify_api_key)):
                 score_threshold=body.score_threshold,
                 filters=filters or None,
                 user_id=user_id,
+                use_cognitive_decay=body.use_cognitive_decay,
+                decay_lambda=body.decay_lambda,
             )
         elif body.search_type == "keyword":
             raw_results = qdrant_svc.hybrid_search_vectors(
@@ -48,6 +62,8 @@ async def search(body: SearchRequest, user_id: str = Depends(verify_api_key)):
                 filters=filters or None,
                 alpha=0.0,
                 user_id=user_id,
+                use_cognitive_decay=body.use_cognitive_decay,
+                decay_lambda=body.decay_lambda,
             )
         else:
             raw_results = qdrant_svc.hybrid_search_vectors(
@@ -59,11 +75,15 @@ async def search(body: SearchRequest, user_id: str = Depends(verify_api_key)):
                 filters=filters or None,
                 alpha=body.alpha,
                 user_id=user_id,
+                use_cognitive_decay=body.use_cognitive_decay,
+                decay_lambda=body.decay_lambda,
             )
 
         duration_ms = int((time.time() - t0) * 1000)
-        log_usage(user_id, "search", body.collection, body.query, duration_ms)
+        log_usage(user_id, "search", body.collection, body.query or "vector_query", duration_ms)
 
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
     except HTTPException:
         raise
     except Exception as e:
@@ -81,7 +101,7 @@ async def search(body: SearchRequest, user_id: str = Depends(verify_api_key)):
 
     return SearchResponse(
         results=results,
-        query=body.query,
+        query=body.query or "",
         collection=body.collection,
         total=len(results),
     )

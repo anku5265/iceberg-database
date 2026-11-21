@@ -1,5 +1,6 @@
 from .client import (
     Client,
+    ServerlessSpec,
     SearchResult,
     MemoryItem,
     IcebergError,
@@ -9,11 +10,20 @@ from .client import (
     ValidationError,
     RateLimitError,
 )
+from .integrations import (
+    IcebergLangChainVectorStore,
+    IcebergLlamaIndexVectorStore,
+    IcebergHaystackDocumentStore,
+)
 from typing import Optional
+
+Iceberg = Client
 
 __version__ = "1.0.0"
 __all__ = [
     "Client",
+    "Iceberg",
+    "ServerlessSpec",
     "SearchResult",
     "MemoryItem",
     "IcebergError",
@@ -22,6 +32,9 @@ __all__ = [
     "NotFoundError",
     "ValidationError",
     "RateLimitError",
+    "IcebergLangChainVectorStore",
+    "IcebergLlamaIndexVectorStore",
+    "IcebergHaystackDocumentStore",
     "connect",
 ]
 

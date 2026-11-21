@@ -15,10 +15,26 @@ class CollectionRenameRequest(BaseModel):
 async def create_collection(body: CollectionCreate, user_id: str = Depends(require_write)):
     if not body.name or not body.name.strip():
         raise HTTPException(status_code=400, detail="Collection name cannot be empty")
-    created = qdrant_svc.create_collection(body.name.strip(), user_id=user_id)
+    try:
+        created = qdrant_svc.create_collection(
+            body.name.strip(),
+            user_id=user_id,
+            dimension=body.dimension,
+            metric=body.metric,
+            quantization=body.quantization,
+            engine=body.engine,
+        )
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
     if not created:
         raise HTTPException(status_code=409, detail="Collection already exists")
-    return {"name": body.name.strip(), "message": "Collection created"}
+    return {
+        "name": body.name.strip(),
+        "dimension": body.dimension,
+        "metric": body.metric.lower(),
+        "quantization": body.quantization.lower(),
+        "message": "Collection created",
+    }
 
 
 @router.get("")
@@ -32,6 +48,14 @@ async def get_collection(name: str, user_id: str = Depends(verify_api_key)):
     try:
         info = qdrant_svc.get_collection_info(name, user_id=user_id)
         return {"name": name, **info}
+    except Exception:
+        raise HTTPException(status_code=404, detail="Collection not found")
+
+
+@router.get("/{name}/stats")
+async def get_collection_stats(name: str, user_id: str = Depends(verify_api_key)):
+    try:
+        return qdrant_svc.get_collection_stats(name, user_id=user_id)
     except Exception:
         raise HTTPException(status_code=404, detail="Collection not found")
 

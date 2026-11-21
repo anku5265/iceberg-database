@@ -75,6 +75,24 @@ class ReadNodeManager:
         if self._initialized:
             return
 
+        from services.rust_engine import rust_engine
+        import os
+
+        forced = os.environ.get("ICEBERG_ENGINE", "").strip().lower()
+        use_rust = (forced == "rust" and rust_engine.is_binary_available()) or (
+            forced != "qdrant" and not self._is_server_mode() and rust_engine.is_binary_available()
+        )
+
+        if use_rust:
+            # Native Rust Engine mode: zero local Qdrant file lock needed!
+            self._mode = "iceberg-core-rs"
+            self._write_client = None
+            for _ in range(self.POOL_SIZE):
+                self._read_pool.append((None, QueryStats()))
+            self._initialized = True
+            print(f"[engine] ReadNodeManager: 1 primary + {self.POOL_SIZE} read slots (iceberg-core-rs native mode)")
+            return
+
         self._write_client = self._make_client()
 
         # Read pool — in server mode each slot is a separate connection

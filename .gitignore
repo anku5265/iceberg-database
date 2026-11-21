@@ -40,3 +40,10 @@ screen_studio_build/
 tools/
 .vercel/
 
+
+# Native Rust Engine & Live Production Backup Vault (NEVER commit)
+iceberg-backend/data/rust_core/
+iceberg-core-rs/target/
+iceberg-core-rs/data/
+live_production_backup/
+iceberg-backend/*.db

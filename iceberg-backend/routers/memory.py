@@ -36,6 +36,7 @@ MEMORY_TTL = {
 class RememberRequest(BaseModel):
     content: str
     memory_type: str = "long_term"  # short_term, long_term, episodic, semantic
+    importance: float = 0.5
     metadata: Optional[dict] = {}
 
 
@@ -43,6 +44,8 @@ class RecallRequest(BaseModel):
     query: str
     top_k: int = 5
     memory_type: Optional[str] = None  # None = search all types
+    use_cognitive_decay: bool = True
+    decay_lambda: float = 0.015
 
 
 def _get_collection(agent_id: str, user_id: Optional[str] = None) -> str:
@@ -83,6 +86,7 @@ async def remember(
     metadata = {
         "agent_id": agent_id,
         "memory_type": body.memory_type,
+        "importance": max(0.0, min(1.0, float(body.importance))),
         "created_at": int(time.time()),
         "expires_at": expires_at,
         **(body.metadata or {}),
@@ -116,6 +120,8 @@ async def recall(
             query_vector=query_vec,
             top_k=body.top_k,
             score_threshold=0.2,
+            use_cognitive_decay=body.use_cognitive_decay,
+            decay_lambda=body.decay_lambda,
         )
     except Exception:
         results = []

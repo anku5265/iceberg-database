@@ -23,7 +23,20 @@ class CreateKeyRequest(BaseModel):
     project_id: str = ""
 
 def hash_password(p): return hashlib.sha256(p.encode()).hexdigest()
-def generate_api_key(): return "ib_" + secrets.token_urlsafe(32)
+def generate_api_key():
+    lowers = "abcdefghijkmnopqrstuvwxyz"
+    digits = "23456789"
+    uppers = "ABCDEFGHJKLMNPQRSTUVWXYZ"
+    alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+    short_id = (
+        secrets.choice(lowers)
+        + secrets.choice(lowers)
+        + secrets.choice(digits)
+        + secrets.choice(lowers)
+        + secrets.choice(uppers)
+    )
+    secret_part = "".join(secrets.choice(alphabet) for _ in range(32))
+    return f"ibsk_{short_id}_{secret_part}"
 
 @router.post("/signup")
 async def signup(body: SignupRequest):

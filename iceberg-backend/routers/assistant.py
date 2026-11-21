@@ -27,14 +27,22 @@ router = APIRouter(prefix="/assistant", tags=["Assistant"])
 class AssistantCreate(BaseModel):
     name: str
     description: str = ""
+    instructions: Optional[str] = None
     greeting: str = "Hi! How can I help you?"
     llm_provider: str = "iceberg_fast"   # iceberg_fast, openai, claude, gemini, groq, deepseek
     llm_api_key: str = ""
     llm_model: str = "all-MiniLM-L6-v2"
     color: str = "#2563eb"
 
+class ChatMessage(BaseModel):
+    role: str = "user"
+    content: str = ""
+
 class ChatRequest(BaseModel):
-    message: str
+    message: Optional[str] = None
+    messages: Optional[list[ChatMessage]] = None
+    stream: Optional[bool] = False
+    model: Optional[str] = None
     session_id: Optional[str] = None
 
 def _get_asst_collection(asst_id: str) -> str:
@@ -45,11 +53,12 @@ async def create_assistant(body: AssistantCreate, user_id: str = Depends(verify_
     asst_id = str(uuid.uuid4())[:8]
     col = _get_asst_collection(asst_id)
     qdrant_svc.create_collection(col)
+    desc_val = body.description or body.instructions or ""
 
     conn = get_conn()
     conn.execute(
         "INSERT INTO assistants (id, user_id, name, description, greeting, llm_provider, llm_model, llm_api_key, color, created_at) VALUES (?,?,?,?,?,?,?,?,?,?)",
-        (asst_id, user_id, body.name, body.description, body.greeting, body.llm_provider, body.llm_model, body.llm_api_key, body.color, int(time.time()))
+        (asst_id, user_id, body.name, desc_val, body.greeting, body.llm_provider, body.llm_model, body.llm_api_key, body.color, int(time.time()))
     )
     conn.commit()
     conn.close()
@@ -81,6 +90,7 @@ async def delete_assistant(asst_id: str, user_id: str = Depends(verify_api_key))
 
 # ── Upload docs to assistant ──────────────────────────────────────────────────
 
+@router.post("/files/{asst_id}")
 @router.post("/{asst_id}/upload")
 async def upload_to_assistant(
     asst_id: str,
@@ -102,7 +112,19 @@ async def upload_to_assistant(
     if not text.strip():
         raise HTTPException(400, "No text extracted")
 
-    col = _get_asst_collection(asst_id)
+    conn = get_conn()
+    row = conn.execute(
+        "SELECT id FROM assistants WHERE id=? OR LOWER(name)=LOWER(?)",
+        (asst_id, asst_id),
+    ).fetchone()
+    conn.close()
+    resolved_id = row["id"] if row else asst_id
+
+    col = _get_asst_collection(resolved_id)
+    try:
+        qdrant_svc.create_collection(col)
+    except Exception:
+        pass
     chunks = chunk_text(text)
     vectors = embed(chunks)
     metadata = [{"source": file.filename, "chunk_index": i} for i in range(len(chunks))]
@@ -112,27 +134,39 @@ async def upload_to_assistant(
 
 # ── Chat endpoint ─────────────────────────────────────────────────────────────
 
+@router.post("/chat/{asst_id}")
 @router.post("/{asst_id}/chat")
 async def chat(asst_id: str, body: ChatRequest):
-    """Chat with the assistant — no auth needed (public endpoint)."""
+    """Chat with the assistant — supports both {message} and {messages: [{role, content}]}."""
     conn = get_conn()
-    asst = conn.execute("SELECT * FROM assistants WHERE id=?", (asst_id,)).fetchone()
+    asst = conn.execute("SELECT * FROM assistants WHERE id=? OR LOWER(name)=LOWER(?)", (asst_id, asst_id)).fetchone()
     conn.close()
 
     if not asst:
         raise HTTPException(404, "Assistant not found")
 
     asst = dict(asst)
-    col = _get_asst_collection(asst_id)
+    col = _get_asst_collection(asst["id"])
+
+    user_question = (body.message or "").strip()
+    if not user_question and body.messages:
+        for m in reversed(body.messages):
+            if m.content and m.content.strip():
+                user_question = m.content.strip()
+                break
+
+    if not user_question:
+        raise HTTPException(400, "Message content is required")
 
     # Search relevant docs
-    qvec = embed_query(body.message)
+    qvec = embed_query(user_question)
     results = qdrant_svc.search_vectors(col, qvec, top_k=4, score_threshold=0.3)
     context = "\n\n".join([r["text"] for r in results])
 
     if not context:
         return {
             "reply": "I don't have enough information to answer that. Please ask something related to the uploaded documents.",
+            "message": {"role": "assistant", "content": "I don't have enough information to answer that. Please ask something related to the uploaded documents."},
             "sources": []
         }
 
@@ -140,14 +174,15 @@ async def chat(asst_id: str, body: ChatRequest):
     reply = await _call_llm(
         provider=asst["llm_provider"],
         api_key=asst["llm_api_key"],
-        model=asst["llm_model"],
+        model=body.model or asst["llm_model"],
         context=context,
-        question=body.message,
+        question=user_question,
         greeting=asst["greeting"],
     )
 
     return {
         "reply": reply,
+        "message": {"role": "assistant", "content": reply},
         "sources": [r["metadata"].get("source", "") for r in results],
         "session_id": body.session_id or str(uuid.uuid4()),
     }
@@ -319,7 +354,7 @@ async def widget_js(asst_id: str):
     var input = document.getElementById('iceberg-input');
     var msg = input.value.trim();
     if (!msg) return;
-    msgs.innerHTML += '<div style="text-align:right;margin-bottom:8px;"><span style="background:{color};color:white;border-radius:8px;padding:8px 12px;display:inline-block;">' + msg + '</span></div>';
+    msgs.innerHTML += '<div style="text-align:right;margin-bottom:8px;"><span style="background:' + color + ';color:white;border-radius:8px;padding:8px 12px;display:inline-block;">' + msg + '</span></div>';
     input.value = '';
     fetch(apiUrl, {{method:'POST',headers:{{'Content-Type':'application/json'}},body:JSON.stringify({{message:msg}})}})
       .then(r=>r.json()).then(d=>{{

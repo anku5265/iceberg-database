@@ -179,6 +179,98 @@ with TestClient(app) as client:
     info_after_clr = client.get("/collections/renamed_vault", headers=hdr_a).json()
     check("Clear collection empties all vectors while keeping 'renamed_vault'", clr.get("cleared") is True and info_after_clr.get("vector_count") == 0)
 
+    print("\n=== 8. Native Rust Engine: Multi-Dimension (1536d SQ8 & 3072d Binary), /vectors/*, Rich Filters & /metrics ===")
+    c_1536 = client.post(
+        "/collections",
+        headers=hdr_a,
+        json={"name": "openai_1536_sq8", "dimension": 1536, "metric": "cosine", "quantization": "sq8"},
+    )
+    check("Create 1536d SQ8 quantized collection", c_1536.status_code == 201 and c_1536.json().get("dimension") == 1536)
+
+    v1 = [0.01 * ((i % 13) - 6) for i in range(1536)]
+    v2 = [0.02 * ((i % 7) - 3) for i in range(1536)]
+    v1[0] = 0.95
+    v2[1] = 0.95
+
+    up_raw = client.post(
+        "/vectors/upsert",
+        headers={**hdr_a, "X-Iceberg-Integration": "langchain-iceberg"},
+        json={
+            "collection": "openai_1536_sq8",
+            "namespace": "prod_rag",
+            "vectors": [
+                {"id": "lc_1", "values": v1, "text": "LangChain RAG doc alpha", "metadata": {"score_rank": 95, "tier": "enterprise"}},
+                {"id": "lc_2", "values": v2, "text": "LangChain RAG doc beta", "metadata": {"score_rank": 40, "tier": "starter"}},
+            ],
+        },
+    )
+    check("Batch upsert 1536d vectors via /vectors/upsert", up_raw.status_code == 200 and up_raw.json().get("upserted_count") == 2)
+
+    st_1536 = client.get("/collections/openai_1536_sq8/stats", headers=hdr_a).json()
+    check(
+        "Collection /stats reports 1536d, sq8 compression ~3.9x+ & namespace counts",
+        st_1536.get("dimension") == 1536 and st_1536.get("compression_ratio", 1.0) >= 3.5 and st_1536.get("namespaces", {}).get("prod_rag") == 2,
+        str(st_1536),
+    )
+
+    q_raw = client.post(
+        "/vectors/query",
+        headers=hdr_a,
+        json={
+            "collection": "openai_1536_sq8",
+            "vector": v1,
+            "namespace": "prod_rag",
+            "filter": {"score_rank": {"$gte": 80}},
+            "top_k": 5,
+            "include_metadata": True,
+        },
+    ).json()
+    check(
+        "Query 1536d /vectors/query with $gte filter returns exact match 'lc_1'",
+        len(q_raw.get("matches", [])) == 1 and q_raw["matches"][0]["id"] == "lc_1",
+        str(q_raw),
+    )
+
+    # Wrong dimension into 1536d collection must fail with 400
+    bad_1536 = client.post(
+        "/vectors/upsert",
+        headers=hdr_a,
+        json={"collection": "openai_1536_sq8", "vectors": [{"id": "bad", "values": [0.1] * 384}]},
+    )
+    check("384d vector into 1536d collection rejected with HTTP 400", bad_1536.status_code == 400)
+
+    # Delete by rich filter on /vectors/delete
+    del_flt = client.post(
+        "/vectors/delete",
+        headers=hdr_a,
+        json={"collection": "openai_1536_sq8", "namespace": "prod_rag", "filter": {"tier": "starter"}},
+    ).json()
+    st_after_del = client.get("/collections/openai_1536_sq8", headers=hdr_a).json()
+    check("Delete by metadata filter removes 'lc_2' leaving 1 vector", del_flt.get("deleted_count") == 1 and st_after_del.get("vector_count") == 1)
+
+    # 3072d Binary POPCNT Quantization collection test
+    c_3072 = client.post(
+        "/collections",
+        headers=hdr_a,
+        json={"name": "openai_large_3072_bin", "dimension": 3072, "metric": "cosine", "quantization": "binary"},
+    )
+    v_3072 = [1.0 if i % 2 == 0 else -0.5 for i in range(3072)]
+    client.post("/vectors/upsert", headers=hdr_a, json={"collection": "openai_large_3072_bin", "vectors": [{"id": "b1", "values": v_3072}]})
+    st_3072 = client.get("/collections/openai_large_3072_bin/stats", headers=hdr_a).json()
+    check("3072d Binary collection achieves ~32x RAM compression", c_3072.status_code == 201 and st_3072.get("compression_ratio", 1.0) >= 31.0)
+
+    # Agent Memory Cognitive Recall check
+    mem_w = client.post("/memory/agent_alpha/remember", headers=hdr_a, json={"content": "Founder Ankush prefers monochrome UI aesthetic", "memory_type": "semantic", "importance": 0.95})
+    mem_r = client.post("/memory/agent_alpha/recall", headers=hdr_a, json={"query": "What UI style does Ankush prefer?", "top_k": 3}).json()
+    check("4-Tier Cognitive Memory stores & recalls semantic fact on Rust Engine", mem_w.status_code == 200 and len(mem_r.get("memories", [])) == 1)
+
+    # Prometheus /metrics + X-Iceberg-Integration attribution check
+    prom = client.get("/metrics").text
+    check(
+        "Prometheus /metrics exposes API, X-Iceberg-Integration & Rust Engine counters",
+        'integration="langchain-iceberg"' in prom and "iceberg_engine_vectors_total" in prom,
+    )
+
     try:
         if rn_mod.node_manager._write_client:
             rn_mod.node_manager._write_client.close()

@@ -3,27 +3,36 @@ from fastapi.security import APIKeyHeader
 from core.database import verify_key
 
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+alt_api_key_header = APIKeyHeader(name="Api-Key", auto_error=False)
 
-async def verify_api_key(api_key: str = Security(api_key_header)):
-    if not api_key:
+async def verify_api_key(
+    api_key: str = Security(api_key_header),
+    alt_key: str = Security(alt_api_key_header),
+):
+    resolved = api_key or alt_key
+    if not resolved:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing API key")
-    user_id = verify_key(api_key)
+    user_id = verify_key(resolved)
     if not user_id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid API key")
     return user_id
 
-async def require_admin(api_key: str = Security(api_key_header)):
+async def require_admin(
+    api_key: str = Security(api_key_header),
+    alt_key: str = Security(alt_api_key_header),
+):
     """Only admin keys can perform this action."""
-    if not api_key:
+    resolved = api_key or alt_key
+    if not resolved:
         raise HTTPException(status_code=401, detail="Missing API key")
     from core.database import get_conn, verify_key
     import hashlib
-    user_id = verify_key(api_key)
+    user_id = verify_key(resolved)
     if not user_id:
         raise HTTPException(status_code=401, detail="Invalid API key")
     if user_id == "dev_user_001":
         return user_id
-    key_hash = hashlib.sha256(api_key.encode()).hexdigest()
+    key_hash = hashlib.sha256(resolved.encode()).hexdigest()
     conn = get_conn()
     key = conn.execute("SELECT role FROM api_keys WHERE key_hash=? AND is_active=1", (key_hash,)).fetchone()
     conn.close()
@@ -31,18 +40,22 @@ async def require_admin(api_key: str = Security(api_key_header)):
         raise HTTPException(status_code=403, detail="Admin key required")
     return user_id
 
-async def require_write(api_key: str = Security(api_key_header)):
+async def require_write(
+    api_key: str = Security(api_key_header),
+    alt_key: str = Security(alt_api_key_header),
+):
     """read_only keys cannot write."""
-    if not api_key:
+    resolved = api_key or alt_key
+    if not resolved:
         raise HTTPException(status_code=401, detail="Missing API key")
     from core.database import get_conn, verify_key
     import hashlib
-    user_id = verify_key(api_key)
+    user_id = verify_key(resolved)
     if not user_id:
         raise HTTPException(status_code=401, detail="Invalid API key")
     if user_id == "dev_user_001":
         return user_id
-    key_hash = hashlib.sha256(api_key.encode()).hexdigest()
+    key_hash = hashlib.sha256(resolved.encode()).hexdigest()
     conn = get_conn()
     key = conn.execute("SELECT role FROM api_keys WHERE key_hash=? AND is_active=1", (key_hash,)).fetchone()
     conn.close()
