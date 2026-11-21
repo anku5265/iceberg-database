@@ -1,0 +1,51 @@
+{
+  "name": "n8n-nodes-iceberg",
+  "version": "1.0.0",
+  "description": "Official n8n community node for Iceberg DB — Build no-code RAG Assistants, 4-Tier Agent Memory, and Hybrid Vector Search workflows in India (ap-south-1).",
+  "keywords": [
+    "n8n-community-node-package",
+    "n8n",
+    "iceberg",
+    "icebergdb",
+    "rag",
+    "assistant",
+    "vector-database",
+    "agent-memory",
+    "whatsapp",
+    "ai-agent"
+  ],
+  "license": "MIT",
+  "homepage": "https://icebergdb.in/product/assistant",
+  "author": {
+    "name": "Ankush",
+    "email": "contact@icebergdb.in",
+    "url": "https://icebergdb.in"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/anku5265/iceberg-database.git",
+    "directory": "n8n-nodes-iceberg"
+  },
+  "main": "index.js",
+  "files": [
+    "dist",
+    "index.js",
+    "README.md",
+    "LICENSE"
+  ],
+  "n8n": {
+    "n8nNodesApiVersion": 1,
+    "credentials": [
+      "dist/credentials/IcebergApi.credentials.js"
+    ],
+    "nodes": [
+      "dist/nodes/IcebergAssistant/IcebergAssistant.node.js"
+    ]
+  },
+  "engines": {
+    "node": ">=18.10"
+  },
+  "peerDependencies": {
+    "n8n-workflow": "*"
+  }
+}

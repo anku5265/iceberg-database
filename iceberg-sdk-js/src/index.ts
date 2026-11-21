@@ -4,6 +4,7 @@ export interface SearchResult {
   score: number
   source?: string
   chunk_index?: number
+  values?: number[]
   metadata: Record<string, unknown>
 }
 
@@ -12,6 +13,36 @@ export interface SearchResponse {
   query: string
   collection: string
   total: number
+}
+
+export interface VectorRecord {
+  id?: string
+  values?: number[]
+  vector?: number[]
+  text?: string
+  metadata?: Record<string, unknown>
+  namespace?: string
+  timestamp?: number
+  importance?: number
+}
+
+export interface VectorQueryResponse {
+  matches: SearchResult[]
+  results: SearchResult[]
+  namespace: string
+  dimension?: number
+  metric?: string
+}
+
+export interface CollectionStats {
+  name: string
+  dimension: number
+  metric: string
+  quantization?: string
+  total_vector_count: number
+  namespaces: Record<string, { vector_count: number }>
+  deletion_protection?: boolean
+  tags?: Record<string, string>
 }
 
 export interface MemoryItem {
@@ -25,7 +56,18 @@ export interface MemoryItem {
 export interface CollectionInfo {
   name: string
   vector_count: number
+  dimension?: number
+  metric?: string
   status: string
+}
+
+export interface CreateCollectionOptions {
+  description?: string
+  dimension?: number
+  metric?: 'cosine' | 'dotproduct' | 'euclidean' | 'manhattan'
+  quantization?: 'float32' | 'sq8' | 'binary'
+  deletionProtection?: boolean
+  tags?: Record<string, string>
 }
 
 export interface ClientOptions {
@@ -34,6 +76,54 @@ export interface ClientOptions {
   timeout?: number
   maxRetries?: number
   backoffMs?: number
+  integration?: string
+  sourceTag?: string
+}
+
+export interface ConnectPopupOptions {
+  integrationId: string
+  dashboardUrl?: string
+  onConnect?: (payload: { apiKey: string; projectId?: string }) => void
+  onClose?: () => void
+}
+
+export function connectPopup(options: ConnectPopupOptions): Window | null {
+  if (typeof window === 'undefined') {
+    throw new Error('connectPopup can only be called in a browser environment.')
+  }
+  const base = (options.dashboardUrl || 'https://dashboard.icebergdb.in').replace(/\/$/, '')
+  const url = `${base}/connect?integration=${encodeURIComponent(options.integrationId)}`
+  const popup = window.open(url, 'iceberg_connect', 'width=560,height=680,menubar=no,toolbar=no')
+
+  const onMessage = (event: MessageEvent) => {
+    if (!event.origin.startsWith(base)) return
+    const data = event.data as Record<string, unknown> | null
+    if (
+      data &&
+      (data.type === 'ICEBERG_API_KEY_CONNECTED' || data.type === 'ICEBERG_CONNECT_SUCCESS') &&
+      typeof data.apiKey === 'string'
+    ) {
+      options.onConnect?.({
+        apiKey: data.apiKey,
+        projectId: typeof data.projectId === 'string' ? data.projectId : undefined,
+      })
+      window.removeEventListener('message', onMessage)
+      popup?.close()
+    }
+  }
+  window.addEventListener('message', onMessage)
+
+  if (popup && options.onClose) {
+    const timer = window.setInterval(() => {
+      if (popup.closed) {
+        window.clearInterval(timer)
+        window.removeEventListener('message', onMessage)
+        options.onClose?.()
+      }
+    }, 500)
+  }
+
+  return popup
 }
 
 export class IcebergError extends Error {
@@ -50,12 +140,14 @@ export class Client {
   private baseUrl: string
   private maxRetries: number
   private backoffMs: number
+  private sourceTag?: string
 
   constructor(options: ClientOptions) {
     this.apiKey = options.apiKey
     this.baseUrl = (options.baseUrl || 'https://api.icebergdb.in').replace(/\/$/, '')
     this.maxRetries = Math.max(1, options.maxRetries ?? 3)
     this.backoffMs = options.backoffMs ?? 500
+    this.sourceTag = options.integration || options.sourceTag
   }
 
   private sleep(ms: number): Promise<void> {
@@ -64,6 +156,7 @@ export class Client {
 
   private async request<T>(method: string, path: string, body?: unknown, formData?: FormData): Promise<T> {
     const headers: Record<string, string> = { 'X-API-Key': this.apiKey }
+    if (this.sourceTag) headers['X-Iceberg-Integration'] = this.sourceTag
     if (body && !formData) headers['Content-Type'] = 'application/json'
 
     let lastError: unknown = null
@@ -105,10 +198,46 @@ export class Client {
     throw new IcebergError(0, `Network error after ${this.maxRetries} attempts: ${String(lastError)}`)
   }
 
-  // ── Collections ──────────────────────────────────────────────────────────
+  // -- Collections ----------------------------------------------------------
 
-  async createCollection(name: string, description = ''): Promise<{ name: string; message: string }> {
-    return this.request('POST', '/collections', { name, description })
+  async createCollection(
+    name: string,
+    descriptionOrOptions: string | CreateCollectionOptions = '',
+    extraOptions?: CreateCollectionOptions
+  ): Promise<{ name: string; dimension?: number; metric?: string; message: string }> {
+    const opts: CreateCollectionOptions =
+      typeof descriptionOrOptions === 'string'
+        ? { description: descriptionOrOptions, ...(extraOptions || {}) }
+        : descriptionOrOptions
+    return this.request('POST', '/collections', {
+      name,
+      description: opts.description ?? '',
+      dimension: opts.dimension ?? 384,
+      metric: opts.metric ?? 'cosine',
+      quantization: opts.quantization ?? 'float32',
+      deletion_protection: opts.deletionProtection ?? false,
+      tags: opts.tags,
+    })
+  }
+
+  async createIndexForModel(config: {
+    name: string
+    cloud?: string
+    region?: string
+    dimension?: number
+    metric?: 'cosine' | 'dotproduct' | 'euclidean' | 'manhattan'
+    embed?: { model?: string; fieldMap?: Record<string, string> }
+    waitUntilReady?: boolean
+    description?: string
+  }): Promise<{ name: string; message: string }> {
+    const desc =
+      config.description ||
+      `Hosted in ${config.region || 'ap-south-1'} (${config.embed?.model || 'all-MiniLM-L6-v2'})`
+    return this.createCollection(config.name, {
+      description: desc,
+      dimension: config.dimension ?? 384,
+      metric: config.metric ?? 'cosine',
+    })
   }
 
   async listCollections(): Promise<string[]> {
@@ -132,7 +261,72 @@ export class Client {
     return this.request('GET', `/collections/${name}`)
   }
 
-  // ── Indexing & Point-Level CRUD ──────────────────────────────────────────
+  async describeCollectionStats(name: string): Promise<CollectionStats> {
+    return this.request('GET', `/collections/${name}/stats`)
+  }
+
+  // -- Raw Multi-Dimension Vectors ------------------------------------------
+
+  async upsertVectors(
+    collection: string,
+    vectors: VectorRecord[],
+    namespace = ''
+  ): Promise<{ upserted_count: number; collection: string; namespace: string }> {
+    return this.request('POST', '/vectors/upsert', {
+      collection,
+      vectors,
+      namespace,
+    })
+  }
+
+  async queryVectors(
+    collection: string,
+    options: {
+      vector?: number[]
+      queryText?: string
+      topK?: number
+      filter?: Record<string, unknown>
+      namespace?: string
+      searchType?: 'semantic' | 'keyword' | 'hybrid'
+      alpha?: number
+      scoreThreshold?: number
+      includeValues?: boolean
+      includeMetadata?: boolean
+    }
+  ): Promise<VectorQueryResponse> {
+    return this.request('POST', '/vectors/query', {
+      collection,
+      vector: options.vector,
+      query_text: options.queryText,
+      top_k: options.topK ?? 5,
+      filter: options.filter,
+      namespace: options.namespace ?? '',
+      search_type: options.searchType ?? 'semantic',
+      alpha: options.alpha ?? 0.5,
+      score_threshold: options.scoreThreshold ?? 0.0,
+      include_values: options.includeValues ?? false,
+      include_metadata: options.includeMetadata ?? true,
+    })
+  }
+
+  async fetchVectors(collection: string, ids: string[]): Promise<{ vectors: Record<string, SearchResult> }> {
+    return this.request('POST', '/vectors/fetch', { collection, ids })
+  }
+
+  async deleteVectors(
+    collection: string,
+    options: { ids?: string[]; filter?: Record<string, unknown>; namespace?: string; deleteAll?: boolean }
+  ): Promise<{ deleted: boolean; deleted_count?: number }> {
+    return this.request('POST', '/vectors/delete', {
+      collection,
+      ids: options.ids,
+      filter: options.filter,
+      namespace: options.namespace ?? '',
+      delete_all: options.deleteAll ?? false,
+    })
+  }
+
+  // -- Indexing & Point-Level CRUD ------------------------------------------
 
   async indexText(collection: string, text: string, source = 'sdk', namespace?: string): Promise<{ chunks_indexed: number }> {
     const form = new FormData()
@@ -176,7 +370,7 @@ export class Client {
     return this.request('GET', `/documents/${collection}/scroll?limit=${limit}&offset=${offset}`)
   }
 
-  // ── Search ────────────────────────────────────────────────────────────────
+  // -- Search ---------------------------------------------------------------
 
   async search(
     collection: string,
@@ -203,7 +397,7 @@ export class Client {
     return data.results
   }
 
-  // ── Agent Memory ──────────────────────────────────────────────────────────
+  // -- Agent Memory ---------------------------------------------------------
 
   async remember(
     agentId: string,
@@ -235,9 +429,11 @@ export class Client {
     return this.request('DELETE', `/memory/${agentId}`)
   }
 
-  // ── Usage ─────────────────────────────────────────────────────────────────
+  // -- Usage ----------------------------------------------------------------
 
   async usageStats(): Promise<{ searches_today: number; total_chunks_indexed: number }> {
     return this.request('GET', '/usage/stats')
   }
 }
+
+export { Client as Iceberg }

@@ -101,6 +101,7 @@ class Client:
         max_retries: int = 3,
         backoff_factor: float = 0.5,
         integration: Optional[str] = None,
+        source_tag: Optional[str] = None,
     ):
         raw_key = api_key or os.environ.get("ICEBERG_API_KEY", "")
         if raw_key in ("ib_your_key", "ib_live_...", "ib_key", "ib_admin_key"):
@@ -115,8 +116,9 @@ class Client:
         headers = {}
         if self.api_key:
             headers["X-API-Key"] = self.api_key
-        if integration:
-            headers["X-Iceberg-Integration"] = str(integration)
+        resolved_tag = integration or source_tag
+        if resolved_tag:
+            headers["X-Iceberg-Integration"] = str(resolved_tag)
 
         self._client = httpx.Client(
             headers=headers,
@@ -274,6 +276,13 @@ class Client:
     def collection_stats(self, name: str) -> dict:
         """Get detailed engine statistics (RAM bytes, quantization compression ratio, namespaces, BM25 terms)."""
         return self._get(f"/collections/{name}/stats")
+
+    def describe_collection_stats(self, name: str) -> dict:
+        """Alias for collection_stats() returning dimension, metric, vector_count, and per-namespace counts."""
+        data = self._get(f"/collections/{name}/stats")
+        if isinstance(data, dict) and "vector_count" not in data and "total_vector_count" in data:
+            data["vector_count"] = data["total_vector_count"]
+        return data
 
     # ── Native Multi-Dimension Vector Batch Operations ───────────────────────
 
