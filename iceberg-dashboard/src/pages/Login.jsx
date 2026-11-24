@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import GoogleAuthButton from '../components/GoogleAuthButton'
 import LegalModal from '../components/LegalModal'
-import { trackFounderEvent, deriveAccountKey } from '../lib/api'
+import { trackFounderEvent, deriveAccountKey, setCrossDomainSessionCookie } from '../lib/api'
 import { useTheme } from '../lib/theme'
 
 const BASE = import.meta.env.VITE_API_URL || 'https://api.icebergdb.in'
@@ -53,6 +53,7 @@ export default function Login() {
     localStorage.setItem('iceberg_api_key', fullKey)
     localStorage.setItem('iceberg_api_key_prefix', adminKey?.key_prefix || fullKey.slice(0, 10))
     localStorage.setItem('iceberg_project_id', adminKey?.project_id || data.projects?.[0]?.id || data.project_id || '')
+    setCrossDomainSessionCookie(data.email || cleanEmail)
 
     fetch('/api/auth-otp', {
       method: 'POST',

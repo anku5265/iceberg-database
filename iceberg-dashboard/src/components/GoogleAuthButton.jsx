@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import IcebergLogo from './IcebergLogo'
-import { trackFounderEvent, deriveAccountKey } from '../lib/api'
+import { trackFounderEvent, deriveAccountKey, setCrossDomainSessionCookie } from '../lib/api'
 
 const BASE = import.meta.env.VITE_API_URL || 'https://api.icebergdb.in'
 const GOOGLE_CLIENT_ID =
@@ -75,6 +75,7 @@ export default function GoogleAuthButton({ mode = 'signin', dark = false }) {
     localStorage.setItem('iceberg_api_key', fullKey)
     localStorage.setItem('iceberg_api_key_prefix', fullKey.slice(0, 10))
     localStorage.setItem('iceberg_project_id', data.project_id || data.projects?.[0]?.id || '')
+    setCrossDomainSessionCookie(cleanEmail)
 
     if (data.trusted_token) {
       try {

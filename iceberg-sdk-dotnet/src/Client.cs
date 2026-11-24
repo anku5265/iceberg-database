@@ -4,39 +4,64 @@ using System.Text.Json;
 
 namespace Iceberg;
 
+public class CreateIndexForModelEmbed
+{
+    public string Model { get; set; } = "all-MiniLM-L6-v2";
+    public string? Metric { get; set; } = "cosine";
+    public Dictionary<string, string>? FieldMap { get; set; }
+}
+
+public class CreateIndexForModelRequest
+{
+    public string Name { get; set; } = "";
+    public string Cloud { get; set; } = "aws";
+    public string Region { get; set; } = "ap-south-1";
+    public CreateIndexForModelEmbed Embed { get; set; } = new();
+}
+
 /// <summary>
 /// Official .NET client for the Iceberg Vector Database API.
 /// </summary>
-/// <example>
-/// <code>
-/// using Iceberg;
-///
-/// var client = new Client("your_api_key");
-///
-/// await client.CreateCollectionAsync("my_docs");
-/// await client.IndexTextAsync("my_docs", "Iceberg is a vector database for Indian AI teams.");
-///
-/// var results = await client.SearchAsync("my_docs", "Indian AI");
-/// foreach (var r in results)
-///     Console.WriteLine($"{r.Score:F3} {r.Text}");
-/// </code>
-/// </example>
 public class Client : IDisposable
 {
-    public const string DefaultBaseUrl = "https://iceberg-backend-hrg9.onrender.com";
+    public const string DefaultBaseUrl = "https://api.icebergdb.in";
 
     private readonly HttpClient _http;
+    private string? _sourceTag;
     private readonly JsonSerializerOptions _json = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
         DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
     };
 
-    public Client(string apiKey, string baseUrl = DefaultBaseUrl)
+    public Client(string apiKey, string baseUrl = DefaultBaseUrl, string? sourceTag = null)
     {
         _http = new HttpClient { BaseAddress = new Uri(baseUrl.TrimEnd('/') + "/") };
         _http.DefaultRequestHeaders.Add("X-API-Key", apiKey);
         _http.Timeout = TimeSpan.FromSeconds(30);
+        ApplySourceTag(sourceTag);
+    }
+
+    public Client WithSourceTag(string sourceTag)
+    {
+        ApplySourceTag(sourceTag);
+        return this;
+    }
+
+    private void ApplySourceTag(string? sourceTag)
+    {
+        _sourceTag = string.IsNullOrWhiteSpace(sourceTag) ? null : sourceTag.Trim();
+        _http.DefaultRequestHeaders.Remove("X-Iceberg-Integration");
+        _http.DefaultRequestHeaders.Remove("User-Agent");
+        if (_sourceTag != null)
+        {
+            _http.DefaultRequestHeaders.TryAddWithoutValidation("X-Iceberg-Integration", _sourceTag);
+            _http.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", $"iceberg-dotnet/1.0.0; source_tag={_sourceTag}");
+        }
+        else
+        {
+            _http.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "iceberg-dotnet/1.0.0");
+        }
     }
 
     // ── Internal helpers ─────────────────────────────────────────────────────
@@ -99,6 +124,14 @@ public class Client : IDisposable
     public Task CreateCollectionAsync(string name, string description = "") =>
         RequestAsync<JsonElement>(HttpMethod.Post, "collections", new { name, description });
 
+    /// <summary>Create an integrated-model collection on Iceberg DB.</summary>
+    public Task CreateIndexForModelAsync(CreateIndexForModelRequest request)
+    {
+        var model = request.Embed?.Model ?? "all-MiniLM-L6-v2";
+        var desc = $"Integrated model index ({model}, {request.Cloud}/{request.Region})";
+        return CreateCollectionAsync(request.Name, desc);
+    }
+
     /// <summary>List all collection names.</summary>
     public async Task<List<string>> ListCollectionsAsync()
     {
@@ -116,13 +149,6 @@ public class Client : IDisposable
 
     // ── Indexing ──────────────────────────────────────────────────────────────
 
-    /// <summary>
-    /// Index plain text into a collection.
-    /// Text is automatically chunked and embedded.
-    /// </summary>
-    /// <param name="collection">Collection name</param>
-    /// <param name="text">Text to index (Hindi/English/Hinglish supported)</param>
-    /// <param name="source">Label for this content (for filtering later)</param>
     public async Task<int> IndexTextAsync(string collection, string text, string source = "sdk")
     {
         var result = await MultipartPostAsync<IndexResponse>("documents/text",
@@ -130,9 +156,6 @@ public class Client : IDisposable
         return result.ChunksIndexed;
     }
 
-    /// <summary>Upload and index a file (PDF, TXT, MD).</summary>
-    /// <param name="collection">Collection name</param>
-    /// <param name="filePath">Path to file on disk</param>
     public async Task<int> UploadAsync(string collection, string filePath)
     {
         await using var stream = File.OpenRead(filePath);
@@ -142,7 +165,6 @@ public class Client : IDisposable
         return result.ChunksIndexed;
     }
 
-    /// <summary>Upload and index from a stream.</summary>
     public async Task<int> UploadStreamAsync(string collection, Stream stream, string fileName)
     {
         var result = await MultipartPostAsync<IndexResponse>("documents/upload",
@@ -152,22 +174,9 @@ public class Client : IDisposable
 
     // ── Search ────────────────────────────────────────────────────────────────
 
-    /// <summary>
-    /// Semantic search in a collection (hybrid mode, top 5 results).
-    /// </summary>
     public Task<List<SearchResult>> SearchAsync(string collection, string query, int topK = 5) =>
         SearchWithOptionsAsync(collection, query, topK);
 
-    /// <summary>
-    /// Search with full control over parameters.
-    /// </summary>
-    /// <param name="collection">Collection name</param>
-    /// <param name="query">Search query</param>
-    /// <param name="topK">Number of results</param>
-    /// <param name="searchType">"hybrid" | "semantic" | "keyword"</param>
-    /// <param name="alpha">0.0=keyword only, 1.0=semantic only</param>
-    /// <param name="filters">Metadata filters</param>
-    /// <param name="namespaceName">Optional namespace filter</param>
     public async Task<List<SearchResult>> SearchWithOptionsAsync(
         string collection,
         string query,
@@ -194,15 +203,10 @@ public class Client : IDisposable
 
     // ── Agent Memory ──────────────────────────────────────────────────────────
 
-    /// <summary>Store a memory for an AI agent.</summary>
-    /// <param name="agentId">Unique agent/user identifier</param>
-    /// <param name="content">Memory content</param>
-    /// <param name="memoryType">"long_term" | "short_term" | "episodic" | "semantic"</param>
     public Task RememberAsync(string agentId, string content, string memoryType = "long_term") =>
         RequestAsync<JsonElement>(HttpMethod.Post, $"memory/{agentId}/remember",
             new { content, memory_type = memoryType });
 
-    /// <summary>Recall memories for an AI agent.</summary>
     public async Task<List<MemoryResult>> RecallAsync(string agentId, string query, int topK = 5)
     {
         var data = await RequestAsync<MemoryResponse>(HttpMethod.Post, $"memory/{agentId}/recall",
@@ -212,13 +216,11 @@ public class Client : IDisposable
 
     // ── Usage ─────────────────────────────────────────────────────────────────
 
-    /// <summary>Get usage statistics for your account.</summary>
     public Task<JsonElement> UsageStatsAsync() =>
         RequestAsync<JsonElement>(HttpMethod.Get, "usage/stats");
 
     // ── Backup ────────────────────────────────────────────────────────────────
 
-    /// <summary>Create a backup of a collection. Returns backup ID.</summary>
     public async Task<string> BackupAsync(string collection)
     {
         var result = await RequestAsync<JsonElement>(HttpMethod.Post, $"backup/{collection}");
@@ -226,4 +228,10 @@ public class Client : IDisposable
     }
 
     public void Dispose() => _http.Dispose();
+}
+
+public class IcebergClient : Client
+{
+    public IcebergClient(string apiKey, string baseUrl = DefaultBaseUrl, string? sourceTag = null)
+        : base(apiKey, baseUrl, sourceTag) { }
 }

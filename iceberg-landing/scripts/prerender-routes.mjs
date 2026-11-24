@@ -1,5 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import { ALL_INTEGRATIONS, INTEGRATION_CATEGORIES } from '../src/data/integrationsInfraModelsObs.js'
 
 const distDir = path.resolve('dist')
 const baseHtmlPath = path.join(distDir, 'index.html')
@@ -856,13 +857,16 @@ print(f"Sequential (30 runs) -> min={latencies[0]:.1f}ms p50={statistics.median(
   },
   {
     route: '/integrations',
-    title: 'Integrations: Claude Code MCP, Cursor, LangChain & LlamaIndex — Iceberg DB (v1.0.0)',
+    title: 'Integrations Overview: AI Coding Tools, RAG Frameworks, Models & Cloud — Iceberg DB (v1.0.0)',
     description:
-      'Connect Iceberg DB v1.0.0 with Claude Code, Cursor, Windsurf, GitHub Copilot, Gemini CLI via npx -y iceberg-mcp, or integrate with LangChain, LlamaIndex, and FastAPI.',
+      'Browse 59 official Iceberg DB v1.0.0 integrations across Claude Code, Codex, Cursor, Agent Skills, LangChain, LlamaIndex, Haystack, Amazon Bedrock, Cohere, Voyage AI, Databricks, Terraform, Datadog, and TruLens.',
     bodyHtml: `
-      <main style="background:#070709;color:#ffffff;font-family:system-ui,-apple-system,sans-serif;max-width:980px;margin:0 auto;padding:48px 24px;line-height:1.6;">
-        <h1>Iceberg DB Integrations — MCP Server, LangChain, LlamaIndex &amp; REST</h1>
-        <p>Connect Iceberg DB to Claude Code, Cursor, Windsurf, Copilot, and Gemini CLI with a single command: <code>claude mcp add icebergdb --env ICEBERG_API_KEY=ib_your_key -- npx -y iceberg-mcp</code>.</p>
+      <main style="background:#0f0f11;color:#ffffff;font-family:system-ui,-apple-system,sans-serif;max-width:980px;margin:0 auto;padding:48px 24px;line-height:1.6;">
+        <h1>Integrations overview — Iceberg DB (v1.0.0)</h1>
+        <p>Browse Iceberg integrations across AI coding tools, vector embedding providers, data ingestion tools, frameworks, cloud infrastructure, and observability to ship AI apps faster.</p>
+        <ul>
+          ${ALL_INTEGRATIONS.map(it => `<li><a href="/integrations/${it.slug}">${(it.cardTitle || it.name).replace(/&/g, '&amp;')}</a> — ${String(it.shortDesc || '').replace(/&/g, '&amp;')}</li>`).join('\n          ')}
+        </ul>
       </main>
     `,
   },
@@ -1132,7 +1136,32 @@ public class Example {
 ]
 
 function escapeAttr(str) {
-  return str.replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+  return String(str || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+}
+
+// Dynamically append all 59 /integrations/:slug subpages for full crawler & OpenGraph SEO coverage
+for (const item of ALL_INTEGRATIONS) {
+  const catLabel = INTEGRATION_CATEGORIES.find(c => c.id === item.category)?.label || 'Integration'
+  const cleanSummary = String(item.summary || item.shortDesc || '').replace(/`/g, '')
+  const sectionTitles = (item.sections || [])
+    .filter(s => s.title)
+    .map(s => `<h2>${escapeAttr(s.title)}</h2>`)
+    .join('\n        ')
+
+  ROUTES.push({
+    route: `/integrations/${item.slug}`,
+    title: `${item.pageTitle || item.name} — Iceberg DB ${catLabel} Integration (v1.0.0)`,
+    description: cleanSummary,
+    bodyHtml: `
+      <main style="background:#0f0f11;color:#ffffff;font-family:system-ui,-apple-system,sans-serif;max-width:980px;margin:0 auto;padding:48px 24px;line-height:1.6;">
+        <p><a href="/integrations">Back to Integrations</a> · ${escapeAttr(catLabel)}</p>
+        <h1>${escapeAttr(item.pageTitle || item.name)}</h1>
+        <p>${escapeAttr(cleanSummary)}</p>
+        ${(item.intro || []).map(p => `<p>${escapeAttr(String(p).replace(/`/g, ''))}</p>`).join('\n        ')}
+        ${sectionTitles}
+      </main>
+    `,
+  })
 }
 
 for (const item of ROUTES) {

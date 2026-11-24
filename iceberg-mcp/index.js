@@ -153,6 +153,56 @@ const TOOLS = [
     },
   },
   {
+    name: "iceberg_upsert_vectors",
+    description:
+      "Batch upsert custom-dimension vectors (768d, 1024d, 1536d, 3072d) with metadata and optional namespace.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        collection: { type: "string", description: "Target collection name" },
+        vectors: {
+          type: "array",
+          description: "Array of {id, values, text?, metadata?}",
+          items: { type: "object" },
+        },
+        namespace: { type: "string", description: "Optional tenant namespace", default: "" },
+      },
+      required: ["collection", "vectors"],
+    },
+  },
+  {
+    name: "iceberg_query_vectors",
+    description:
+      "Query custom-dimension vectors with optional hybrid BM25 query_text and metadata filters ($eq, $gt, $gte, $in).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        collection: { type: "string", description: "Collection name" },
+        vector: { type: "array", items: { type: "number" }, description: "Query float vector" },
+        query_text: { type: "string", description: "Optional BM25 query text for hybrid RRF" },
+        top_k: { type: "integer", description: "Max matches to return (default: 5)", default: 5 },
+        namespace: { type: "string", description: "Optional namespace", default: "" },
+        filter: { type: "object", description: "Optional metadata filter object" },
+      },
+      required: ["collection", "vector"],
+    },
+  },
+  {
+    name: "iceberg_delete_vectors",
+    description: "Delete vectors by IDs, metadata filter, or delete_all within a namespace.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        collection: { type: "string", description: "Collection name" },
+        ids: { type: "array", items: { type: "string" }, description: "Vector IDs to delete" },
+        namespace: { type: "string", description: "Optional namespace", default: "" },
+        filter: { type: "object", description: "Optional metadata filter" },
+        delete_all: { type: "boolean", description: "Delete all vectors in namespace", default: false },
+      },
+      required: ["collection"],
+    },
+  },
+  {
     name: "iceberg_create_assistant",
     description:
       "Create a managed Iceberg RAG Assistant in India (ap-south-1) with automatic Web Widget (widget.js), WhatsApp webhook, and 6 pluggable LLMs.",
@@ -262,7 +312,8 @@ const TOOLS = [
 async function callApi(urlPath, method = "GET", body = null, isForm = false) {
   const headers = {
     "X-API-Key": API_KEY,
-    "X-Iceberg-Integration": "iceberg-mcp",
+    "X-Iceberg-Integration": "iceberg_mcp",
+    "User-Agent": "iceberg-mcp/1.0.0; source_tag=iceberg_mcp",
   };
   const opts = { method, headers };
 
@@ -388,6 +439,37 @@ async function handleToolCall(name, args = {}) {
     return await callApi(`/collections/${encodeURIComponent(args.name)}`, "DELETE");
   }
 
+  if (name === "iceberg_upsert_vectors") {
+    return await callApi("/vectors/upsert", "POST", {
+      collection: args.collection,
+      vectors: args.vectors || [],
+      namespace: args.namespace || "",
+    });
+  }
+
+  if (name === "iceberg_query_vectors") {
+    const payload = {
+      collection: args.collection,
+      vector: args.vector || [],
+      top_k: Number(args.top_k || 5),
+      namespace: args.namespace || "",
+    };
+    if (args.query_text) payload.query_text = args.query_text;
+    if (args.filter) payload.filter = args.filter;
+    return await callApi("/vectors/query", "POST", payload);
+  }
+
+  if (name === "iceberg_delete_vectors") {
+    const payload = {
+      collection: args.collection,
+      namespace: args.namespace || "",
+      delete_all: Boolean(args.delete_all),
+    };
+    if (args.ids) payload.ids = args.ids;
+    if (args.filter) payload.filter = args.filter;
+    return await callApi("/vectors/delete", "POST", payload);
+  }
+
   if (name === "iceberg_create_assistant") {
     const instructions = args.instructions || "Answer concisely using the uploaded documents.";
     return await callApi("/assistant", "POST", {
@@ -469,7 +551,7 @@ rl.on("line", async (rawLine) => {
       result: {
         protocolVersion: "2024-11-05",
         capabilities: { tools: {} },
-        serverInfo: { name: "iceberg-mcp", version: "1.1.0" },
+        serverInfo: { name: "iceberg-mcp", version: "1.0.0" },
       },
     };
     process.stdout.write(JSON.stringify(resp) + "\n");

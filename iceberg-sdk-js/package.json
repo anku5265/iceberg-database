@@ -1,7 +1,7 @@
 {
   "name": "icebergdb",
   "version": "1.0.0",
-  "description": "Official JavaScript and TypeScript client for Iceberg Vector Database — Built for AI agents and RAG applications",
+  "description": "Official JavaScript and TypeScript client for Iceberg Vector Database \u2014 Built for AI agents and RAG applications",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [

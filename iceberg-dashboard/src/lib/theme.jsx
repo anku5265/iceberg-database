@@ -1,40 +1,60 @@
-﻿import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useState } from 'react'
+import { flushSync } from 'react-dom'
 
 const ThemeContext = createContext(null)
 
-export function ThemeProvider({ children }) {
-  const [theme, setThemeState] = useState(
-    () => localStorage.getItem('iceberg_theme') || 'dark'
-  )
-
-  function applyTheme(t) {
-    const root = document.documentElement
-    if (t === 'system') {
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-      root.classList.toggle('dark', prefersDark)
-      root.classList.toggle('light', !prefersDark)
-    } else if (t === 'light') {
-      root.classList.remove('dark')
-      root.classList.add('light')
-    } else {
-      root.classList.add('dark')
-      root.classList.remove('light')
-    }
+function resolveThemeName(t) {
+  if (t === 'system') {
+    const prefersDark =
+      typeof window !== 'undefined' &&
+      window.matchMedia &&
+      window.matchMedia('(prefers-color-scheme: dark)').matches
+    return prefersDark ? 'dark' : 'light'
   }
+  return t === 'light' ? 'light' : 'dark'
+}
+
+export function applyThemeDOM(t) {
+  if (typeof document === 'undefined') return
+  const root = document.documentElement
+  const resolved = resolveThemeName(t)
+  root.classList.toggle('dark', resolved === 'dark')
+  root.classList.toggle('light', resolved === 'light')
+  root.setAttribute('data-theme', resolved)
+}
+
+export function ThemeProvider({ children }) {
+  const [theme, setThemeState] = useState(() => {
+    const saved = localStorage.getItem('iceberg_theme') || 'dark'
+    applyThemeDOM(saved)
+    return saved
+  })
 
   useEffect(() => {
-    applyTheme(theme)
+    applyThemeDOM(theme)
 
-    // Listen for system preference changes when in 'system' mode
     const mq = window.matchMedia('(prefers-color-scheme: dark)')
-    const handler = () => { if (theme === 'system') applyTheme('system') }
+    const handler = () => {
+      if (theme === 'system') {
+        applyThemeDOM('system')
+      }
+    }
     mq.addEventListener('change', handler)
     return () => mq.removeEventListener('change', handler)
   }, [theme])
 
   function setTheme(t) {
+    if (typeof document !== 'undefined') {
+      applyThemeDOM(t)
+    }
     localStorage.setItem('iceberg_theme', t)
-    setThemeState(t)
+    try {
+      flushSync(() => {
+        setThemeState(t)
+      })
+    } catch {
+      setThemeState(t)
+    }
   }
 
   return (

@@ -5,10 +5,10 @@
 //! ## Quickstart
 //!
 //! ```rust,no_run
-//! use iceberg::Client;
+//! use icebergdb::Client;
 //!
 //! #[tokio::main]
-//! async fn main() -> Result<(), iceberg::IcebergError> {
+//! async fn main() -> Result<(), icebergdb::IcebergError> {
 //!     let client = Client::new("your_api_key");
 //!
 //!     client.create_collection("my_docs", None).await?;
@@ -28,7 +28,7 @@ use std::collections::HashMap;
 use std::path::Path;
 use thiserror::Error;
 
-pub const DEFAULT_BASE_URL: &str = "https://iceberg-backend-hrg9.onrender.com";
+pub const DEFAULT_BASE_URL: &str = "https://api.icebergdb.in";
 
 // ── Error ─────────────────────────────────────────────────────────────────────
 
@@ -45,6 +45,30 @@ pub enum IcebergError {
 }
 
 // ── Models ────────────────────────────────────────────────────────────────────
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateIndexForModelEmbed {
+    pub model: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub metric: Option<String>,
+    pub field_map: HashMap<String, String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateIndexForModelRequest {
+    pub name: String,
+    pub cloud: String,
+    pub region: String,
+    pub embed: CreateIndexForModelEmbed,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct IndexModel {
+    pub name: String,
+    pub cloud: String,
+    pub region: String,
+    pub model: String,
+}
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct SearchResult {
@@ -107,8 +131,12 @@ struct SearchRequest<'a> {
 pub struct Client {
     api_key: String,
     base_url: String,
+    source_tag: Option<String>,
     http: reqwest::Client,
 }
+
+pub type IcebergClient = Client;
+pub type Iceberg = Client;
 
 impl Client {
     /// Create a new client with default base URL.
@@ -116,17 +144,40 @@ impl Client {
         Self::with_base_url(api_key, DEFAULT_BASE_URL)
     }
 
+    /// Create a new client with a source tag for integration usage attribution.
+    pub fn new_with_source_tag(api_key: impl Into<String>, source_tag: impl Into<String>) -> Self {
+        Self::new(api_key).with_source_tag(source_tag)
+    }
+
     /// Create a new client with a custom base URL (for local/self-hosted instances).
     pub fn with_base_url(api_key: impl Into<String>, base_url: impl Into<String>) -> Self {
         Self {
             api_key: api_key.into(),
             base_url: base_url.into().trim_end_matches('/').to_string(),
+            source_tag: None,
             http: reqwest::Client::new(),
         }
     }
 
+    /// Attach a source tag so requests from your integration are attributed (`User-Agent` + `X-Iceberg-Integration`).
+    pub fn with_source_tag(mut self, source_tag: impl Into<String>) -> Self {
+        let tag = source_tag.into().trim().to_string();
+        self.source_tag = if tag.is_empty() { None } else { Some(tag) };
+        self
+    }
+
     fn url(&self, path: &str) -> String {
         format!("{}{}", self.base_url, path)
+    }
+
+    fn authed(&self, rb: reqwest::RequestBuilder) -> reqwest::RequestBuilder {
+        let rb = rb.header("X-API-Key", &self.api_key);
+        if let Some(ref tag) = self.source_tag {
+            rb.header("X-Iceberg-Integration", tag)
+              .header("User-Agent", format!("iceberg-rust/1.0.0; source_tag={}", tag))
+        } else {
+            rb.header("User-Agent", "iceberg-rust/1.0.0")
+        }
     }
 
     async fn check_response(&self, resp: reqwest::Response) -> Result<String, IcebergError> {
@@ -149,17 +200,29 @@ impl Client {
             "name": name,
             "description": description.unwrap_or(""),
         });
-        let resp = self.http.post(self.url("/collections"))
-            .header("X-API-Key", &self.api_key)
+        let resp = self.authed(self.http.post(self.url("/collections")))
             .json(&body)
             .send().await?;
         self.check_response(resp).await?;
         Ok(())
     }
 
+    pub async fn create_index_for_model(&self, req: &CreateIndexForModelRequest) -> Result<IndexModel, IcebergError> {
+        let desc = format!(
+            "Integrated model index ({}, {}/{})",
+            req.embed.model, req.cloud, req.region
+        );
+        self.create_collection(&req.name, Some(&desc)).await?;
+        Ok(IndexModel {
+            name: req.name.clone(),
+            cloud: req.cloud.clone(),
+            region: req.region.clone(),
+            model: req.embed.model.clone(),
+        })
+    }
+
     pub async fn list_collections(&self) -> Result<Vec<String>, IcebergError> {
-        let resp = self.http.get(self.url("/collections"))
-            .header("X-API-Key", &self.api_key)
+        let resp = self.authed(self.http.get(self.url("/collections")))
             .send().await?;
         let body = self.check_response(resp).await?;
         let data: CollectionsResponse = serde_json::from_str(&body)
@@ -168,8 +231,7 @@ impl Client {
     }
 
     pub async fn delete_collection(&self, name: &str) -> Result<(), IcebergError> {
-        let resp = self.http.delete(self.url(&format!("/collections/{}", name)))
-            .header("X-API-Key", &self.api_key)
+        let resp = self.authed(self.http.delete(self.url(&format!("/collections/{}", name))))
             .send().await?;
         self.check_response(resp).await?;
         Ok(())
@@ -183,8 +245,7 @@ impl Client {
             .text("text", text.to_string())
             .text("source", source.unwrap_or("sdk").to_string());
 
-        let resp = self.http.post(self.url("/documents/text"))
-            .header("X-API-Key", &self.api_key)
+        let resp = self.authed(self.http.post(self.url("/documents/text")))
             .multipart(form)
             .send().await?;
         let body = self.check_response(resp).await?;
@@ -204,8 +265,7 @@ impl Client {
             .text("collection", collection.to_string())
             .part("file", file_part);
 
-        let resp = self.http.post(self.url("/documents/upload"))
-            .header("X-API-Key", &self.api_key)
+        let resp = self.authed(self.http.post(self.url("/documents/upload")))
             .multipart(form)
             .send().await?;
         let body = self.check_response(resp).await?;
@@ -231,8 +291,7 @@ impl Client {
         namespace: Option<&str>,
     ) -> Result<Vec<SearchResult>, IcebergError> {
         let body = SearchRequest { collection, query, top_k, search_type, alpha, filters, namespace };
-        let resp = self.http.post(self.url("/search"))
-            .header("X-API-Key", &self.api_key)
+        let resp = self.authed(self.http.post(self.url("/search")))
             .json(&body)
             .send().await?;
         let text = self.check_response(resp).await?;
@@ -245,8 +304,7 @@ impl Client {
 
     pub async fn remember(&self, agent_id: &str, content: &str, memory_type: &str) -> Result<(), IcebergError> {
         let body = serde_json::json!({ "content": content, "memory_type": memory_type });
-        let resp = self.http.post(self.url(&format!("/memory/{}/remember", agent_id)))
-            .header("X-API-Key", &self.api_key)
+        let resp = self.authed(self.http.post(self.url(&format!("/memory/{}/remember", agent_id))))
             .json(&body)
             .send().await?;
         self.check_response(resp).await?;
@@ -255,8 +313,7 @@ impl Client {
 
     pub async fn recall(&self, agent_id: &str, query: &str, top_k: usize) -> Result<Vec<Memory>, IcebergError> {
         let body = serde_json::json!({ "query": query, "top_k": top_k });
-        let resp = self.http.post(self.url(&format!("/memory/{}/recall", agent_id)))
-            .header("X-API-Key", &self.api_key)
+        let resp = self.authed(self.http.post(self.url(&format!("/memory/{}/recall", agent_id))))
             .json(&body)
             .send().await?;
         let text = self.check_response(resp).await?;
@@ -272,8 +329,7 @@ impl Client {
     // ── Usage ─────────────────────────────────────────────────────────────────
 
     pub async fn usage_stats(&self) -> Result<serde_json::Value, IcebergError> {
-        let resp = self.http.get(self.url("/usage/stats"))
-            .header("X-API-Key", &self.api_key)
+        let resp = self.authed(self.http.get(self.url("/usage/stats")))
             .send().await?;
         let body = self.check_response(resp).await?;
         serde_json::from_str(&body).map_err(|e| IcebergError::Api { status: 0, message: e.to_string() })
@@ -282,8 +338,7 @@ impl Client {
     // ── Backup ────────────────────────────────────────────────────────────────
 
     pub async fn backup(&self, collection: &str) -> Result<String, IcebergError> {
-        let resp = self.http.post(self.url(&format!("/backup/{}", collection)))
-            .header("X-API-Key", &self.api_key)
+        let resp = self.authed(self.http.post(self.url(&format!("/backup/{}", collection))))
             .send().await?;
         let body = self.check_response(resp).await?;
         let data: serde_json::Value = serde_json::from_str(&body)

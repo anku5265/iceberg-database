@@ -618,6 +618,10 @@ function IcebergDotMatrixEmblem({ dark = true }) {
     let lastAutoPulse = startTime
 
     const render = (now) => {
+      if (window.__ibDropdownOpen) {
+        rafId = requestAnimationFrame(render)
+        return
+      }
       const t = (now - startTime) * 0.001
       ctx.clearRect(0, 0, SIZE, SIZE)
 
@@ -811,6 +815,13 @@ export default function HomePage({ ProductDropdown }) {
     try {
       localStorage.setItem('iceberg_theme', 'dark')
     } catch (_) {}
+    if (window.location.hash) {
+      const targetId = window.location.hash.slice(1)
+      const el = document.getElementById(targetId)
+      if (el) {
+        setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60)
+      }
+    }
   }, [])
   const [visibleScores, setVisibleScores] = useState([])
   const [isUserTyping, setIsUserTyping] = useState(false)
@@ -854,14 +865,18 @@ export default function HomePage({ ProductDropdown }) {
     }, 38)
   }
 
+  // Theme tokens (Pinecone Matte Charcoal + Crisp White + Solid Blue)
+  const [heroMode, setHeroMode] = useState('builder') // 'builder' | 'demo'
+
   useEffect(() => {
-    const start = setTimeout(runAutoCycle, 1200)
+    if (heroMode !== 'demo') return
+    const start = setTimeout(runAutoCycle, 600)
     return () => {
       clearTimeout(start)
       clearTimeout(autoRef.current)
       clearInterval(typeRef.current)
     }
-  }, [])
+  }, [heroMode])
 
   // When user interacts, stop auto-cycle
   const handleUserSearch = (q) => {
@@ -884,8 +899,6 @@ export default function HomePage({ ProductDropdown }) {
     }, 500)
   }
 
-  // Theme tokens (Pinecone Matte Charcoal + Crisp White + Solid Blue)
-  const [heroMode, setHeroMode] = useState('builder') // 'builder' | 'demo'
   const bg = dark ? '#0a0b0d' : '#ffffff'
   const navBg = dark ? 'rgba(10,11,13,0.95)' : 'rgba(255,255,255,0.95)'
   const navBorder = dark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.1)'
@@ -946,15 +959,12 @@ export default function HomePage({ ProductDropdown }) {
                 The trusted AI knowledge platform where fast, accurate retrieval doesn&apos;t get more expensive as it scales.
               </p>
 
-              {/* Sharp Rectangular CTA Buttons with Architectural Crosshair Ticks (Pure Ice-White + Black Bold Text) */}
-              <div className="flex flex-wrap items-center gap-4">
+              {/* Exact Pinecone Royal Blue Primary + Dark Secondary Buttons with CAD Crop-Mark Ticks */}
+              <div className="flex flex-wrap items-center gap-5">
                 <a
                   href={`${D}/signup${!dark ? '?theme=light' : ''}`}
-                  className={`relative inline-flex items-center justify-center px-6 py-3 text-[13.5px] font-semibold transition ${
-                    dark
-                      ? 'bg-white hover:bg-[#e0f2fe] text-[#0a0b0d]'
-                      : 'bg-[#0a0b0d] hover:bg-[#18181b] text-white'
-                  }`}
+                  className="relative inline-flex items-center justify-center px-6 py-3 text-[14px] font-medium text-white bg-[#1d6bf3] hover:bg-[#1559d6] transition no-underline"
+                  style={{ '--ib-corner-color': '#3b82f6' }}
                 >
                   <span className="ib-corner-tl" />
                   <span className="ib-corner-tr" />
@@ -965,11 +975,12 @@ export default function HomePage({ ProductDropdown }) {
 
                 <button
                   onClick={() => setHeroMode(heroMode === 'demo' ? 'builder' : 'demo')}
-                  className="relative inline-flex items-center justify-center px-6 py-3 text-[13.5px] font-medium transition cursor-pointer"
+                  className="relative inline-flex items-center justify-center px-6 py-3 text-[14px] font-medium transition cursor-pointer"
                   style={{
                     background: 'transparent',
-                    border: `1px solid ${dark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.22)'}`,
+                    border: `1px solid ${dark ? '#2e2e34' : 'rgba(0,0,0,0.22)'}`,
                     color: textPrimary,
+                    '--ib-corner-color': dark ? '#a1a1aa' : '#52525b',
                   }}
                 >
                   <span className="ib-corner-tl" />

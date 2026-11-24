@@ -1,324 +1,374 @@
-import { useEffect, useState } from 'react'
-import { api } from '../lib/api'
-import { API_URL } from '../lib/config'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import OnboardingModal from '../components/OnboardingModal'
+import { api } from '../lib/api'
+
+function InfoCircleIcon({ size = 14 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 20 20" fill="none" className="shrink-0">
+      <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="1.85" />
+      <rect x="9" y="5.4" width="2" height="2" rx="0.4" fill="currentColor" />
+      <rect x="9" y="9" width="2" height="5.6" rx="0.4" fill="currentColor" />
+    </svg>
+  )
+}
 
 export default function Overview() {
-  const [collections, setCollections] = useState([])
-  const [colDetails, setColDetails] = useState({})
-  const [status, setStatus] = useState('online')
-  const [stats, setStats] = useState({ searches_today: 0, total_chunks_indexed: 0 })
-  const [showOnboarding, setShowOnboarding] = useState(false)
-  const [copiedField, setCopiedField] = useState('')
-
-  const loadData = async () => {
-    try {
-      const colRes = await api.getCollections()
-      const cols = colRes.collections || []
-      setCollections(cols)
-      setStatus('online')
-
-      if (cols.length > 0) {
-        const details = {}
-        await Promise.all(
-          cols.map(async (c) => {
-            try {
-              const info = await api.getCollection(c)
-              if (info) details[c] = info
-            } catch {}
-          })
-        )
-        setColDetails(details)
-      } else {
-        setColDetails({})
-      }
-    } catch {
-      try {
-        await api.health()
-        setStatus('online')
-      } catch {
-        setStatus('offline')
-      }
-    }
-
-    try {
-      const statsRes = await api.getStats()
-      if (statsRes && typeof statsRes === 'object') {
-        setStats(prev => ({
-          ...prev,
-          searches_today: statsRes.searches_today ?? prev.searches_today ?? 0,
-          total_chunks_indexed: statsRes.total_chunks_indexed ?? prev.total_chunks_indexed ?? 0
-        }))
-        setStatus('online')
-      }
-    } catch {}
-  }
+  const [assistants, setAssistants] = useState(() => api.getCachedAssistants())
+  const [collections, setCollections] = useState(() => api.getCachedCollections())
+  const [vectorCount, setVectorCount] = useState(() => {
+    const details = api.getCachedCollectionDetails()
+    return Object.values(details).reduce((sum, info) => sum + (info?.vector_count || 0), 0)
+  })
+  const [queryCount, setQueryCount] = useState(0)
 
   useEffect(() => {
-    loadData()
-    const timer = setInterval(loadData, 3500)
-    const onFocus = () => loadData()
-    window.addEventListener('focus', onFocus)
+    let mounted = true
+
+    const syncOverviewData = async () => {
+      try {
+        const [asstRes, colRes, statsRes] = await Promise.all([
+          api.getAssistants().catch(() => ({ assistants: api.getCachedAssistants() })),
+          api.getCollections().catch(() => ({ collections: api.getCachedCollections() })),
+          api.getStats().catch(() => null),
+        ])
+        if (!mounted) return
+        if (Array.isArray(asstRes?.assistants)) {
+          setAssistants(asstRes.assistants)
+        }
+        const cols = colRes?.collections || []
+        setCollections(cols)
+        if (statsRes) {
+          setQueryCount(statsRes.searches_today ?? 0)
+        }
+        if (cols.length > 0) {
+          let totalVecs = 0
+          await Promise.all(
+            cols.map(async (c) => {
+              try {
+                const info = await api.getCollection(c)
+                totalVecs += info?.vector_count || 0
+              } catch {}
+            })
+          )
+          if (mounted) setVectorCount(totalVecs)
+        } else {
+          setVectorCount(0)
+        }
+      } catch {}
+    }
+
+    syncOverviewData()
+    const onAsstUpdate = () => {
+      setAssistants(api.getCachedAssistants())
+      syncOverviewData()
+    }
+    const onColsUpdate = () => {
+      setCollections(api.getCachedCollections())
+    }
+    window.addEventListener('iceberg-assistants-updated', onAsstUpdate)
+    window.addEventListener('iceberg-collections-updated', onColsUpdate)
+    const timer = setInterval(syncOverviewData, 5000)
     return () => {
+      mounted = false
+      window.removeEventListener('iceberg-assistants-updated', onAsstUpdate)
+      window.removeEventListener('iceberg-collections-updated', onColsUpdate)
       clearInterval(timer)
-      window.removeEventListener('focus', onFocus)
     }
   }, [])
 
-  function handleOnboardingDone() {
-    setShowOnboarding(false)
-    loadData()
-  }
+  const rawStorageGb = (vectorCount * 1536) / (1024 * 1024 * 1024)
+  const displayStorage = rawStorageGb < 0.01 ? '0GB' : `${rawStorageGb.toFixed(2)}GB`
+  const vecPct = Math.min(100, Math.round((vectorCount / 100000) * 100))
+  const storagePct = Math.min(100, Math.round((rawStorageGb / 2) * 100))
+  const queryPct = Math.min(100, Math.round((queryCount / 2000) * 100))
 
-  const copyText = (text, key) => {
-    navigator.clipboard.writeText(text)
-    setCopiedField(key)
-    setTimeout(() => setCopiedField(''), 1800)
-  }
+  const dbUsageRows = [
+    { label: 'RUs', value: `${queryCount.toLocaleString()} / 1M`, pct: queryPct },
+    { label: 'Storage', value: `${displayStorage} / 2GB`, pct: storagePct },
+    { label: 'WUs', value: `${vectorCount.toLocaleString()} / 2M`, pct: vecPct },
+  ]
 
-  // Strictly isolated per-user vector count (0 when user has 0 collections)
-  const totalVectors = collections.length === 0
-    ? 0
-    : Object.values(colDetails).reduce((sum, c) => sum + (c.vector_count || 0), 0)
-
-  const queries24h = collections.length === 0 ? 0 : (stats.searches_today ?? 0)
+  const assistantUsageRows = [
+    { label: 'Storage', value: '0GB / 1GB', pct: 0 },
+    { label: 'Input Tokens', value: '0 / 1M', pct: 0 },
+    { label: 'Output Tokens', value: '0 / 300K', pct: 0 },
+    { label: 'Context Tokens', value: '0 / 500K', pct: 0 },
+    { label: 'Ingestion Units', value: '0 / 1K', pct: 0 },
+  ]
 
   return (
-    <div className="p-5 md:p-8 max-w-7xl mx-auto space-y-6">
-      {showOnboarding && <OnboardingModal onDone={handleOnboardingDone} />}
+    <div className="pt-[46px] pb-12 px-6 sm:px-[49px] max-w-[1090px] space-y-8">
+      {/* ── Top Header Row: "Project overview" + borderless "+ API key" button ── */}
+      <div className="flex items-center justify-between gap-4">
+        <h1 className="text-[24px] font-bold tracking-[-0.015em] text-white leading-none">
+          Project overview
+        </h1>
 
-      {/* ── Page Header ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight text-[var(--text-primary)]">Overview</h1>
-          <p className="text-[13px] text-[var(--text-muted)] mt-1">
-            Production vector database and memory cluster hosted in India (ap-south-1).
-          </p>
-        </div>
-        <div className="flex items-center gap-2.5">
-          <Link
-            to="/explorer"
-            className="px-3.5 py-2 rounded-md border border-[var(--border)] bg-[var(--bg-surface)] hover:bg-[var(--bg-hover)] text-[var(--text-primary)] text-xs font-medium transition"
-          >
-            Query Explorer
-          </Link>
-          <Link
-            to="/collections"
-            className="px-3.5 py-2 rounded-md bg-[var(--text-primary)] text-[var(--bg-base)] hover:opacity-90 text-xs font-semibold transition"
-          >
-            New Collection
-          </Link>
-        </div>
+        <Link
+          to="/apikeys"
+          className="px-3 py-1.5 rounded-[2px] hover:bg-[#242424] text-white text-[13.5px] font-semibold inline-flex items-center gap-2 transition"
+        >
+          <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          <span>API key</span>
+        </Link>
       </div>
 
-      {/* ── Unified 4-Cell Enterprise Metric Strip (Vercel / PlanetScale / Stripe Pattern) ── */}
-      <div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-lg grid grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 lg:divide-x divide-[var(--border)] shadow-[var(--shadow)]">
-        <div className="p-5">
-          <p className="text-xs font-medium text-[var(--text-muted)]">Collections</p>
-          <p className="text-2xl font-semibold text-[var(--text-primary)] font-mono tabular-nums mt-2">
-            {collections.length}
-          </p>
-          <p className="text-[11px] text-[var(--text-muted)] mt-1.5">Isolated namespaces</p>
-        </div>
-
-        <div className="p-5 border-t-0">
-          <p className="text-xs font-medium text-[var(--text-muted)]">Vectors Indexed</p>
-          <p className="text-2xl font-semibold text-[var(--text-primary)] font-mono tabular-nums mt-2">
-            {totalVectors.toLocaleString()}
-          </p>
-          <p className="text-[11px] text-[var(--text-muted)] mt-1.5">384d · Cosine HNSW</p>
-        </div>
-
-        <div className="p-5">
-          <p className="text-xs font-medium text-[var(--text-muted)]">Queries (24h)</p>
-          <p className="text-2xl font-semibold text-[var(--text-primary)] font-mono tabular-nums mt-2">
-            {queries24h.toLocaleString()}
-          </p>
-          <p className="text-[11px] text-[var(--text-muted)] mt-1.5">Hybrid dense + BM25</p>
-        </div>
-
-        <div className="p-5">
-          <p className="text-xs font-medium text-[var(--text-muted)]">Median Latency</p>
-          <p className="text-2xl font-semibold text-[var(--text-primary)] font-mono tabular-nums mt-2">
-            14ms
-          </p>
-          <p className="text-[11px] text-emerald-500 font-medium mt-1.5 flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
-            {status === 'online' ? 'Healthy · ap-south-1' : 'Reconnecting'}
-          </p>
-        </div>
-      </div>
-
-      {/* ── Middle Row: Request Volume Chart + Cluster Endpoint Specs ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        {/* Left: 24h Request Volume & Throughput */}
-        <div className="lg:col-span-7 bg-[var(--card-bg)] border border-[var(--card-border)] rounded-lg p-5 flex flex-col justify-between shadow-[var(--shadow)]">
-          <div className="flex items-center justify-between mb-4">
+      {/* ── 2 Main Cards: Database & Assistant (Exact Dynamic State Matching Pinecone Screenshots 1 & 5) ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+        {/* Card 1: Database */}
+        {collections.length === 0 ? (
+          <div className="border border-[#343434] rounded-[2px] bg-[#1c1c1c] p-7 flex flex-col justify-between min-h-[238px]">
             <div>
-              <h2 className="text-[13.5px] font-medium text-[var(--text-primary)]">Request Volume</h2>
-              <p className="text-xs text-[var(--text-muted)] mt-0.5">Search &amp; indexing throughput · ap-south-1</p>
-            </div>
-            <span className="text-xs text-[var(--text-muted)] border border-[var(--border)] bg-[var(--bg-surface2)] px-2.5 py-1 rounded">
-              Last 24 hours
-            </span>
-          </div>
-
-          <div className="relative h-40 w-full pt-2">
-            <svg viewBox="0 0 600 130" className="w-full h-full overflow-visible">
-              <line x1="0" y1="20" x2="600" y2="20" stroke="var(--border)" strokeWidth="1" />
-              <line x1="0" y1="55" x2="600" y2="55" stroke="var(--border)" strokeWidth="1" />
-              <line x1="0" y1="90" x2="600" y2="90" stroke="var(--border)" strokeWidth="1" />
-              <line x1="0" y1="120" x2="600" y2="120" stroke="var(--border2)" strokeWidth="1" />
-              {queries24h > 0 ? (
-                <path
-                  d="M0,118 L120,116 L240,108 L360,92 L480,78 L600,64"
-                  fill="none"
-                  stroke="#3b82f6"
-                  strokeWidth="2"
-                />
-              ) : (
-                <line x1="0" y1="119" x2="600" y2="119" stroke="#3b82f6" strokeWidth="1.5" strokeOpacity="0.65" />
-              )}
-            </svg>
-            <div className="flex items-center justify-between text-[10.5px] font-mono text-[var(--text-muted)] mt-1">
-              <span>00:00</span>
-              <span>08:00</span>
-              <span>16:00</span>
-              <span>Now</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Right: Cluster Endpoint & SDK Connection Details */}
-        <div className="lg:col-span-5 bg-[var(--card-bg)] border border-[var(--card-border)] rounded-lg overflow-hidden shadow-[var(--shadow)] flex flex-col">
-          <div className="px-5 py-4 border-b border-[var(--border)] flex items-center justify-between">
-            <h2 className="text-[13.5px] font-medium text-[var(--text-primary)]">Cluster Endpoint</h2>
-            <Link to="/apikeys" className="text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] transition">
-              API Keys →
-            </Link>
-          </div>
-
-          <div className="divide-y divide-[var(--border)] text-xs flex-1 flex flex-col justify-center">
-            <div className="px-5 py-3.5 flex items-center justify-between gap-3">
-              <span className="text-[var(--text-muted)]">Host</span>
-              <div className="flex items-center gap-2">
-                <span className="font-mono text-[var(--text-primary)]">{API_URL}</span>
-                <button
-                  onClick={() => copyText(API_URL, 'host')}
-                  className="text-[11px] px-2 py-0.5 rounded border border-[var(--border)] bg-[var(--bg-surface2)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition"
-                >
-                  {copiedField === 'host' ? 'Copied' : 'Copy'}
-                </button>
+              <div className="flex items-center gap-3 text-white">
+                <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.9" viewBox="0 0 24 24" className="text-white shrink-0">
+                  <rect x="3" y="4" width="18" height="7" rx="1.5" />
+                  <rect x="3" y="13" width="18" height="7" rx="1.5" />
+                  <line x1="7" y1="7.5" x2="7.01" y2="7.5" strokeWidth="2.4" strokeLinecap="round" />
+                  <line x1="7" y1="16.5" x2="7.01" y2="16.5" strokeWidth="2.4" strokeLinecap="round" />
+                </svg>
+                <h2 className="text-[17px] font-bold tracking-tight">Database</h2>
               </div>
+
+              <p className="text-[14px] text-white leading-[1.6] mt-4">
+                Store and search vector embeddings at scale. Best for building your own custom search, RAG, or recommendation logic.
+              </p>
             </div>
 
-            <div className="px-5 py-3.5 flex items-center justify-between gap-3">
-              <span className="text-[var(--text-muted)]">Region</span>
-              <span className="font-mono text-[var(--text-primary)]">Hosted in India (ap-south-1)</span>
-            </div>
-
-            <div className="px-5 py-3.5 flex items-center justify-between gap-3">
-              <span className="text-[var(--text-muted)]">Embedding Model</span>
-              <span className="font-mono text-[var(--text-primary)]">all-MiniLM-L6-v2 (384d)</span>
-            </div>
-
-            <div className="px-5 py-3.5 flex items-center justify-between gap-3">
-              <span className="text-[var(--text-muted)]">Python SDK</span>
-              <div className="flex items-center gap-2">
-                <span className="font-mono text-[var(--text-secondary)]">pip install icebergdb</span>
-                <button
-                  onClick={() => copyText('pip install icebergdb', 'sdk')}
-                  className="text-[11px] px-2 py-0.5 rounded border border-[var(--border)] bg-[var(--bg-surface2)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition"
-                >
-                  {copiedField === 'sdk' ? 'Copied' : 'Copy'}
-                </button>
-              </div>
+            <div className="mt-6">
+              <Link to="/database/quickstart" className="pc-btn-primary">
+                Load data
+              </Link>
             </div>
           </div>
-        </div>
+        ) : (
+          <div className="border border-[#343434] rounded-[2px] bg-[#1c1c1c] p-7">
+            {/* Header with ↗ button */}
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 text-white">
+                <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.9" viewBox="0 0 24 24" className="text-white shrink-0">
+                  <rect x="3" y="4" width="18" height="7" rx="1.5" />
+                  <rect x="3" y="13" width="18" height="7" rx="1.5" />
+                  <line x1="7" y1="7.5" x2="7.01" y2="7.5" strokeWidth="2.4" strokeLinecap="round" />
+                  <line x1="7" y1="16.5" x2="7.01" y2="16.5" strokeWidth="2.4" strokeLinecap="round" />
+                </svg>
+                <h2 className="text-[17px] font-bold tracking-tight">Database</h2>
+              </div>
+
+              <Link
+                to="/collections"
+                className="w-[34px] h-[34px] rounded-[2px] border border-[#3a3a3a] bg-[#1c1c1c] hover:bg-[#2a2a2a] flex items-center justify-center text-white transition"
+                title="View indexes"
+              >
+                <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <line x1="7" y1="17" x2="17" y2="7" />
+                  <polyline points="7 7 17 7 17 17" />
+                </svg>
+              </Link>
+            </div>
+
+            {/* Active Indexes List */}
+            <div className="mt-4 divide-y divide-[#343434] border-b border-[#343434]">
+              {collections.slice(0, 4).map((colName) => (
+                <Link
+                  key={colName}
+                  to={`/explorer?collection=${encodeURIComponent(colName)}`}
+                  className="py-3 flex items-center justify-between text-[14.5px] font-normal text-white hover:text-[#58a6ff] transition group"
+                >
+                  <span className="truncate pr-3">{colName}</span>
+                  <svg
+                    width="15"
+                    height="15"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.2"
+                    viewBox="0 0 24 24"
+                    className="text-white group-hover:text-[#58a6ff] shrink-0"
+                  >
+                    <polyline points="9 18 15 12 9 6" />
+                  </svg>
+                </Link>
+              ))}
+            </div>
+
+            {/* Database Usage Quota Bars */}
+            <div className="mt-5 space-y-4">
+              {dbUsageRows.map((row) => (
+                <div key={row.label}>
+                  <div className="flex items-center justify-between mb-2 text-[13.5px]">
+                    <span className="text-white font-bold inline-flex items-center gap-1.5">
+                      <span>{row.label}</span>
+                      <span className="text-[#cccccc]">
+                        <InfoCircleIcon size={14} />
+                      </span>
+                    </span>
+                    <span className="font-bold text-white tabular-nums">{row.value}</span>
+                  </div>
+                  <div className="h-[4px] w-full rounded-[1px] bg-[#282828] overflow-hidden">
+                    <div className="h-full bg-[#388bfd]" style={{ width: `${row.pct}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Card 2: Assistant (Exact Match to Screenshot 1 when empty & Screenshot 5 when assistant exists!) */}
+        {assistants.length === 0 ? (
+          <div className="border border-[#343434] rounded-[2px] bg-[#1c1c1c] p-7 flex flex-col justify-between min-h-[238px]">
+            <div>
+              <div className="flex items-center gap-3 text-white">
+                <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.9" viewBox="0 0 24 24" className="text-white shrink-0">
+                  <path d="M9 18h6" />
+                  <path d="M10 22h4" />
+                  <path d="M12 2a7 7 0 0 0-4 12.75c.6.45 1 1.15 1 1.9V18h6v-1.35c0-.75.4-1.45 1-1.9A7 7 0 0 0 12 2z" />
+                </svg>
+                <h2 className="text-[17px] font-bold tracking-tight">Assistant</h2>
+              </div>
+
+              <p className="text-[14px] text-white leading-[1.6] mt-4">
+                Upload files, get a working Q&amp;A chatbot in minutes. Best for grounded answers without building retrieval yourself.
+              </p>
+            </div>
+
+            <div className="mt-6">
+              <Link to="/assistants/quickstart" className="pc-btn-primary">
+                Create assistant
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <div className="border border-[#343434] rounded-[2px] bg-[#1c1c1c] p-7">
+            {/* Header Row: Lightbulb + "Assistant" on left, square ↗ button on right (Exact Match to Screenshot 5) */}
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 text-white">
+                <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.9" viewBox="0 0 24 24" className="text-white shrink-0">
+                  <path d="M9 18h6" />
+                  <path d="M10 22h4" />
+                  <path d="M12 2a7 7 0 0 0-4 12.75c.6.45 1 1.15 1 1.9V18h6v-1.35c0-.75.4-1.45 1-1.9A7 7 0 0 0 12 2z" />
+                </svg>
+                <h2 className="text-[17px] font-bold tracking-tight">Assistant</h2>
+              </div>
+
+              <Link
+                to="/assistants"
+                className="w-[34px] h-[34px] rounded-[2px] border border-[#3a3a3a] bg-[#1c1c1c] hover:bg-[#2a2a2a] flex items-center justify-center text-white transition"
+                title="View assistants"
+              >
+                <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <line x1="7" y1="17" x2="17" y2="7" />
+                  <polyline points="7 7 17 7 17 17" />
+                </svg>
+              </Link>
+            </div>
+
+            {/* Created Assistants List (e.g. "ankush >" with bottom border) */}
+            <div className="mt-4 divide-y divide-[#343434] border-b border-[#343434]">
+              {assistants.map((asst) => (
+                <Link
+                  key={asst.id || asst.name}
+                  to={`/assistants?assistant=${encodeURIComponent(asst.name)}`}
+                  className="py-3 flex items-center justify-between text-[14.5px] font-normal text-white hover:text-[#58a6ff] transition group"
+                >
+                  <span className="truncate pr-3">{asst.name}</span>
+                  <svg
+                    width="15"
+                    height="15"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.2"
+                    viewBox="0 0 24 24"
+                    className="text-white group-hover:text-[#58a6ff] shrink-0"
+                  >
+                    <polyline points="9 18 15 12 9 6" />
+                  </svg>
+                </Link>
+              ))}
+            </div>
+
+            {/* 5 Assistant Usage Quota Bars (Exact Match to Screenshot 5) */}
+            <div className="mt-5 space-y-4">
+              {assistantUsageRows.map((row) => (
+                <div key={row.label}>
+                  <div className="flex items-center justify-between mb-2 text-[13.5px]">
+                    <span className="text-white font-bold inline-flex items-center gap-1.5">
+                      <span>{row.label}</span>
+                      <span className="text-[#cccccc]">
+                        <InfoCircleIcon size={14} />
+                      </span>
+                    </span>
+                    <span className="font-bold text-white tabular-nums">{row.value}</span>
+                  </div>
+                  <div className="h-[4px] w-full rounded-[1px] bg-[#282828] overflow-hidden">
+                    <div className="h-full bg-[#388bfd]" style={{ width: `${row.pct}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* ── Bottom Row: Collections Data Table (Pinecone / PlanetScale Style) ── */}
-      <div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-lg overflow-hidden shadow-[var(--shadow)]">
-        <div className="px-5 py-4 border-b border-[var(--border)] flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <h2 className="text-[13.5px] font-medium text-[var(--text-primary)]">Collections</h2>
-            <span className="text-[11px] font-mono text-[var(--text-muted)] px-2 py-0.5 rounded bg-[var(--bg-surface2)] border border-[var(--border)]">
-              {collections.length}
-            </span>
-          </div>
-          <Link to="/collections" className="text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] transition">
-            Manage all →
-          </Link>
-        </div>
+      {/* ── Resources Section (48x48 Icon Box + Text on Right) ── */}
+      <div className="pt-2">
+        <h2 className="text-[17px] font-bold tracking-tight text-white mb-5">
+          Resources
+        </h2>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-[var(--border)] bg-[var(--bg-surface2)] text-[11px] font-medium text-[var(--text-muted)] uppercase tracking-wider">
-                <th className="py-2.5 px-5">Name</th>
-                <th className="py-2.5 px-5">Dimensions</th>
-                <th className="py-2.5 px-5">Metric</th>
-                <th className="py-2.5 px-5">Vectors</th>
-                <th className="py-2.5 px-5">Status</th>
-                <th className="py-2.5 px-5 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[var(--border)] text-xs">
-              {collections.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="py-14 px-5 text-center">
-                    <p className="text-[13.5px] font-medium text-[var(--text-primary)]">
-                      No collections in this workspace
-                    </p>
-                    <p className="text-xs text-[var(--text-muted)] mt-1 max-w-md mx-auto">
-                      Create your first vector collection to start indexing documents and agent memories.
-                    </p>
-                    <div className="mt-4">
-                      <Link
-                        to="/collections"
-                        className="inline-flex items-center px-3.5 py-1.5 rounded-md border border-[var(--border2)] bg-[var(--bg-surface2)] hover:bg-[var(--bg-hover)] text-[var(--text-primary)] text-xs font-medium transition"
-                      >
-                        Create Collection
-                      </Link>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                collections.map((name) => {
-                  const info = colDetails[name]
-                  const count = info?.vector_count ?? 0
-                  return (
-                    <tr key={name} className="hover:bg-[var(--bg-hover)] transition-colors">
-                      <td className="py-3.5 px-5 font-mono font-medium text-[var(--text-primary)]">
-                        {name}
-                      </td>
-                      <td className="py-3.5 px-5 font-mono text-[var(--text-muted)]">384</td>
-                      <td className="py-3.5 px-5 font-mono text-[var(--text-muted)]">Cosine</td>
-                      <td className="py-3.5 px-5 font-mono text-[var(--text-primary)] tabular-nums">
-                        {count.toLocaleString()}
-                      </td>
-                      <td className="py-3.5 px-5">
-                        <span className="inline-flex items-center gap-1.5 text-[11px] text-emerald-500 font-medium">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                          Ready
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-5 text-right">
-                        <Link
-                          to={`/explorer?collection=${encodeURIComponent(name)}`}
-                          className="text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] font-medium transition"
-                        >
-                          Explore →
-                        </Link>
-                      </td>
-                    </tr>
-                  )
-                })
-              )}
-            </tbody>
-          </table>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-7">
+          {/* Resource 1: API reference */}
+          <Link to="/docs" className="flex items-start gap-4 group">
+            <div className="w-12 h-12 rounded-[4px] border border-[#343434] bg-[#1c1c1c] group-hover:border-[#4a4a4a] flex items-center justify-center text-[#58a6ff] shrink-0">
+              <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.1" viewBox="0 0 24 24">
+                <polyline points="16 18 22 12 16 6" />
+                <polyline points="8 6 2 12 8 18" />
+              </svg>
+            </div>
+            <div>
+              <div className="text-[14px] font-bold text-white group-hover:text-[#58a6ff]">
+                API reference
+              </div>
+              <p className="text-[13px] text-[#cccccc] mt-1 leading-relaxed">
+                Get detailed info on API endpoints, examples and best practices.
+              </p>
+            </div>
+          </Link>
+
+          {/* Resource 2: Support Center */}
+          <Link to="/settings" className="flex items-start gap-4 group">
+            <div className="w-12 h-12 rounded-[4px] border border-[#343434] bg-[#1c1c1c] group-hover:border-[#4a4a4a] flex items-center justify-center text-[#58a6ff] shrink-0">
+              <svg width="19" height="19" fill="none" stroke="currentColor" strokeWidth="1.95" viewBox="0 0 24 24">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+              </svg>
+            </div>
+            <div>
+              <div className="text-[14px] font-bold text-white group-hover:text-[#58a6ff]">
+                Support Center
+              </div>
+              <p className="text-[13px] text-[#cccccc] mt-1 leading-relaxed">
+                Find answers and troubleshoot ideas.
+              </p>
+            </div>
+          </Link>
+
+          {/* Resource 3: Community Discord / Agent Memory */}
+          <Link to="/memory" className="flex items-start gap-4 group">
+            <div className="w-12 h-12 rounded-[4px] border border-[#343434] bg-[#1c1c1c] group-hover:border-[#4a4a4a] flex items-center justify-center text-[#58a6ff] shrink-0">
+              <svg width="19" height="19" fill="none" stroke="currentColor" strokeWidth="1.95" viewBox="0 0 24 24">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
+            </div>
+            <div>
+              <div className="text-[14px] font-bold text-white group-hover:text-[#58a6ff]">
+                Community Discord
+              </div>
+              <p className="text-[13px] text-[#cccccc] mt-1 leading-relaxed">
+                Join to ask questions, share insights, and collaborate with others.
+              </p>
+            </div>
+          </Link>
         </div>
       </div>
     </div>

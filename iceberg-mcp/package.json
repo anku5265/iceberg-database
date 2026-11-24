@@ -1,7 +1,7 @@
 {
   "name": "iceberg-mcp",
   "version": "1.0.0",
-  "description": "Official Model Context Protocol (MCP) Server for Iceberg DB — Connect Claude Code, Cursor, GitHub Copilot, Gemini & Windsurf to India-hosted (ap-south-1) RAG Assistants, Vector Search & 4-Tier Agent Memory",
+  "description": "Official Model Context Protocol (MCP) Server for Iceberg DB \u2014 Connect Claude Code, Cursor, GitHub Copilot, Gemini & Windsurf to India-hosted (ap-south-1) RAG Assistants, Vector Search & 4-Tier Agent Memory",
   "main": "index.js",
   "bin": {
     "iceberg-mcp": "bin/iceberg-mcp.js"

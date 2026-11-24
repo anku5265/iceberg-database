@@ -119,6 +119,7 @@ class Client:
         resolved_tag = integration or source_tag
         if resolved_tag:
             headers["X-Iceberg-Integration"] = str(resolved_tag)
+            headers["User-Agent"] = f"iceberg-python/1.0.0; source_tag={resolved_tag}"
 
         self._client = httpx.Client(
             headers=headers,

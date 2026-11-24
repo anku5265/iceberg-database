@@ -26,6 +26,34 @@ function getKey() {
   return ''
 }
 
+// Cross-subdomain session cookie (Vercel / Supabase / Pinecone style)
+// Allows https://icebergdb.in to immediately recognize an active session on https://dashboard.icebergdb.in
+export function setCrossDomainSessionCookie(email = '') {
+  if (typeof document === 'undefined') return
+  try {
+    const maxAge = 365 * 24 * 60 * 60 // 1 year
+    const cleanEmail = encodeURIComponent((email || '').trim().toLowerCase())
+    document.cookie = `ib_session=1; Domain=.icebergdb.in; Path=/; Max-Age=${maxAge}; SameSite=Lax; Secure`
+    document.cookie = `ib_session=1; Path=/; Max-Age=${maxAge}; SameSite=Lax`
+    if (cleanEmail) {
+      document.cookie = `ib_user=${cleanEmail}; Domain=.icebergdb.in; Path=/; Max-Age=${maxAge}; SameSite=Lax; Secure`
+      document.cookie = `ib_user=${cleanEmail}; Path=/; Max-Age=${maxAge}; SameSite=Lax`
+    }
+  } catch {}
+}
+
+export function clearCrossDomainSessionCookie() {
+  if (typeof document === 'undefined') return
+  try {
+    const expired = 'Thu, 01 Jan 1970 00:00:00 GMT'
+    ;['ib_session', 'ib_user'].forEach(name => {
+      document.cookie = `${name}=; Domain=.icebergdb.in; Path=/; Max-Age=0; Expires=${expired}; SameSite=Lax; Secure`
+      document.cookie = `${name}=; Domain=icebergdb.in; Path=/; Max-Age=0; Expires=${expired}; SameSite=Lax; Secure`
+      document.cookie = `${name}=; Path=/; Max-Age=0; Expires=${expired}; SameSite=Lax`
+    })
+  } catch {}
+}
+
 // Deterministic per-account tenant namespace prefix (Pinecone / Supabase style multi-tenant isolation)
 export function getTenantPrefix() {
   try {
@@ -139,7 +167,33 @@ export function trackFounderEvent(eventType, details = {}) {
 }
 
 export const api = {
-  // Collections (Strictly isolated per user account)
+  // Collections (Strictly isolated per user account + synchronously cached to prevent 1s UI flashes)
+  hasLoadedCollectionsCache() {
+    try {
+      const prefix = getTenantPrefix()
+      return localStorage.getItem(`iceberg_collections_${prefix}`) !== null
+    } catch {
+      return false
+    }
+  },
+  getCachedCollections() {
+    try {
+      const prefix = getTenantPrefix()
+      const list = JSON.parse(localStorage.getItem(`iceberg_collections_${prefix}`) || '[]')
+      return Array.isArray(list) ? list : []
+    } catch {
+      return []
+    }
+  },
+  getCachedCollectionDetails() {
+    try {
+      const prefix = getTenantPrefix()
+      const obj = JSON.parse(localStorage.getItem(`iceberg_col_details_${prefix}`) || '{}')
+      return obj && typeof obj === 'object' ? obj : {}
+    } catch {
+      return {}
+    }
+  },
   async getCollections() {
     const res = await request(`${BASE}/collections`, { headers: headers() })
     const prefix = getTenantPrefix()
@@ -155,12 +209,19 @@ export const api = {
           c => !c.startsWith('_memory_') && !c.startsWith('_assistant_') && !/^u_[0-9a-f]{10}__/.test(c)
         )
       }
+      try {
+        localStorage.setItem(`iceberg_collections_${prefix}`, JSON.stringify(res.collections))
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('iceberg-collections-updated'))
+        }
+      } catch {}
     }
     return res
   },
   async createCollection(name, description = '') {
     const user = JSON.parse(localStorage.getItem('iceberg_user') || '{}')
     trackFounderEvent('create_collection', { email: user.email || 'unknown', collection: name })
+    const prefix = getTenantPrefix()
     const scopedName = toScopedCollection(name)
     const res = await request(`${BASE}/collections`, {
       method: 'POST', headers: headers(),
@@ -169,21 +230,162 @@ export const api = {
     if (res && res.name) {
       res.name = fromScopedCollection(res.name)
     }
+    try {
+      const cached = this.getCachedCollections()
+      if (!cached.includes(name)) {
+        const next = [...cached, name]
+        localStorage.setItem(`iceberg_collections_${prefix}`, JSON.stringify(next))
+      }
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('iceberg-collections-updated'))
+      }
+    } catch {}
     return res
   },
   async deleteCollection(name) {
+    const prefix = getTenantPrefix()
     const scopedName = toScopedCollection(name)
-    return request(`${BASE}/collections/${scopedName}`, {
+    const res = await request(`${BASE}/collections/${scopedName}`, {
       method: 'DELETE', headers: headers()
     })
+    try {
+      const next = this.getCachedCollections().filter(c => c !== name)
+      localStorage.setItem(`iceberg_collections_${prefix}`, JSON.stringify(next))
+      const details = this.getCachedCollectionDetails()
+      delete details[name]
+      localStorage.setItem(`iceberg_col_details_${prefix}`, JSON.stringify(details))
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('iceberg-collections-updated'))
+      }
+    } catch {}
+    return res
   },
   async getCollection(name) {
+    const prefix = getTenantPrefix()
     const scopedName = toScopedCollection(name)
     const res = await request(`${BASE}/collections/${scopedName}`, { headers: headers() })
     if (res && res.name) {
       res.name = fromScopedCollection(res.name)
     }
+    if (res && typeof res === 'object') {
+      try {
+        const details = this.getCachedCollectionDetails()
+        details[name] = res
+        localStorage.setItem(`iceberg_col_details_${prefix}`, JSON.stringify(details))
+      } catch {}
+    }
     return res
+  },
+
+  // Backups (Backed by real /backup endpoints + tenant-isolated metadata)
+  async getBackups() {
+    const prefix = getTenantPrefix()
+    const storageKey = `iceberg_backups_${prefix}`
+    let localList = []
+    try {
+      localList = JSON.parse(localStorage.getItem(storageKey) || '[]')
+    } catch {}
+
+    try {
+      const res = await request(`${BASE}/backup`, { headers: headers() })
+      const remoteList = Array.isArray(res?.backups) ? res.backups : []
+      const mergedMap = new Map()
+      for (const b of localList) {
+        if (b && b.backup_id) mergedMap.set(b.backup_id, b)
+      }
+      for (const r of remoteList) {
+        const rawKey = r?.key || ''
+        if (!rawKey) continue
+        // Match only files belonging to this tenant prefix
+        const baseName = rawKey.split('/').pop().replace(/\.json$/, '')
+        if (!baseName.startsWith(prefix)) continue
+        const unscopedId = fromScopedCollection(baseName)
+        if (!mergedMap.has(unscopedId)) {
+          const parts = unscopedId.split('_')
+          const tsPart = parseInt(parts[parts.length - 1], 10)
+          const colName = !isNaN(tsPart) ? parts.slice(0, -1).join('_') : unscopedId
+          mergedMap.set(unscopedId, {
+            backup_id: unscopedId,
+            scoped_id: baseName,
+            collection: colName,
+            points_backed_up: r.points_backed_up ?? '—',
+            size_kb: r.size_kb ?? 1,
+            storage: res?.storage || 'r2',
+            created_at: !isNaN(tsPart) ? tsPart : Math.floor(Date.now() / 1000),
+          })
+        }
+      }
+      const finalList = Array.from(mergedMap.values()).sort((a, b) => (b.created_at || 0) - (a.created_at || 0))
+      localStorage.setItem(storageKey, JSON.stringify(finalList))
+      return { backups: finalList, storage: res?.storage || 'r2' }
+    } catch {
+      return { backups: localList, storage: 'r2' }
+    }
+  },
+
+  async createBackup(collection, customLabel = '') {
+    const prefix = getTenantPrefix()
+    const storageKey = `iceberg_backups_${prefix}`
+    const scopedName = toScopedCollection(collection)
+    let vecCount = 0
+    try {
+      const info = await this.getCollection(collection)
+      vecCount = info?.vector_count ?? 0
+    } catch {}
+
+    const res = await request(`${BASE}/backup/${encodeURIComponent(scopedName)}`, {
+      method: 'POST',
+      headers: headers(),
+    })
+
+    const ts = res?.created_at || Math.floor(Date.now() / 1000)
+    const unscopedBackupId = `${collection}_${ts}`
+    const scopedBackupId = res?.backup_id || `${scopedName}_${ts}`
+    const pointsCount = res?.points_backed_up ?? vecCount
+
+    const record = {
+      backup_id: unscopedBackupId,
+      scoped_id: scopedBackupId,
+      label: customLabel.trim() || unscopedBackupId,
+      collection,
+      points_backed_up: pointsCount,
+      storage: res?.storage || 'r2',
+      created_at: ts,
+    }
+
+    try {
+      const existing = JSON.parse(localStorage.getItem(storageKey) || '[]').filter(
+        x => x.backup_id !== unscopedBackupId
+      )
+      existing.unshift(record)
+      localStorage.setItem(storageKey, JSON.stringify(existing))
+    } catch {}
+
+    return record
+  },
+
+  async restoreBackup(collection, backupRecord) {
+    const scopedName = toScopedCollection(collection)
+    const scopedId = backupRecord?.scoped_id || toScopedCollection(backupRecord?.backup_id || '')
+    return request(
+      `${BASE}/backup/${encodeURIComponent(scopedName)}/restore/${encodeURIComponent(scopedId)}`,
+      {
+        method: 'POST',
+        headers: headers(),
+      }
+    )
+  },
+
+  async deleteBackup(backupId) {
+    const prefix = getTenantPrefix()
+    const storageKey = `iceberg_backups_${prefix}`
+    try {
+      const existing = JSON.parse(localStorage.getItem(storageKey) || '[]').filter(
+        x => x.backup_id !== backupId
+      )
+      localStorage.setItem(storageKey, JSON.stringify(existing))
+    } catch {}
+    return { deleted: true }
   },
 
   // Documents
@@ -229,6 +431,17 @@ export const api = {
   },
 
   // Assistants (Tenant-isolated + backed by real Qdrant collections & backend /assistant)
+  getCachedAssistants() {
+    try {
+      const prefix = getTenantPrefix()
+      const storageKey = `iceberg_assistants_${prefix}`
+      const list = JSON.parse(localStorage.getItem(storageKey) || '[]')
+      return Array.isArray(list) ? list : []
+    } catch {
+      return []
+    }
+  },
+
   async getAssistants() {
     const prefix = getTenantPrefix()
     const storageKey = `iceberg_assistants_${prefix}`
@@ -258,6 +471,9 @@ export const api = {
       }
       const finalList = Array.from(mergedMap.values())
       localStorage.setItem(storageKey, JSON.stringify(finalList))
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('iceberg-assistants-updated'))
+      }
       return { assistants: finalList }
     } catch {
       return { assistants: localList }
@@ -275,7 +491,7 @@ export const api = {
         body: JSON.stringify({
           name: payload.name,
           description: payload.description || '',
-          greeting: payload.greeting || 'Hi! How can I help you today?',
+          greeting: payload.greeting || 'Namaskar! How can I help you?',
           llm_provider: payload.llm_provider === 'iceberg_fast' ? 'openai' : payload.llm_provider,
           llm_api_key: payload.llm_api_key || '',
           llm_model: payload.llm_model || 'all-MiniLM-L6-v2',
@@ -295,7 +511,7 @@ export const api = {
       id: asstId,
       name: payload.name.trim(),
       description: payload.description || `${payload.llm_provider} (${payload.llm_model})`,
-      greeting: payload.greeting || 'Hi! How can I help you today?',
+      greeting: payload.greeting || 'Namaskar! How can I help you?',
       llm_provider: payload.llm_provider || 'iceberg_fast',
       llm_model: payload.llm_model || 'all-MiniLM-L6-v2',
       llm_api_key: payload.llm_api_key || '',
@@ -310,9 +526,34 @@ export const api = {
       const existing = JSON.parse(localStorage.getItem(storageKey) || '[]').filter(x => x.id !== asstId)
       existing.unshift(record)
       localStorage.setItem(storageKey, JSON.stringify(existing))
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('iceberg-assistants-updated'))
+      }
     } catch {}
 
     return record
+  },
+
+  async updateAssistant(asstId, updates) {
+    const prefix = getTenantPrefix()
+    const storageKey = `iceberg_assistants_${prefix}`
+    let updatedRecord = null
+    try {
+      const existing = JSON.parse(localStorage.getItem(storageKey) || '[]')
+      const next = existing.map(a => {
+        if (a.id === asstId) {
+          updatedRecord = { ...a, ...updates }
+          localStorage.setItem(`iceberg_asst_meta_${asstId}`, JSON.stringify(updatedRecord))
+          return updatedRecord
+        }
+        return a
+      })
+      localStorage.setItem(storageKey, JSON.stringify(next))
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('iceberg-assistants-updated'))
+      }
+    } catch {}
+    return updatedRecord
   },
 
   async deleteAssistant(asstId, deleteCollectionAlso = false, collectionName = '') {
@@ -322,6 +563,9 @@ export const api = {
       const existing = JSON.parse(localStorage.getItem(storageKey) || '[]').filter(x => x.id !== asstId)
       localStorage.setItem(storageKey, JSON.stringify(existing))
       localStorage.removeItem(`iceberg_asst_meta_${asstId}`)
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('iceberg-assistants-updated'))
+      }
     } catch {}
     await request(`${BASE}/assistant/${asstId}`, { method: 'DELETE', headers: headers() }).catch(() => {})
     if (deleteCollectionAlso && collectionName && collectionName.startsWith('asst_')) {
@@ -368,15 +612,52 @@ export const api = {
   },
 
   // Usage
-  async getLogs(limit = 50) {
-    const data = await request(`${BASE}/usage/logs?limit=${limit}`, { headers: headers() })
-    if (data && Array.isArray(data.logs)) {
-      data.logs = data.logs.map(l => ({
-        ...l,
-        collection: l.collection ? fromScopedCollection(l.collection) : l.collection
-      }))
+  async getLogs(limit = 1000) {
+    const prefix = getTenantPrefix()
+    const storageKey = `iceberg_audit_logs_${prefix}`
+    let cachedLogs = []
+    try {
+      cachedLogs = JSON.parse(localStorage.getItem(storageKey) || '[]')
+    } catch {}
+
+    try {
+      const data = await request(`${BASE}/usage/logs?limit=${limit}`, { headers: headers() })
+      const remoteLogs = Array.isArray(data?.logs)
+        ? data.logs
+            .filter(l => {
+              const col = l.collection || ''
+              if (col === 'ankush_bot' || col === '_memory_ankush_bot') return false
+              if (/^u_[0-9a-f]{10}__/.test(col) && prefix && !col.startsWith(prefix)) return false
+              return true
+            })
+            .map(l => ({
+              ...l,
+              collection: l.collection ? fromScopedCollection(l.collection) : l.collection
+            }))
+        : []
+
+      const mergedMap = new Map()
+      for (const item of [...remoteLogs, ...cachedLogs]) {
+        if (!item) continue
+        const dedupKey = item.id
+          ? `id_${item.id}`
+          : `${item.action}_${item.collection}_${item.created_at}_${item.detail || ''}`
+        if (!mergedMap.has(dedupKey)) {
+          mergedMap.set(dedupKey, item)
+        }
+      }
+      const mergedList = Array.from(mergedMap.values())
+        .sort((a, b) => (b.created_at || 0) - (a.created_at || 0))
+        .slice(0, 5000)
+
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(mergedList))
+      } catch {}
+
+      return { logs: mergedList, total: mergedList.length }
+    } catch {
+      return { logs: cachedLogs, total: cachedLogs.length }
     }
-    return data
   },
   async getStats() {
     return request(`${BASE}/usage/stats`, { headers: headers() })

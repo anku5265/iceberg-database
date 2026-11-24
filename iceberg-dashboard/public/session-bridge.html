@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <script>
+    (function () {
+      try {
+        var key = localStorage.getItem('iceberg_api_key');
+        if (key && key.trim()) {
+          document.cookie = 'ib_session=1; Domain=.icebergdb.in; Path=/; Max-Age=31536000; SameSite=Lax; Secure';
+          window.parent.postMessage({ type: 'ICEBERG_SESSION_STATUS', loggedIn: true }, '*');
+        } else {
+          window.parent.postMessage({ type: 'ICEBERG_SESSION_STATUS', loggedIn: false }, '*');
+        }
+      } catch (e) {}
+    })();
+  </script>
+</head>
+<body></body>
+</html>

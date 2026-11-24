@@ -10,6 +10,7 @@ package iceberg
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -19,12 +20,44 @@ import (
 	"path/filepath"
 )
 
-const DefaultBaseURL = "https://iceberg-backend-hrg9.onrender.com"
+const DefaultBaseURL = "https://api.icebergdb.in"
+
+const (
+	Aws   = "aws"
+	Gcp   = "gcp"
+	Azure = "azure"
+)
+
+type NewClientParams struct {
+	ApiKey    string
+	BaseURL   string
+	SourceTag string
+}
+
+type CreateIndexForModelEmbed struct {
+	Model    string                 `json:"model"`
+	FieldMap map[string]interface{} `json:"field_map,omitempty"`
+}
+
+type CreateIndexForModelRequest struct {
+	Name   string                   `json:"name"`
+	Cloud  string                   `json:"cloud,omitempty"`
+	Region string                   `json:"region,omitempty"`
+	Embed  CreateIndexForModelEmbed `json:"embed,omitempty"`
+}
+
+type IndexModel struct {
+	Name   string `json:"name"`
+	Cloud  string `json:"cloud"`
+	Region string `json:"region"`
+	Model  string `json:"model"`
+}
 
 type Client struct {
-	APIKey  string
-	BaseURL string
-	http    *http.Client
+	APIKey    string
+	BaseURL   string
+	SourceTag string
+	http      *http.Client
 }
 
 func New(apiKey string) *Client {
@@ -33,6 +66,17 @@ func New(apiKey string) *Client {
 
 func NewWithURL(apiKey, baseURL string) *Client {
 	return &Client{APIKey: apiKey, BaseURL: baseURL, http: &http.Client{}}
+}
+
+func NewClient(params NewClientParams) (*Client, error) {
+	if params.ApiKey == "" {
+		return nil, fmt.Errorf("iceberg: ApiKey is required")
+	}
+	base := params.BaseURL
+	if base == "" {
+		base = DefaultBaseURL
+	}
+	return &Client{APIKey: params.ApiKey, BaseURL: base, SourceTag: params.SourceTag, http: &http.Client{}}, nil
 }
 
 type SearchResult struct {
@@ -62,6 +106,10 @@ func (c *Client) do(method, path string, body interface{}) ([]byte, error) {
 		return nil, err
 	}
 	req.Header.Set("X-API-Key", c.APIKey)
+	if c.SourceTag != "" {
+		req.Header.Set("X-Iceberg-Integration", c.SourceTag)
+		req.Header.Set("User-Agent", "iceberg-go/1.0.0; source_tag="+c.SourceTag)
+	}
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
 	}
@@ -81,6 +129,38 @@ func (c *Client) do(method, path string, body interface{}) ([]byte, error) {
 func (c *Client) CreateCollection(name string) error {
 	_, err := c.do("POST", "/collections", map[string]string{"name": name})
 	return err
+}
+
+// CreateIndexForModel creates an integrated-model collection on Iceberg DB.
+func (c *Client) CreateIndexForModel(ctx context.Context, req *CreateIndexForModelRequest) (*IndexModel, error) {
+	_ = ctx
+	if req == nil || req.Name == "" {
+		return nil, fmt.Errorf("iceberg: index Name is required")
+	}
+	modelName := req.Embed.Model
+	if modelName == "" {
+		modelName = "all-MiniLM-L6-v2"
+	}
+	cloud := req.Cloud
+	if cloud == "" {
+		cloud = Aws
+	}
+	region := req.Region
+	if region == "" {
+		region = "ap-south-1"
+	}
+	desc := fmt.Sprintf("Integrated model index (%s, %s/%s)", modelName, cloud, region)
+	_, err := c.do("POST", "/collections", map[string]string{
+		"name":        req.Name,
+		"description": desc,
+	})
+	idx := &IndexModel{
+		Name:   req.Name,
+		Cloud:  cloud,
+		Region: region,
+		Model:  modelName,
+	}
+	return idx, err
 }
 
 // DeleteCollection deletes a collection.
@@ -119,6 +199,10 @@ func (c *Client) IndexTextWithNamespace(collection, text, source, namespace stri
 	w.Close()
 	req, _ := http.NewRequest("POST", c.BaseURL+"/documents/text", &buf)
 	req.Header.Set("X-API-Key", c.APIKey)
+	if c.SourceTag != "" {
+		req.Header.Set("X-Iceberg-Integration", c.SourceTag)
+		req.Header.Set("User-Agent", "iceberg-go/1.0.0; source_tag="+c.SourceTag)
+	}
 	req.Header.Set("Content-Type", w.FormDataContentType())
 	resp, err := c.http.Do(req)
 	if err != nil {
@@ -147,6 +231,10 @@ func (c *Client) Upload(collection, filePath string) (int, error) {
 	w.Close()
 	req, _ := http.NewRequest("POST", c.BaseURL+"/documents/upload", &buf)
 	req.Header.Set("X-API-Key", c.APIKey)
+	if c.SourceTag != "" {
+		req.Header.Set("X-Iceberg-Integration", c.SourceTag)
+		req.Header.Set("User-Agent", "iceberg-go/1.0.0; source_tag="+c.SourceTag)
+	}
 	req.Header.Set("Content-Type", w.FormDataContentType())
 	resp, err := c.http.Do(req)
 	if err != nil {
@@ -201,8 +289,8 @@ func (c *Client) Remember(agentID, content, memType string) error {
 // Recall searches agent memory.
 func (c *Client) Recall(agentID, query string, topK int) ([]SearchResult, error) {
 	data, err := c.do("POST", "/memory/"+agentID+"/recall", map[string]interface{}{
-		"query":  query,
-		"top_k":  topK,
+		"query": query,
+		"top_k": topK,
 	})
 	if err != nil {
 		return nil, err

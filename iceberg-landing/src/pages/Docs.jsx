@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 import { Navbar } from '../components/Navbar'
 import { CodeBlock } from '../components/CodeBlock'
 import Footer from '../components/Footer'
@@ -223,50 +224,50 @@ for r in results:
   },
   python: {
     title: 'Python SDK',
-    desc: 'pip install icebergdb — Official package on PyPI (https://pypi.org/project/icebergdb/)',
+    desc: 'pip install icebergdb -- Official package on PyPI (https://pypi.org/project/icebergdb/)',
     sections: [
       { heading: 'Install from PyPI', code: `pip install icebergdb`, lang: 'bash' },
-      { heading: 'End-to-End Example', code: `from iceberg import Client\n\nclient = Client(api_key="ib_your_key")\n\n# 1. Collections & Indexing\nclient.create_collection("my_docs")\nclient.index_text("my_docs", "Our return policy allows 30 day returns.", source="catalog")\nclient.upload("my_docs", "handbook.pdf")\n\n# 2. Hybrid RRF Search (Dense 384d + Okapi BM25)\nresults = client.search("my_docs", "can I return my order?", search_type="hybrid", top_k=5)\nfor r in results:\n    print(f"{r.score:.3f} — {r.text}")\n\n# 3. 4-Tier Agent Memory\nclient.remember("agent_001", "User prefers dark mode", memory_type="long_term")\nmemories = client.recall("agent_001", "what does user prefer?", top_k=3)`, lang: 'python' },
+      { heading: 'End-to-End Example (v1.0.0)', code: `from iceberg import Iceberg\n\nclient = Iceberg(api_key="ib_your_key", source_tag="my_app")\n\n# 1. Collections & Indexing\nclient.create_collection("my_docs")\nclient.index_text("my_docs", "Our return policy allows 30 day returns.", source="catalog")\nclient.upload("my_docs", "handbook.pdf")\n\n# 2. Hybrid RRF Search (Dense 384d + Okapi BM25)\nresults = client.search("my_docs", "can I return my order?", search_type="hybrid", top_k=5)\nfor r in results:\n    print(f"{r.score:.3f} -- {r.text}")\n\n# 3. 4-Tier Agent Memory\nclient.remember("agent_001", "User prefers dark mode", memory_type="long_term")\nmemories = client.recall("agent_001", "what does user prefer?", top_k=3)`, lang: 'python' },
     ]
   },
   javascript: {
     title: 'JavaScript / TypeScript SDK',
-    desc: 'npm install icebergdb — Official zero-dependency client for Node.js, Next.js, Edge Runtime, Deno & Bun.',
+    desc: 'npm install icebergdb -- Official zero-dependency client for Node.js, Next.js, Edge Runtime, Deno & Bun.',
     sections: [
       { heading: 'Install from npm', code: `npm install icebergdb`, lang: 'bash' },
-      { heading: 'TypeScript / ESM Usage', code: `import { Client } from 'icebergdb'\n\nconst client = new Client({ apiKey: process.env.ICEBERG_API_KEY || 'ib_your_key' })\n\n// 1. Create collection & index raw text\nawait client.createCollection('my_docs')\nawait client.indexText('my_docs', 'Our return policy allows 30 day returns.')\n\n// 2. Hybrid RRF Search\nconst results = await client.search('my_docs', 'return order', {\n  topK: 5,\n  searchType: 'hybrid',\n  alpha: 0.5,\n})\nresults.forEach(r => console.log(r.score, r.text))`, lang: 'javascript' },
+      { heading: 'TypeScript / ESM Usage (v1.0.0)', code: `import { Iceberg } from 'icebergdb'\n\nconst client = new Iceberg({\n  apiKey: process.env.ICEBERG_API_KEY || 'ib_your_key',\n  sourceTag: 'my_app',\n})\n\n// 1. Create collection & index raw text\nawait client.createCollection('my_docs')\nawait client.indexText('my_docs', 'Our return policy allows 30 day returns.')\n\n// 2. Hybrid RRF Search\nconst results = await client.search('my_docs', 'return order', {\n  topK: 5,\n  searchType: 'hybrid',\n  alpha: 0.5,\n})\nresults.forEach(r => console.log(r.score, r.text))`, lang: 'javascript' },
     ]
   },
   rust: {
     title: 'Rust SDK',
-    desc: 'cargo add icebergdb — Official async Tokio/Reqwest client on Crates.io (https://crates.io/crates/icebergdb)',
+    desc: 'cargo add icebergdb -- Official async Tokio/Reqwest client on Crates.io (https://crates.io/crates/icebergdb)',
     sections: [
       { heading: 'Install from Crates.io', code: `cargo add icebergdb`, lang: 'bash' },
-      { heading: 'Usage', code: `use icebergdb::Client;\n\n#[tokio::main]\nasync fn main() -> Result<(), Box<dyn std::error::Error>> {\n    let client = Client::new("ib_your_key");\n\n    // Create & index\n    client.create_collection("my_docs").await?;\n    client.index_text("my_docs", "Our return policy allows 30 day returns.", None).await?;\n\n    // Hybrid RRF Search\n    let res = client.search("my_docs", "return order", 5).await?;\n    for r in res.results {\n        println!("{:.4} — {}", r.score, r.text);\n    }\n    Ok(())\n}`, lang: 'rust' },
+      { heading: 'Usage (v1.0.0)', code: `use icebergdb::Iceberg;\n\n#[tokio::main]\nasync fn main() -> Result<(), Box<dyn std::error::Error>> {\n    let client = Iceberg::new("ib_your_key").with_source_tag("my_app");\n\n    // Create & index\n    client.create_collection("my_docs", None).await?;\n    client.index_text("my_docs", "Our return policy allows 30 day returns.", None).await?;\n\n    // Hybrid RRF Search\n    let res = client.search("my_docs", "return order", 5).await?;\n    for r in res {\n        println!("{:.4} -- {}", r.score, r.text);\n    }\n    Ok(())\n}`, lang: 'rust' },
     ]
   },
   go: {
     title: 'Go SDK',
-    desc: 'go get github.com/anku5265/iceberg-database/iceberg-sdk-go — Official Go module',
+    desc: 'go get github.com/anku5265/iceberg-database/iceberg-sdk-go -- Official Go module',
     sections: [
       { heading: 'Install Go Module', code: `go get github.com/anku5265/iceberg-database/iceberg-sdk-go`, lang: 'bash' },
-      { heading: 'Usage', code: `package main\n\nimport (\n    "fmt"\n    iceberg "github.com/anku5265/iceberg-database/iceberg-sdk-go"\n)\n\nfunc main() {\n    client := iceberg.New("ib_your_key")\n\n    // Create & index\n    _ = client.CreateCollection("my_docs")\n    _ = client.IndexText("my_docs", "Our return policy allows 30 day returns.", "docs")\n\n    // Hybrid RRF Search\n    res, _ := client.Search("my_docs", "return order", 5)\n    for _, r := range res.Results {\n        fmt.Printf("%.4f — %s\\n", r.Score, r.Text)\n    }\n}`, lang: 'go' },
+      { heading: 'Usage (v1.0.0)', code: `package main\n\nimport (\n    "fmt"\n    iceberg "github.com/anku5265/iceberg-database/iceberg-sdk-go"\n)\n\nfunc main() {\n    client, _ := iceberg.NewClient(iceberg.NewClientParams{\n        ApiKey:    "ib_your_key",\n        SourceTag: "my_app",\n    })\n\n    // Create & index\n    _ = client.CreateCollection("my_docs")\n    _, _ = client.IndexText("my_docs", "Our return policy allows 30 day returns.", "docs")\n\n    // Hybrid RRF Search\n    res, _ := client.Search("my_docs", "return order", 5)\n    for _, r := range res.Results {\n        fmt.Printf("%.4f -- %s\\n", r.Score, r.Text)\n    }\n}`, lang: 'go' },
     ]
   },
   dotnet: {
     title: '.NET / C# SDK',
-    desc: 'dotnet add package IcebergDb — Official NuGet package for .NET 8.0+',
+    desc: 'dotnet add package IcebergDb -- Official NuGet package for .NET 8.0+',
     sections: [
       { heading: 'Install from NuGet', code: `dotnet add package IcebergDb`, lang: 'bash' },
-      { heading: 'Usage', code: `using IcebergDb;\n\nvar client = new IcebergClient("ib_your_key");\n\n// Create & index\nawait client.CreateCollectionAsync("my_docs");\nawait client.IndexTextAsync("my_docs", "Our return policy allows 30 day returns.");\n\n// Hybrid RRF Search\nvar results = await client.SearchAsync("my_docs", "return order", topK: 5);\nforeach (var r in results.Results)\n{\n    Console.WriteLine($"{r.Score:F4} — {r.Text}");\n}`, lang: 'csharp' },
+      { heading: 'Usage (v1.0.0)', code: `using Iceberg;\n\nvar client = new IcebergClient(\n    apiKey: "ib_your_key",\n    sourceTag: "my_app"\n);\n\n// Create & index\nawait client.CreateCollectionAsync("my_docs");\nawait client.IndexTextAsync("my_docs", "Our return policy allows 30 day returns.");\n\n// Hybrid RRF Search\nvar results = await client.SearchAsync("my_docs", "return order", topK: 5);\nforeach (var r in results)\n{\n    Console.WriteLine($"{r.Score:F4} -- {r.Text}");\n}`, lang: 'csharp' },
     ]
   },
   java: {
     title: 'Java SDK',
-    desc: 'io.icebergdb:iceberg-sdk:1.0.0 — Official Java 17+ HTTP client for Spring Boot & enterprise JVM stacks.',
+    desc: 'io.icebergdb:iceberg-sdk:1.0.0 -- Official Java 17+ HTTP client for Spring Boot & enterprise JVM stacks.',
     sections: [
       { heading: 'Maven Dependency (pom.xml)', code: `<dependency>\n  <groupId>io.icebergdb</groupId>\n  <artifactId>iceberg-sdk</artifactId>\n  <version>1.0.0</version>\n</dependency>`, lang: 'xml' },
-      { heading: 'Java Usage', code: `import in.iceberg.Client;\nimport java.util.Map;\n\npublic class Example {\n    public static void main(String[] args) throws Exception {\n        Client client = new Client("ib_your_key");\n\n        // Create & index\n        client.createCollection("my_docs");\n        client.indexText("my_docs", "Our return policy allows 30 day returns.", "docs");\n\n        // Hybrid RRF Search\n        Map<String, Object> results = client.search("my_docs", "return order", 5, "hybrid");\n        System.out.println(results);\n    }\n}`, lang: 'java' },
+      { heading: 'Java Usage (v1.0.0)', code: `import in.iceberg.Iceberg;\nimport java.util.Map;\n\npublic class Example {\n    public static void main(String[] args) throws Exception {\n        Iceberg client = new Iceberg.Builder("ib_your_key")\n                .withSourceTag("my_app")\n                .build();\n\n        // Create & index\n        client.createCollection("my_docs");\n        client.indexText("my_docs", "Our return policy allows 30 day returns.", "docs");\n\n        // Hybrid RRF Search\n        Map<String, Object> results = client.search("my_docs", "return order", 5, "hybrid");\n        System.out.println(results);\n    }\n}`, lang: 'java' },
     ]
   },
   mcp: {
@@ -275,12 +276,12 @@ for r in results:
     sections: [
       { heading: 'Quick Add to Claude Code', code: `claude mcp add icebergdb --env ICEBERG_API_KEY=ib_your_key -- npx -y iceberg-mcp`, lang: 'bash' },
       { heading: 'Cursor / Windsurf / Claude Desktop (mcp.json)', code: `{\n  "mcpServers": {\n    "icebergdb": {\n      "command": "npx",\n      "args": ["-y", "iceberg-mcp"],\n      "env": {\n        "ICEBERG_API_KEY": "ib_your_key",\n        "ICEBERG_API_URL": "https://api.icebergdb.in"\n      }\n    }\n  }\n}`, lang: 'json' },
-      { heading: 'Available MCP Tools', list: [
-        '**iceberg_remember** — Store long-term, episodic, short-term, or semantic memories from any AI coding session.',
-        '**iceberg_recall** — Semantically recall relevant memories across sessions.',
-        '**iceberg_index** — Index project documentation or code snippets into an Iceberg collection.',
-        '**iceberg_search** — Run hybrid BM25 + dense vector RRF search directly from your IDE agent.',
-        '**iceberg_list_collections** — Inspect all collections in your workspace.'
+      { heading: 'Available MCP Tools (16 Live Tools)', list: [
+        '**iceberg_list_collections / iceberg_create_collection / iceberg_collection_info / iceberg_delete_collection** -- Full collection lifecycle (`384d` default or custom `768d`..`3072d` with `float32`, `sq8`, or `binary` quantization).',
+        '**iceberg_upsert_vectors / iceberg_query_vectors / iceberg_delete_vectors** -- Custom-dimension vector CRUD and filtered queries across isolated namespaces.',
+        '**iceberg_index_text & iceberg_search** -- Server-side `384d` ONNX CPU ingestion (`Rs.0` cost) and hybrid BM25 + dense vector RRF search.',
+        '**iceberg_remember & iceberg_recall** -- Store and recall 4-tier cognitive agent memories (`short_term`, `episodic`, `long_term`, `semantic`).',
+        '**iceberg_create_assistant / iceberg_list_assistants / iceberg_upload_assistant_doc / iceberg_chat_assistant / iceberg_delete_assistant** -- Managed grounded RAG Assistants.'
       ] },
     ]
   },
@@ -318,9 +319,21 @@ function renderBold(text) {
 }
 
 export default function Docs() {
+  const location = useLocation()
   const [dark] = useState(true)
   const [active, setActive] = useState('quickstart')
   const [showAll, setShowAll] = useState(false)
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    const sec = params.get('section')
+    if (sec && CONTENT[sec]) {
+      setShowAll(false)
+      setActive(sec)
+    }
+    window.scrollTo(0, 0)
+  }, [location.search])
+
   const doc = CONTENT[active]
 
   const allKeys = NAV.flatMap(g => g.items.map(i => i.id))

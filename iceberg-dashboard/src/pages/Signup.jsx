@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import GoogleAuthButton from '../components/GoogleAuthButton'
 import LegalModal from '../components/LegalModal'
 import PasswordStrengthMeter, { validatePasswordStrength } from '../components/PasswordStrengthMeter'
-import { trackFounderEvent, deriveAccountKey } from '../lib/api'
+import { trackFounderEvent, deriveAccountKey, setCrossDomainSessionCookie } from '../lib/api'
 import { useTheme } from '../lib/theme'
 
 const BASE = import.meta.env.VITE_API_URL || 'https://api.icebergdb.in'
@@ -87,6 +87,7 @@ export default function Signup() {
           localStorage.setItem('iceberg_api_key', fullKey)
           localStorage.setItem('iceberg_api_key_prefix', adminKey?.key_prefix || fullKey.slice(0, 10))
           localStorage.setItem('iceberg_project_id', adminKey?.project_id || loginData.projects?.[0]?.id || '')
+          setCrossDomainSessionCookie(cleanEmail)
           await vaultPromise
           trackFounderEvent('login', { email: cleanEmail, user_id: loginData.user_id || '', via: 'signup_auto_login' })
           navigate('/')
@@ -108,6 +109,7 @@ export default function Signup() {
       localStorage.setItem('iceberg_api_key', data.api_key)
       localStorage.setItem('iceberg_api_key_prefix', (data.api_key || '').slice(0, 10))
       localStorage.setItem('iceberg_project_id', data.project_id)
+      setCrossDomainSessionCookie(data.email || cleanEmail)
 
       await vaultPromise
 

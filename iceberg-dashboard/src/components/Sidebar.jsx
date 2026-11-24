@@ -1,111 +1,516 @@
-import { NavLink } from 'react-router-dom'
-import IcebergLogo from './IcebergLogo'
-
-const groups = [
-  {
-    links: [
-      { to: '/', label: 'Overview', icon: <GridIcon /> },
-      { to: '/collections', label: 'Collections', icon: <DbIcon /> },
-      { to: '/explorer', label: 'Explorer', icon: <SearchIcon /> },
-    ]
-  },
-  {
-    label: 'AI',
-    links: [
-      { to: '/assistants', label: 'Assistants', icon: <BotIcon /> },
-      { to: '/memory', label: 'Memory', icon: <MemIcon /> },
-    ]
-  },
-  {
-    label: 'Manage',
-    links: [
-      { to: '/apikeys', label: 'API Keys', icon: <KeyIcon /> },
-      { to: '/logs', label: 'Logs', icon: <LogIcon /> },
-      { to: '/settings', label: 'Settings', icon: <AdminIcon /> },
-    ]
-  },
-]
+import { useState, useEffect } from 'react'
+import { NavLink, Link, useLocation, useNavigate } from 'react-router-dom'
+import { api } from '../lib/api'
 
 export default function Sidebar({ open = true, onCloseMobile }) {
-  return (
-    <aside className={`${open ? 'fixed inset-y-0 left-0 z-40 w-56 md:relative md:z-auto md:w-56 flex' : 'hidden md:flex md:w-[52px]'} shrink-0 h-full bg-[var(--bg-surface)] border-r border-[var(--border)] flex-col overflow-hidden transition-all duration-200`}>
+  const location = useLocation()
+  const navigate = useNavigate()
+  const path = location.pathname
 
-      {/* Logo — fixed h-12 (48px) so bottom border aligns 100% flush with Top Header Bar */}
-      <div className={`h-12 shrink-0 flex items-center border-b border-[var(--border)] ${open ? 'px-4' : 'justify-center'}`}>
-        {open ? (
-          <div className="flex items-center gap-2.5">
-            <IcebergLogo className="w-7 h-7 shrink-0" />
-            <span className="text-[var(--text-primary)] font-bold text-base tracking-tight">Iceberg</span>
-            <span className="text-[9px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-md border border-emerald-500/20 font-semibold uppercase tracking-wider">v1.0.0</span>
+  const isDbRoute =
+    path.startsWith('/database') ||
+    path.startsWith('/collections') ||
+    path.startsWith('/explorer') ||
+    path.startsWith('/backups')
+
+  const isAsstRoute = path.startsWith('/assistants')
+  const isSettingsRoute = path.startsWith('/settings')
+
+  const [dbExpanded, setDbExpanded] = useState(isDbRoute)
+  const [asstExpanded, setAsstExpanded] = useState(isAsstRoute)
+  const [settingsExpanded, setSettingsExpanded] = useState(isSettingsRoute)
+
+  const currentSettingsTab = (() => {
+    const t = new URLSearchParams(location.search).get('tab') || 'configuration'
+    if (t === 'general') return 'configuration'
+    return t
+  })()
+
+  // Live usage telemetry for the bottom USAGE box + assistant & index counts
+  const [vectorCount, setVectorCount] = useState(() => {
+    const details = api.getCachedCollectionDetails()
+    return Object.values(details).reduce((sum, info) => sum + (info?.vector_count || 0), 0)
+  })
+  const [queryCount, setQueryCount] = useState(0)
+  const [assistantCount, setAssistantCount] = useState(() => api.getCachedAssistants().length)
+  const [indexCount, setIndexCount] = useState(() => api.getCachedCollections().length)
+  const [partnerIntegrationCount, setPartnerIntegrationCount] = useState(() => {
+    try {
+      return Number(localStorage.getItem('ib_partner_integrations_count') || '0')
+    } catch {
+      return 0
+    }
+  })
+
+  useEffect(() => {
+    setDbExpanded(isDbRoute)
+    setAsstExpanded(isAsstRoute)
+    setSettingsExpanded(isSettingsRoute)
+  }, [isDbRoute, isAsstRoute, isSettingsRoute])
+
+  useEffect(() => {
+    const syncCachedCount = () => {
+      setAssistantCount(api.getCachedAssistants().length)
+    }
+    const syncCachedIndexes = () => {
+      setIndexCount(api.getCachedCollections().length)
+    }
+    const syncPartnerIntegrations = async () => {
+      try {
+        const key = localStorage.getItem('iceberg_api_key') || ''
+        if (!key) return
+        const base = import.meta.env.VITE_API_URL || 'https://api.icebergdb.in'
+        const res = await fetch(`${base}/partner-integrations`, { headers: { 'X-API-Key': key } })
+        if (res.ok) {
+          const data = await res.json()
+          const c = Array.isArray(data?.integrations) ? data.integrations.length : 0
+          localStorage.setItem('ib_partner_integrations_count', String(c))
+          setPartnerIntegrationCount(c)
+        }
+      } catch {}
+    }
+    syncPartnerIntegrations()
+    window.addEventListener('iceberg-assistants-updated', syncCachedCount)
+    window.addEventListener('iceberg-collections-updated', syncCachedIndexes)
+    window.addEventListener('iceberg-partner-integrations-updated', syncPartnerIntegrations)
+    return () => {
+      window.removeEventListener('iceberg-assistants-updated', syncCachedCount)
+      window.removeEventListener('iceberg-collections-updated', syncCachedIndexes)
+      window.removeEventListener('iceberg-partner-integrations-updated', syncPartnerIntegrations)
+    }
+  }, [])
+
+  useEffect(() => {
+    let mounted = true
+    const fetchUsage = async () => {
+      try {
+        api.getAssistants().then((res) => {
+          if (mounted && Array.isArray(res?.assistants)) {
+            setAssistantCount(res.assistants.length)
+          }
+        }).catch(() => {})
+
+        const colRes = await api.getCollections()
+        const cols = colRes?.collections || []
+        if (!mounted) return
+        setIndexCount(cols.length)
+        if (cols.length === 0) {
+          setVectorCount(0)
+          setQueryCount(0)
+          return
+        }
+        let totalVecs = 0
+        await Promise.all(
+          cols.map(async (c) => {
+            try {
+              const info = await api.getCollection(c)
+              totalVecs += info?.vector_count || 0
+            } catch {}
+          })
+        )
+        if (mounted) setVectorCount(totalVecs)
+
+        const statsRes = await api.getStats().catch(() => null)
+        if (mounted && statsRes) {
+          setQueryCount(statsRes.searches_today ?? 0)
+        }
+      } catch {}
+    }
+
+    fetchUsage()
+    const timer = setInterval(fetchUsage, 6000)
+    return () => {
+      mounted = false
+      clearInterval(timer)
+    }
+  }, [])
+
+  const rawStorageGb = (vectorCount * 1536) / (1024 * 1024 * 1024)
+  const displayStorage = rawStorageGb < 0.01 ? '0GB' : `${rawStorageGb.toFixed(2)}GB`
+  const vecPct = Math.min(100, Math.round((vectorCount / 100000) * 100))
+  const storagePct = Math.min(100, Math.round((rawStorageGb / 2) * 100))
+  const queryPct = Math.min(100, Math.round((queryCount / 2000) * 100))
+
+  const usageRows = isAsstRoute
+    ? [
+        { label: 'Storage', value: '0GB / 1GB', pct: 0, truncateLabel: false },
+        { label: 'Input Tokens', value: '0 / 1M', pct: 0, truncateLabel: false },
+        { label: 'Output Tokens', value: '0 / 300K', pct: 0, truncateLabel: false },
+        { label: 'Context Tokens', value: '0 / 500K', pct: 0, truncateLabel: true },
+        { label: 'Ingestion Units', value: '0 / 1K', pct: 0, truncateLabel: false },
+      ]
+    : [
+        { label: 'RUs', value: `${queryCount.toLocaleString()} / 1M`, pct: queryPct, truncateLabel: false },
+        { label: 'Storage', value: `${displayStorage} / 2GB`, pct: storagePct, truncateLabel: false },
+        { label: 'WUs', value: `${vectorCount.toLocaleString()} / 2M`, pct: vecPct, truncateLabel: false },
+      ]
+
+  const handleNavClick = () => {
+    if (onCloseMobile) onCloseMobile()
+  }
+
+  const topItemClass = (active) =>
+    `w-[212px] h-[33px] flex items-center gap-[13px] pl-[8px] pr-3 rounded-[2px] text-[13.5px] ${
+      active
+        ? 'bg-[var(--nav-active-bg)] text-[var(--accent)] font-semibold'
+        : 'text-[var(--text-primary)] hover:bg-[var(--bg-hover)] font-normal'
+    }`
+
+  const subItemClass = (active) =>
+    `w-[212px] h-[32px] flex items-center pl-[39px] pr-3 rounded-[2px] text-[13.5px] ${
+      active
+        ? 'bg-[var(--nav-active-bg)] text-[var(--accent)] font-semibold'
+        : 'text-[var(--text-primary)] hover:bg-[var(--bg-hover)] font-normal'
+    }`
+
+  return (
+    <aside
+      className={`${
+        open ? 'flex w-[244px]' : 'hidden'
+      } fixed md:static inset-y-0 left-0 z-30 md:z-auto bg-[var(--sidebar-bg)] border-r border-[var(--border)] flex-col justify-between shrink-0 select-none overflow-y-auto no-scrollbar`}
+    >
+      {/* ── Top Navigation Sections ── */}
+      <div className="pl-4 pr-3 pt-4 pb-2 space-y-4">
+        {/* PROJECT Section */}
+        <div>
+          <div className="mb-1.5 text-[11.5px] font-medium uppercase tracking-[0.06em] text-[var(--text-secondary)]">
+            PROJECT
           </div>
-        ) : (
-          <div title="Iceberg" className="flex items-center justify-center">
-            <IcebergLogo className="w-7 h-7 shrink-0" />
+
+          <nav className="space-y-0.5">
+            {/* Overview */}
+            <NavLink
+              to="/"
+              end
+              onClick={handleNavClick}
+              className={({ isActive }) => topItemClass(isActive)}
+            >
+              <HomeIcon />
+              <span>Overview</span>
+            </NavLink>
+
+            {/* Database */}
+            <div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!isDbRoute) {
+                    setDbExpanded(true)
+                    navigate('/database/quickstart')
+                    handleNavClick()
+                  } else {
+                    setDbExpanded((v) => !v)
+                  }
+                }}
+                className={topItemClass(false)}
+              >
+                <ServerStackIcon />
+                <span>Database</span>
+              </button>
+
+              {dbExpanded && (
+                <div className="relative mt-0.5 space-y-0.5">
+                  <div className="pointer-events-none absolute left-[15px] top-0 bottom-0 w-px bg-[var(--border)] z-10" />
+                  <NavLink
+                    to="/database/quickstart"
+                    onClick={handleNavClick}
+                    className={({ isActive }) => subItemClass(isActive)}
+                  >
+                    Quickstart
+                  </NavLink>
+                  <NavLink
+                    to="/collections"
+                    onClick={handleNavClick}
+                    className={({ isActive }) => subItemClass(isActive)}
+                  >
+                    {indexCount > 0 ? `Indexes (${indexCount})` : 'Indexes'}
+                  </NavLink>
+                  <NavLink
+                    to="/explorer"
+                    onClick={handleNavClick}
+                    className={({ isActive }) => subItemClass(isActive)}
+                  >
+                    Query Explorer
+                  </NavLink>
+                  <NavLink
+                    to="/backups"
+                    onClick={handleNavClick}
+                    className={({ isActive }) => subItemClass(isActive)}
+                  >
+                    Backups
+                  </NavLink>
+                </div>
+              )}
+            </div>
+
+            {/* Assistant */}
+            <div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!isAsstRoute) {
+                    setAsstExpanded(true)
+                    navigate('/assistants/quickstart')
+                    handleNavClick()
+                  } else {
+                    setAsstExpanded((v) => !v)
+                  }
+                }}
+                className={topItemClass(false)}
+              >
+                <LightbulbIcon />
+                <span>Assistant</span>
+              </button>
+
+              {asstExpanded && (
+                <div className="relative mt-0.5 space-y-0.5">
+                  <div className="pointer-events-none absolute left-[15px] top-0 bottom-0 w-px bg-[var(--border)] z-10" />
+                  <NavLink
+                    to="/assistants/quickstart"
+                    onClick={handleNavClick}
+                    className={({ isActive }) => subItemClass(isActive)}
+                  >
+                    Quickstart
+                  </NavLink>
+                  <NavLink
+                    to="/assistants"
+                    end
+                    onClick={handleNavClick}
+                    className={({ isActive }) => subItemClass(isActive)}
+                  >
+                    {assistantCount > 0 ? `Assistants (${assistantCount})` : 'Assistants'}
+                  </NavLink>
+                </div>
+              )}
+            </div>
+
+            {/* Memory */}
+            <NavLink
+              to="/memory"
+              onClick={handleNavClick}
+              className={({ isActive }) => topItemClass(isActive)}
+            >
+              <MemoryIcon />
+              <span>Memory</span>
+            </NavLink>
+          </nav>
+        </div>
+
+        {/* MANAGE Section */}
+        <div>
+          <div className="mb-1.5 text-[11.5px] font-medium uppercase tracking-[0.06em] text-[var(--text-secondary)]">
+            MANAGE
           </div>
-        )}
+
+          <nav className="space-y-0.5">
+            <NavLink
+              to="/apikeys"
+              onClick={handleNavClick}
+              className={({ isActive }) => topItemClass(isActive)}
+            >
+              <LockIcon />
+              <span>API keys</span>
+            </NavLink>
+
+            {(partnerIntegrationCount > 0 || path.startsWith('/integrations')) && (
+              <NavLink
+                to="/integrations"
+                onClick={handleNavClick}
+                className={({ isActive }) => topItemClass(isActive)}
+              >
+                <PlugIcon />
+                <span>Integrations</span>
+              </NavLink>
+            )}
+
+            <NavLink
+              to="/logs"
+              onClick={handleNavClick}
+              className={({ isActive }) => topItemClass(isActive)}
+            >
+              <LogsIcon />
+              <span>Logs</span>
+            </NavLink>
+
+            {/* Settings (expandable sub-menu) */}
+            <div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!isSettingsRoute) {
+                    setSettingsExpanded(true)
+                    navigate('/settings?tab=configuration')
+                    handleNavClick()
+                  } else {
+                    setSettingsExpanded((v) => !v)
+                  }
+                }}
+                className={topItemClass(false)}
+              >
+                <SettingsIcon />
+                <span>Settings</span>
+              </button>
+
+              {settingsExpanded && (
+                <div className="relative mt-0.5 space-y-0.5">
+                  <div className="pointer-events-none absolute left-[15px] top-0 bottom-0 w-px bg-[var(--border)] z-10" />
+                  {[
+                    { id: 'configuration', label: 'Configuration' },
+                    { id: 'access', label: 'Access' },
+                    { id: 'cmek', label: 'CMEK' },
+                    { id: 'storage', label: 'Storage integrations' },
+                    { id: 'network', label: 'Network' },
+                    { id: 'billing', label: 'Plans & billing' },
+                  ].map((item) => {
+                    const active = isSettingsRoute && currentSettingsTab === item.id
+                    return (
+                      <Link
+                        key={item.id}
+                        to={`/settings?tab=${item.id}`}
+                        onClick={handleNavClick}
+                        className={subItemClass(active)}
+                      >
+                        {item.label}
+                      </Link>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          </nav>
+        </div>
       </div>
 
-      {/* Nav */}
-      <nav className="flex-1 px-2 py-3 overflow-y-auto">
-        {groups.map((group, gi) => (
-          <div key={gi} className={gi > 0 ? 'mt-4' : ''}>
-            {group.label && open && (
-              <p className="section-label px-3 mb-1.5">{group.label}</p>
-            )}
-            <div className="space-y-px">
-              {group.links.map(l => (
-                <NavLink key={l.to} to={l.to} end={l.to === '/'} title={!open ? l.label : undefined} onClick={onCloseMobile}
-                  className={({ isActive }) =>
-                    `flex items-center gap-2.5 rounded-lg text-sm transition-all duration-100 ${open ? 'px-3 py-2' : 'justify-center py-2.5'} ${
-                      isActive
-                        ? 'bg-blue-600/10 text-blue-400 font-medium'
-                        : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]'
-                    }`
-                  }
-                >
-                  <span className="shrink-0 opacity-90">{l.icon}</span>
-                  {open && <span className="whitespace-nowrap">{l.label}</span>}
-                </NavLink>
-              ))}
-            </div>
-            {gi < groups.length - 1 && open && <div className="mt-3 h-px bg-[var(--border)]"/>}
+      {/* Bottom Usage Card (212px width) */}
+      <div className="pl-4 pr-3 pb-3.5 pt-1 mt-auto shrink-0">
+        <div className="w-[212px] rounded-[2px] border border-[var(--border)] bg-[var(--card-bg)] p-3.5">
+          {/* Header Row */}
+          <div className="flex items-center justify-between h-[24px] mb-[12px]">
+            <span className="text-[11.5px] font-semibold uppercase tracking-[0.05em] text-[var(--text-primary)] leading-none">
+              {isAsstRoute ? 'ASSISTANT USAGE' : 'DATABASE USAGE'}
+            </span>
+            <button
+              type="button"
+              className="w-7 h-7 -mr-1 rounded-[4px] hover:bg-[var(--bg-hover)] inline-flex items-center justify-center text-[var(--text-primary)] cursor-pointer"
+              title="Free Starter Plan quota (ap-south-1)"
+            >
+              <InfoCircleIcon size={17} />
+            </button>
           </div>
-        ))}
-      </nav>
+
+          {/* Metric Rows */}
+          <div className="space-y-[12px]">
+            {usageRows.map((row) => (
+              <div key={row.label}>
+                <div className="flex items-center justify-between mb-[6px] text-[13px] leading-[17px]">
+                  <span className="text-[var(--text-primary)] font-semibold inline-flex items-center gap-1.5 min-w-0">
+                    <span className={row.truncateLabel ? 'max-w-[86px] truncate' : ''}>
+                      {row.label}
+                    </span>
+                    <span className="text-[var(--text-primary)] shrink-0">
+                      <InfoCircleIcon size={14} />
+                    </span>
+                  </span>
+                  <span className="font-semibold text-[var(--text-primary)] tabular-nums shrink-0 ml-1.5">
+                    {row.value}
+                  </span>
+                </div>
+                <div className="h-[4px] w-full rounded-[1px] bg-[var(--bar-track)] overflow-hidden">
+                  <div
+                    className="h-full bg-[var(--accent)]"
+                    style={{ width: `${row.pct}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
     </aside>
   )
 }
 
-function GridIcon() {
-  return <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+function HomeIcon() {
+  return (
+    <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.9" viewBox="0 0 24 24" className="shrink-0">
+      <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1V9.5z" />
+    </svg>
+  )
 }
-function DbIcon() {
-  return <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.657 4.03 3 9 3s9-1.343 9-3V5"/><path d="M3 12c0 1.657 4.03 3 9 3s9-1.343 9-3"/></svg>
+
+function ServerStackIcon() {
+  return (
+    <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.9" viewBox="0 0 24 24" className="shrink-0">
+      <rect x="3" y="4" width="18" height="7" rx="1.5" />
+      <rect x="3" y="13" width="18" height="7" rx="1.5" />
+      <line x1="7" y1="7.5" x2="7.01" y2="7.5" strokeWidth="2.4" strokeLinecap="round" />
+      <line x1="7" y1="16.5" x2="7.01" y2="16.5" strokeWidth="2.4" strokeLinecap="round" />
+    </svg>
+  )
 }
-function SearchIcon() {
-  return <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+
+function LightbulbIcon() {
+  return (
+    <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.9" viewBox="0 0 24 24" className="shrink-0">
+      <path d="M9 18h6" />
+      <path d="M10 22h4" />
+      <path d="M12 2a7 7 0 0 0-4 12.75c.6.45 1 1.15 1 1.9V18h6v-1.35c0-.75.4-1.45 1-1.9A7 7 0 0 0 12 2z" />
+    </svg>
+  )
 }
-function KeyIcon() {
-  return <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><circle cx="7.5" cy="15.5" r="4.5"/><path d="m21 2-9.6 9.6M15 3l3 3"/></svg>
+
+function MemoryIcon() {
+  return (
+    <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.9" viewBox="0 0 24 24" className="shrink-0">
+      <rect x="6" y="6" width="12" height="12" rx="2" />
+      <path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4" />
+    </svg>
+  )
 }
-function LogIcon() {
-  return <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+
+function LockIcon() {
+  return (
+    <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.9" viewBox="0 0 24 24" className="shrink-0">
+      <rect x="4" y="11" width="16" height="10" rx="2" />
+      <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+    </svg>
+  )
 }
-function DocIcon() {
-  return <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+
+function PlugIcon() {
+  return (
+    <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.9" viewBox="0 0 24 24" className="shrink-0">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 3v4m6-4v4M7 7h10v4a5 5 0 0 1-5 5v5m-5-9h10" />
+    </svg>
+  )
 }
-function MemIcon() {
-  return <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z"/></svg>
+
+function LogsIcon() {
+  return (
+    <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.9" viewBox="0 0 24 24" className="shrink-0">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <polyline points="14 2 14 8 20 8" />
+      <line x1="8" y1="13" x2="16" y2="13" />
+      <line x1="8" y1="17" x2="13" y2="17" />
+    </svg>
+  )
 }
-function BotIcon() {
-  return <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M8.25 19.5V21M12 3v1.5m0 15V21m3.75-18v1.5m0 15V21M6.75 19.5h10.5a2.25 2.25 0 0 0 2.25-2.25V6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v10.5a2.25 2.25 0 0 0 2.25 2.25Zm3-11.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm3.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm-3.75 4.5a3 3 0 0 1 3 0"/></svg>
+
+function SettingsIcon() {
+  return (
+    <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.9" viewBox="0 0 24 24" className="shrink-0">
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+    </svg>
+  )
 }
-function AdminIcon() {
-  return <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z"/><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/></svg>
-}
-function LogoutIcon() {
-  return <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-}
-function ChevronIcon({ className }) {
-  return <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" className={className}><polyline points="18 15 12 9 6 15"/></svg>
+
+function InfoCircleIcon({ size = 14 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 20 20" fill="none" className="shrink-0">
+      <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="1.85" />
+      <rect x="9" y="5.4" width="2" height="2" rx="0.4" fill="currentColor" />
+      <rect x="9" y="9" width="2" height="5.6" rx="0.4" fill="currentColor" />
+    </svg>
+  )
 }

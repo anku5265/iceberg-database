@@ -45,20 +45,50 @@ import java.util.*;
  */
 public class Client {
 
-    public static final String DEFAULT_BASE_URL = "https://iceberg-backend-hrg9.onrender.com";
+    public static final String DEFAULT_BASE_URL = "https://api.icebergdb.in";
 
     private final String apiKey;
     private final String baseUrl;
+    private final String sourceTag;
     private final HttpClient http;
     private final ObjectMapper mapper;
 
+    public static class Builder {
+        private final String apiKey;
+        private String baseUrl = DEFAULT_BASE_URL;
+        private String sourceTag = null;
+
+        public Builder(String apiKey) {
+            this.apiKey = apiKey;
+        }
+
+        public Builder withBaseUrl(String baseUrl) {
+            this.baseUrl = baseUrl;
+            return this;
+        }
+
+        public Builder withSourceTag(String sourceTag) {
+            this.sourceTag = sourceTag;
+            return this;
+        }
+
+        public Client build() {
+            return new Client(apiKey, baseUrl, sourceTag);
+        }
+    }
+
     public Client(String apiKey) {
-        this(apiKey, DEFAULT_BASE_URL);
+        this(apiKey, DEFAULT_BASE_URL, null);
     }
 
     public Client(String apiKey, String baseUrl) {
+        this(apiKey, baseUrl, null);
+    }
+
+    public Client(String apiKey, String baseUrl, String sourceTag) {
         this.apiKey = apiKey;
         this.baseUrl = baseUrl.replaceAll("/$", "");
+        this.sourceTag = (sourceTag != null && !sourceTag.isBlank()) ? sourceTag.trim() : null;
         this.http = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(10))
                 .build();
@@ -75,6 +105,10 @@ public class Client {
                     .uri(URI.create(baseUrl + path))
                     .header("X-API-Key", apiKey)
                     .timeout(Duration.ofSeconds(30));
+            if (sourceTag != null) {
+                builder.header("X-Iceberg-Integration", sourceTag);
+                builder.header("User-Agent", "iceberg-java/1.0.0; source_tag=" + sourceTag);
+            }
 
             if ("GET".equals(method)) {
                 builder.GET();
@@ -127,13 +161,17 @@ public class Client {
 
             baos.write(("--" + boundary + "--\r\n").getBytes());
 
-            HttpRequest req = HttpRequest.newBuilder()
+            HttpRequest.Builder reqBuilder = HttpRequest.newBuilder()
                     .uri(URI.create(baseUrl + path))
                     .header("X-API-Key", apiKey)
                     .header("Content-Type", "multipart/form-data; boundary=" + boundary)
                     .timeout(Duration.ofSeconds(60))
-                    .POST(HttpRequest.BodyPublishers.ofByteArray(baos.toByteArray()))
-                    .build();
+                    .POST(HttpRequest.BodyPublishers.ofByteArray(baos.toByteArray()));
+            if (sourceTag != null) {
+                reqBuilder.header("X-Iceberg-Integration", sourceTag);
+                reqBuilder.header("User-Agent", "iceberg-java/1.0.0; source_tag=" + sourceTag);
+            }
+            HttpRequest req = reqBuilder.build();
 
             HttpResponse<String> resp = http.send(req, HttpResponse.BodyHandlers.ofString());
 

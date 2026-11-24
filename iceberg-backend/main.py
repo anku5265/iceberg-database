@@ -6,6 +6,7 @@ if sys.platform == "win32":
     except Exception:
         pass
 
+import re
 from collections import Counter
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -28,7 +29,10 @@ from routers import (
     backup,
     status,
     billing,
+    partner_integrations,
 )
+
+_SOURCE_TAG_UA_RE = re.compile(r"source_tag=([a-z0-9_:/.-]{1,64})")
 
 _INTEGRATION_COUNTER: Counter = Counter()
 _HTTP_REQUEST_COUNTER: Counter = Counter()
@@ -79,14 +83,20 @@ app.add_middleware(
 @app.middleware("http")
 async def track_integration_and_metrics(request: Request, call_next):
     integration = request.headers.get("X-Iceberg-Integration", "").strip()
+    if not integration:
+        ua = request.headers.get("User-Agent", "")
+        m = _SOURCE_TAG_UA_RE.search(ua)
+        if m:
+            integration = m.group(1)
     if integration:
         _INTEGRATION_COUNTER[integration[:64]] += 1
+        partner_integrations.record_integration_hit(integration[:64])
     _HTTP_REQUEST_COUNTER[request.method] += 1
     response = await call_next(request)
     if (
         request.method in ("POST", "PUT", "PATCH", "DELETE")
         and response.status_code < 400
-        and request.url.path.startswith(("/auth", "/projects", "/assistant", "/billing", "/waitlist"))
+        and request.url.path.startswith(("/auth", "/projects", "/assistant", "/billing", "/waitlist", "/partner-integrations"))
     ):
         from services.r2_persistence import r2_shield
         r2_shield.mark_sqlite_dirty()
@@ -108,6 +118,7 @@ app.include_router(assistant.router)
 app.include_router(backup.router)
 app.include_router(status.router)
 app.include_router(billing.router)
+app.include_router(partner_integrations.router)
 
 
 @app.api_route("/", methods=["GET", "HEAD"])

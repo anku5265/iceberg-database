@@ -26,6 +26,9 @@ dependencies = [
     "httpx>=0.27.0",
 ]
 
+[project.scripts]
+iceberg = "iceberg.cli:main"
+
 [project.urls]
 Homepage = "https://icebergdb.in"
 Documentation = "https://icebergdb.in/docs"

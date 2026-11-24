@@ -11,12 +11,13 @@ const NAV = [
       { id: 'cookbook', title: 'Practical Cookbook' },
       { id: 'authentication', title: 'Authentication' },
       { id: 'concepts', title: 'Core Concepts' },
+      { id: 'limits', title: 'Pricing & Rate Limits' },
     ]
   },
   {
     group: 'API Reference',
     items: [
-      { id: 'memory', title: 'Cognitive Memory (v1)' },
+      { id: 'memory', title: '4-Tier Agent Memory (v1.0.0)' },
       { id: 'collections', title: 'Collections' },
       { id: 'indexing', title: 'Indexing & Files' },
       { id: 'search', title: 'Hybrid Search' },
@@ -24,14 +25,15 @@ const NAV = [
     ]
   },
   {
-    group: 'Official SDKs (6)',
+    group: 'Official SDKs (v1.0.0)',
     items: [
       { id: 'python', title: 'Python (PyPI)' },
       { id: 'javascript', title: 'JavaScript / TS (npm)' },
       { id: 'go', title: 'Go SDK' },
       { id: 'rust', title: 'Rust Crate' },
       { id: 'java', title: 'Java / Spring' },
-      { id: 'dotnet', title: '.NET / C#' },
+      { id: 'dotnet', title: '.NET / C# (NuGet)' },
+      { id: 'mcp', title: 'MCP Server (Claude/Cursor)' },
       { id: 'frameworks', title: 'LangChain & LlamaIndex' },
       { id: 'rest', title: 'REST API & cURL' },
     ]
@@ -40,8 +42,8 @@ const NAV = [
 
 const CONTENT = {
   quickstart: {
-    title: 'Quickstart — Zero to AI Memory in 2 Minutes',
-    desc: 'Install the official SDK, store cognitive memories or vectors, and recall them with sub-10ms latency.',
+    title: 'Quickstart — Iceberg DB v1.0.0 in 2 Minutes',
+    desc: 'Install the official v1.0.0 SDK, index vectors with built-in 384d CPU embeddings, and run 1.95 ms p50 dense / 8.73 ms p50 hybrid RRF search.',
     sections: [
       {
         heading: '1. Sign up & get your free API key',
@@ -210,6 +212,31 @@ print(res["memories"][0]["text"])`,
     ]
   },
 
+  limits: {
+    title: 'Canonical Pricing, Rate Limits & Plan Quotas (v1.0.0)',
+    desc: 'Identical pricing and quota specification enforced across icebergdb.in, dashboard.icebergdb.in, and api.icebergdb.in.',
+    sections: [
+      {
+        heading: 'Canonical Plan Quotas & Rate Limits (INR & USD)',
+        list: [
+          '**Free Plan (₹0 / $0 • Forever free):** Up to **100,000 vectors** (384d), **1,000 / day** search queries, **1 GB storage**, **60 req/min** burst limit, unlimited collections, **1 project**, max file upload **10 MB**, never pauses.',
+          '**Starter Plan (₹799/mo / $10/mo • ₹7,990/yr ($100/yr)):** Up to **1,000,000 vectors** (384d), **20,000 / day** search queries, **5 GB storage**, **300 req/min** burst limit, unlimited collections, **5 projects**, max file upload **25 MB**, email support.',
+          '**Growth Plan (₹3,499/mo / $42/mo • ₹34,990/yr ($420/yr)):** Up to **5,000,000 vectors** (384d), **100,000 / day** search queries, **25 GB storage**, **1,000 req/min** burst limit, unlimited collections, **15 projects**, max file upload **50 MB**, priority support.',
+          '**Scale Plan (₹9,999/mo / $119/mo • ₹99,990/yr ($1,190/yr)):** Up to **20,000,000 vectors** (384d), **500,000 / day** search queries, **100 GB storage**, **3,000 req/min** burst limit, unlimited collections, **Unlimited projects**, max file upload **100 MB**, dedicated Slack & WhatsApp.',
+        ],
+      },
+      {
+        heading: 'Measured Engine Latency & Pay-As-You-Grow Overage',
+        list: [
+          '**Pure Dense Vector Lookup (384d Cosine HNSW):** 1.42 ms min • **1.95 ms median (p50)** • 3.80 ms p95.',
+          '**Hybrid RRF Search (Dense + Okapi BM25):** 6.40 ms min • **8.73 ms median (p50)** • 13.39 ms p95.',
+          '**Server-Side CPU Embedding (ONNX all-MiniLM-L6-v2):** **48.25 ms min** • **112.34 ms p50** ($0 external OpenAI key cost).',
+          '**Pay-As-You-Grow Overage:** ₹100 per 100K extra vectors and ₹50 per 50K extra queries.',
+        ],
+      },
+    ],
+  },
+
   memory: {
     title: 'Cognitive Memory API (/v1/memory)',
     desc: 'Autonomous long-term, episodic, and semantic memory with auto-extraction and conflict resolution.',
@@ -281,7 +308,7 @@ for m in memories["memories"]:
     sections: [
       {
         heading: 'Index Plain Text',
-        code: `client.index_text(\n    collection="my_docs",\n    text="IcebergDB provides sub-10ms hybrid vector search.",\n    source="architecture_guide"\n)`,
+        code: `client.index_text(\n    collection="my_docs",\n    text="Iceberg DB provides 1.95 ms p50 dense search and 8.73 ms p50 hybrid RRF search.",\n    source="architecture_guide"\n)`,
         lang: 'python',
       },
       {
@@ -336,109 +363,133 @@ for m in memories["memories"]:
   },
 
   python: {
-    title: 'Official Python SDK (PyPI: icebergdb)',
-    desc: 'Published on PyPI — supports both Cognitive Memory (IcebergMemory) and RAG Collections (Client).',
+    title: 'Official Python SDK (PyPI: icebergdb v1.0.0)',
+    desc: 'pip install icebergdb — Canonical v1.0.0 PyPI package (https://pypi.org/project/icebergdb/1.0.0/). Supports both Vector Collections (Client) and Cognitive Memory (IcebergMemory).',
     sections: [
       {
-        heading: 'Installation',
-        code: `pip install --upgrade icebergdb`,
+        heading: 'Official Package & Deprecation Notice (v1.0.0)',
+        text: 'Canonical PyPI package: **icebergdb** (version **v1.0.0**, tested on Python 3.9+ clean virtualenv). Legacy pre-release beta names (**iceberg-db**, **iceberg-python**) are deprecated and must not be used.',
+      },
+      {
+        heading: 'Installation (PyPI v1.0.0)',
+        code: `# Standard install (v1.0.0)
+pip install icebergdb
+
+# Version-pinned install
+pip install icebergdb==1.0.0`,
         lang: 'bash',
       },
       {
-        heading: 'Complete Python Example',
-        code: `from icebergdb import IcebergMemory
-from iceberg import Client
+        heading: 'Verified v1.0.0 Example (Vector Collections + 4-Tier Memory)',
+        code: `from iceberg import Client
+from icebergdb import IcebergMemory
 
-# 1. Cognitive Memory API
+# 1. Vector Collections & Hybrid RRF Search (Canonical Client)
+client = Client(api_key="ib_your_key")
+client.create_collection("my_docs")
+client.index_text("my_docs", "Our return policy allows 30 day returns.", source="catalog")
+
+results = client.search("my_docs", "can I return my order?", search_type="hybrid", top_k=5)
+for r in results:
+    print(f"{r.score:.3f} — {r.text}")
+
+# 2. 4-Tier Agent Memory
+client.remember("agent_001", "User prefers dark mode", memory_type="long_term")
+memories = client.recall("agent_001", "what does user prefer?", top_k=3)
+
+# 3. High-Level Cognitive Memory Engine (Auto-Fact Extraction & Conflict Resolution)
 mem = IcebergMemory(api_key="ib_your_key")
 mem.remember("User is building an AI SaaS in Python", user_id="u_1", importance=0.9)
-print(mem.recall("What is the user building?", user_id="u_1"))
-
-# 2. Vector Collections & Hybrid RAG API
-client = Client(api_key="ib_your_key")
-client.create_collection("knowledge_base")
-client.index_text("knowledge_base", "IcebergDB supports 6 official language SDKs.")
-hits = client.search("knowledge_base", "supported languages", top_k=3)
-for h in hits:
-    print(h.score, h.text)`,
+print(mem.recall("What is the user building?", user_id="u_1"))`,
         lang: 'python',
       }
     ]
   },
 
   javascript: {
-    title: 'Official JavaScript / TypeScript SDK (npm: icebergdb)',
-    desc: 'Zero-dependency TypeScript client for Node.js, Next.js, Cloudflare Workers, Deno, and Bun.',
+    title: 'Official JavaScript / TypeScript SDK (npm: icebergdb v1.0.0)',
+    desc: 'npm install icebergdb — Canonical v1.0.0 zero-dependency TypeScript client for Node.js, Next.js, Edge Runtime, Deno, and Bun.',
     sections: [
       {
-        heading: 'Installation',
-        code: `npm install icebergdb`,
+        heading: 'Official Package & Deprecation Notice (v1.0.0)',
+        text: 'Canonical npm package: **icebergdb** (version **v1.0.0**, tested on Node.js 18+, Next.js, Deno, and Bun). Legacy pre-release package names (**iceberg-js-sdk**, **iceberg-db**) are deprecated and must not be used.',
+      },
+      {
+        heading: 'Installation (npm v1.0.0)',
+        code: `# Standard install (v1.0.0)
+npm install icebergdb
+
+# Version-pinned install
+npm install icebergdb@1.0.0`,
         lang: 'bash',
       },
       {
-        heading: 'TypeScript / Node.js Usage',
-        code: `import { IcebergMemory } from 'icebergdb';
+        heading: 'Verified v1.0.0 TypeScript / Node.js Usage',
+        code: `import { Client, IcebergMemory } from 'icebergdb'
 
-const memory = new IcebergMemory({
-  apiKey: process.env.ICEBERG_API_KEY,
-});
+// 1. Vector Collections & Hybrid RRF Search
+const client = new Client({ apiKey: process.env.ICEBERG_API_KEY || 'ib_your_key' })
 
-// Store cognitive memory
+await client.createCollection('my_docs')
+await client.indexText('my_docs', 'Our return policy allows 30 day returns.')
+
+const results = await client.search('my_docs', 'return order', {
+  topK: 5,
+  searchType: 'hybrid',
+  alpha: 0.5,
+})
+results.forEach(r => console.log(r.score, r.text))
+
+// 2. Cognitive Agent Memory
+const memory = new IcebergMemory({ apiKey: process.env.ICEBERG_API_KEY || 'ib_your_key' })
 await memory.remember({
   text: 'Customer prefers dark mode and monthly GST invoices.',
   userId: 'cust_99',
   importance: 0.9,
-});
-
-// Recall relevant memories
-const res = await memory.recall({
-  query: 'billing and UI preferences',
-  userId: 'cust_99',
-  limit: 5,
-});
-console.log(res.memories);`,
+})`,
         lang: 'javascript',
       }
     ]
   },
 
   go: {
-    title: 'Official Go SDK (iceberg-sdk-go)',
-    desc: 'High-concurrency, zero-dependency Go client for backend microservices.',
+    title: 'Official Go SDK (v1.0.0)',
+    desc: 'go get github.com/anku5265/iceberg-database/iceberg-sdk-go — Canonical v1.0.0 Go module.',
     sections: [
       {
-        heading: 'Installation',
-        code: `go get github.com/anku5265/iceberg-database/iceberg-sdk-go`,
+        heading: 'Official Module & Deprecation Notice (v1.0.0)',
+        text: 'Canonical Go module: **github.com/anku5265/iceberg-database/iceberg-sdk-go** (version **v1.0.0**, tested on Go 1.21+). Legacy pre-release name (**iceberg-go**) is deprecated.',
+      },
+      {
+        heading: 'Installation (v1.0.0)',
+        code: `# Standard install (v1.0.0)
+go get github.com/anku5265/iceberg-database/iceberg-sdk-go
+
+# Version-pinned install
+go get github.com/anku5265/iceberg-database/iceberg-sdk-go@v1.0.0`,
         lang: 'bash',
       },
       {
-        heading: 'Go Example',
+        heading: 'Verified v1.0.0 Go Example',
         code: `package main
 
 import (
-    "context"
     "fmt"
     iceberg "github.com/anku5265/iceberg-database/iceberg-sdk-go"
 )
 
 func main() {
-    client := iceberg.NewClient("ib_your_api_key")
-    ctx := context.Background()
+    client := iceberg.New("ib_your_key")
 
-    // Remember a fact
-    _, _ = client.Remember(ctx, iceberg.RememberRequest{
-        Text:       "Service latency SLA is under 10ms p99",
-        UserID:     "infra_team",
-        Importance: 0.95,
-    })
+    // Create & index
+    _ = client.CreateCollection("my_docs")
+    _ = client.IndexText("my_docs", "Our return policy allows 30 day returns.", "docs")
 
-    // Recall memories
-    res, _ := client.Recall(ctx, iceberg.RecallRequest{
-        Query:  "What is our latency SLA?",
-        UserID: "infra_team",
-        Limit:  3,
-    })
-    fmt.Printf("Top Memory: %+v\\n", res.Memories)
+    // Hybrid RRF Search
+    res, _ := client.Search("my_docs", "return order", 5)
+    for _, r := range res.Results {
+        fmt.Printf("%.4f — %s\\n", r.Score, r.Text)
+    }
 }`,
         lang: 'go',
       }
@@ -446,37 +497,44 @@ func main() {
   },
 
   rust: {
-    title: 'Official Rust SDK (icebergdb crate)',
-    desc: 'Async Tokio + Reqwest strongly-typed Rust SDK for ultra-low-latency systems.',
+    title: 'Official Rust SDK (Crates.io: icebergdb v1.0.0)',
+    desc: 'cargo add icebergdb — Canonical v1.0.0 async Tokio + Reqwest Rust crate on Crates.io.',
     sections: [
       {
-        heading: 'Installation (Cargo.toml)',
-        code: `[dependencies]\nicebergdb = "0.1"\ntokio = { version = "1", features = ["full"] }`,
+        heading: 'Official Crate & Deprecation Notice (v1.0.0)',
+        text: 'Canonical Crates.io crate: **icebergdb** (version **v1.0.0**, tested on Rust 1.75+ / Tokio 1.x). Legacy pre-release crate names (**iceberg-Vector-db**, **iceberg-rs**) are deprecated and must not be used.',
+      },
+      {
+        heading: 'Installation (Crates.io v1.0.0)',
+        code: `# Standard install (v1.0.0)
+cargo add icebergdb
+
+# Version-pinned install
+cargo add icebergdb@1.0.0
+
+# Cargo.toml
+[dependencies]
+icebergdb = "1.0.0"
+tokio = { version = "1", features = ["full"] }`,
         lang: 'toml',
       },
       {
-        heading: 'Rust Usage',
-        code: `use icebergdb::{IcebergClient, RememberRequest, RecallRequest};
+        heading: 'Verified v1.0.0 Rust Usage',
+        code: `use icebergdb::Client;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let client = IcebergClient::new("ib_your_api_key");
+    let client = Client::new("ib_your_key");
 
-    client.remember(RememberRequest {
-        text: "Rust worker node connected to India (ap-south-1) cluster".into(),
-        user_id: Some("sys_rust".into()),
-        importance: Some(0.9),
-        ..Default::default()
-    }).await?;
+    // Create & index
+    client.create_collection("my_docs").await?;
+    client.index_text("my_docs", "Our return policy allows 30 day returns.", None).await?;
 
-    let hits = client.recall(RecallRequest {
-        query: "which cluster is connected?".into(),
-        user_id: Some("sys_rust".into()),
-        limit: Some(3),
-        ..Default::default()
-    }).await?;
-
-    println!("Recalled: {:?}", hits.memories);
+    // Hybrid RRF Search
+    let res = client.search("my_docs", "return order", 5).await?;
+    for r in res.results {
+        println!("{:.4} — {}", r.score, r.text);
+    }
     Ok(())
 }`,
         lang: 'rust',
@@ -485,26 +543,38 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
   },
 
   java: {
-    title: 'Official Java SDK (Java 11+ / Spring Boot)',
-    desc: 'Native HttpClient-based Java SDK for enterprise Spring Boot and JVM backends.',
+    title: 'Official Java SDK (Maven: io.icebergdb:iceberg-sdk:1.0.0)',
+    desc: 'io.icebergdb:iceberg-sdk:1.0.0 — Canonical v1.0.0 Java 17+ HTTP client for Spring Boot and JVM backends.',
     sections: [
       {
-        heading: 'Maven Dependency',
-        code: `<dependency>\n  <groupId>in.icebergdb</groupId>\n  <artifactId>iceberg-sdk-java</artifactId>\n  <version>1.0.0</version>\n</dependency>`,
+        heading: 'Official Maven Artifact & Deprecation Notice (v1.0.0)',
+        text: 'Canonical Maven artifact: **io.icebergdb:iceberg-sdk:1.0.0** (version **v1.0.0**, tested on Java 17+ / Spring Boot 3.x). Legacy pre-release coordinate (**in.icebergdb:iceberg-sdk-java**) is deprecated.',
+      },
+      {
+        heading: 'Maven Dependency (v1.0.0)',
+        code: `<dependency>
+  <groupId>io.icebergdb</groupId>
+  <artifactId>iceberg-sdk</artifactId>
+  <version>1.0.0</version>
+</dependency>`,
         lang: 'xml',
       },
       {
-        heading: 'Java Example',
+        heading: 'Verified v1.0.0 Java Example',
         code: `import in.iceberg.Client;
 import java.util.Map;
 
-public class Main {
+public class Example {
     public static void main(String[] args) throws Exception {
-        IcebergClient client = new IcebergClient("ib_your_api_key");
+        Client client = new Client("ib_your_key");
 
-        client.remember("Enterprise banking user verified KYC", "user_404", 0.95);
-        Map<String, Object> result = client.recall("KYC verification status", "user_404", 5);
-        System.out.println(result);
+        // Create & index
+        client.createCollection("my_docs");
+        client.indexText("my_docs", "Our return policy allows 30 day returns.", "docs");
+
+        // Hybrid RRF Search
+        Map<String, Object> results = client.search("my_docs", "return order", 5, "hybrid");
+        System.out.println(results);
     }
 }`,
         lang: 'java',
@@ -513,31 +583,73 @@ public class Main {
   },
 
   dotnet: {
-    title: 'Official .NET / C# SDK (IcebergDb)',
-    desc: 'Async/await .NET 8.0+ client for C# enterprise applications.',
+    title: 'Official .NET / C# SDK (NuGet: IcebergDb v1.0.0)',
+    desc: 'dotnet add package IcebergDb — Canonical v1.0.0 NuGet package for .NET 8.0+ enterprise applications.',
     sections: [
       {
-        heading: 'Installation',
-        code: `dotnet add package IcebergDb`,
+        heading: 'Official Package & Deprecation Notice (v1.0.0)',
+        text: 'Canonical NuGet package: **IcebergDb** (version **v1.0.0**, tested on .NET 8.0+ / C# 12). Legacy pre-release package names (**Iceberg.VectorDB**, **Iceberg.Net**) are deprecated and must not be used.',
+      },
+      {
+        heading: 'Installation (NuGet v1.0.0)',
+        code: `# Standard install (v1.0.0)
+dotnet add package IcebergDb
+
+# Version-pinned install
+dotnet add package IcebergDb --version 1.0.0`,
         lang: 'bash',
       },
       {
-        heading: 'C# Usage',
+        heading: 'Verified v1.0.0 C# Usage',
         code: `using IcebergDb;
 
-var client = new IcebergClient("ib_your_api_key");
+var client = new IcebergClient("ib_your_key");
 
-await client.RememberAsync(
-    text: "User prefers C# minimal APIs and Azure deployments",
-    userId: "dotnet_dev",
-    importance: 0.9
-);
+// Create & index
+await client.CreateCollectionAsync("my_docs");
+await client.IndexTextAsync("my_docs", "Our return policy allows 30 day returns.");
 
-var recall = await client.RecallAsync("deployment preferences", userId: "dotnet_dev");
-Console.WriteLine(recall);`,
+// Hybrid RRF Search
+var results = await client.SearchAsync("my_docs", "return order", topK: 5);
+foreach (var r in results.Results)
+{
+    Console.WriteLine($"{r.Score:F4} — {r.Text}");
+}`,
         lang: 'csharp',
       }
     ]
+  },
+
+  mcp: {
+    title: 'Official MCP Server (npm: iceberg-mcp v1.0.0)',
+    desc: 'npx -y iceberg-mcp — Canonical v1.0.0 MCP server for Claude Code, Cursor, Windsurf, GitHub Copilot, and Gemini CLI.',
+    sections: [
+      {
+        heading: 'Official MCP Package (v1.0.0)',
+        text: 'Canonical npm package: **iceberg-mcp** (version **v1.0.0**, https://www.npmjs.com/package/iceberg-mcp). Legacy pre-release name (**iceberg-mcp-server**) is deprecated.',
+      },
+      {
+        heading: 'Quick Add to Claude Code (v1.0.0)',
+        code: `claude mcp add icebergdb --env ICEBERG_API_KEY=ib_your_api_key -- npx -y iceberg-mcp`,
+        lang: 'bash',
+      },
+      {
+        heading: 'Cursor / Windsurf / Claude Desktop (mcp.json)',
+        code: `{
+  "mcpServers": {
+    "icebergdb": {
+      "command": "npx",
+      "args": ["-y", "iceberg-mcp"],
+      "env": {
+        "ICEBERG_API_KEY": "ib_your_api_key",
+        "ICEBERG_API_URL": "https://api.icebergdb.in"
+      }
+    }
+  }
+}`,
+        lang: 'json',
+      },
+    ],
   },
 
   frameworks: {
@@ -567,8 +679,8 @@ docs = vectorstore.similarity_search("IcebergCore launch", k=4)`,
         code: `from icebergdb.integrations.llamaindex import IcebergVectorStore
 
 store = IcebergVectorStore(api_key="ib_your_key", collection_name="research_papers")
-store.add_texts(["IcebergCore delivers 32x binary quantization compression."])
-results = store.query("quantization compression ratio", top_k=3)`,
+store.add_texts(["Iceberg DB v1.0.0 delivers 1.95 ms p50 dense HNSW and 8.73 ms p50 hybrid RRF search in India (ap-south-1)."])
+results = store.query("India vector search latency", top_k=3)`,
         lang: 'python',
       }
     ]
@@ -626,17 +738,17 @@ export default function Docs() {
   }
 
   return (
-    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6 animate-fadeIn font-sans text-[var(--text-primary)]">
+    <div className="space-y-6 font-sans text-[var(--text-primary)]">
       {/* ── 1. Page Header ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-1">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-xl font-bold tracking-tight text-[var(--text-primary)]">Documentation &amp; SDK Reference</h1>
-            <span className="px-2 py-0.5 rounded text-xs font-mono bg-blue-500/10 text-blue-400 border border-blue-500/20">
+            <h1 className="text-[22px] font-semibold tracking-tight text-[var(--text-primary)]">Documentation &amp; SDK Reference</h1>
+            <span className="px-2.5 py-0.5 rounded-[2px] text-[13px] font-mono font-semibold bg-[var(--bg-surface2)] text-[var(--accent)] border border-[var(--border)]">
               {doc?.title?.split('—')[0] || 'Guides'}
             </span>
           </div>
-          <p className="text-[var(--text-muted)] text-xs mt-1">
+          <p className="text-[var(--text-secondary)] text-[14.5px] mt-1.5">
             Official guides, Practical AI Cookbook, Cognitive Memory API, and 6 Native Language SDKs.
           </p>
         </div>
@@ -646,10 +758,10 @@ export default function Docs() {
             href={`${API_URL}/docs`}
             target="_blank"
             rel="noreferrer"
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-2 rounded-lg transition shadow-sm"
+            className="pc-btn-primary"
           >
             <span>Open Interactive Swagger Docs</span>
-            <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15,3 21,3 21,9"/><line x1="10" y1="14" x2="21" y2="3"/>
             </svg>
           </a>
@@ -657,52 +769,52 @@ export default function Docs() {
       </div>
 
       {/* ── 2. Telemetry Stat Cards ── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
-        <div className="p-4 bg-[var(--card-bg)] border border-[var(--border)] rounded-xl space-y-1.5">
-          <div className="flex items-center justify-between text-xs text-[var(--text-muted)]">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
+        <div className="pc-card p-5 space-y-2">
+          <div className="flex items-center justify-between text-[13.5px] text-[var(--text-secondary)]">
             <span>Official SDKs</span>
-            <span className="text-blue-400">Native</span>
+            <span className="text-[var(--accent)] font-semibold">Native</span>
           </div>
-          <div className="text-xl font-bold font-mono text-[var(--text-primary)]">6 Languages</div>
-          <p className="text-[11px] text-[var(--text-dim)]">Python, JS, Go, Rust, Java, .NET</p>
+          <div className="text-[19px] font-bold font-mono text-[var(--text-primary)]">6 Languages</div>
+          <p className="text-[13px] text-[var(--text-secondary)]">Python, JS, Go, Rust, Java, .NET</p>
         </div>
 
-        <div className="p-4 bg-[var(--card-bg)] border border-[var(--border)] rounded-xl space-y-1.5">
-          <div className="flex items-center justify-between text-xs text-[var(--text-muted)]">
+        <div className="pc-card p-5 space-y-2">
+          <div className="flex items-center justify-between text-[13.5px] text-[var(--text-secondary)]">
             <span>Backend Host</span>
-            <span className="text-emerald-400">Live</span>
+            <span className="text-emerald-500 font-semibold">Live</span>
           </div>
-          <div className="text-xs font-bold font-mono text-[var(--text-primary)] truncate" title={API_URL}>
+          <div className="text-[15.5px] font-bold font-mono text-[var(--text-primary)] truncate" title={API_URL}>
             {API_URL.replace('https://', '')}
           </div>
-          <p className="text-[11px] text-[var(--text-dim)]">Cognitive Memory + Vector API</p>
+          <p className="text-[13px] text-[var(--text-secondary)]">Cognitive Memory + Vector API</p>
         </div>
 
-        <div className="p-4 bg-[var(--card-bg)] border border-[var(--border)] rounded-xl space-y-1.5">
-          <div className="flex items-center justify-between text-xs text-[var(--text-muted)]">
+        <div className="pc-card p-5 space-y-2">
+          <div className="flex items-center justify-between text-[13.5px] text-[var(--text-secondary)]">
             <span>Cognitive Engine</span>
-            <span className="text-purple-400">v1.0.0</span>
+            <span className="text-[var(--accent)] font-mono font-semibold">v1.0.0</span>
           </div>
-          <div className="text-base font-bold font-mono text-[var(--text-primary)]">Decay + Conflict</div>
-          <p className="text-[11px] text-[var(--text-dim)]">Auto-fact extraction &amp; scoring</p>
+          <div className="text-[17.5px] font-bold font-mono text-[var(--text-primary)]">Decay + Conflict</div>
+          <p className="text-[13px] text-[var(--text-secondary)]">Auto-fact extraction &amp; scoring</p>
         </div>
 
-        <div className="p-4 bg-[var(--card-bg)] border border-[var(--border)] rounded-xl space-y-1.5">
-          <div className="flex items-center justify-between text-xs text-[var(--text-muted)]">
+        <div className="pc-card p-5 space-y-2">
+          <div className="flex items-center justify-between text-[13.5px] text-[var(--text-secondary)]">
             <span>Hybrid Pipeline</span>
-            <span className="text-amber-400">RRF</span>
+            <span className="text-amber-500 font-semibold">RRF</span>
           </div>
-          <div className="text-base font-bold font-mono text-[var(--text-primary)]">Dense + BM25</div>
-          <p className="text-[11px] text-[var(--text-dim)]">Single-pass rank fusion</p>
+          <div className="text-[17.5px] font-bold font-mono text-[var(--text-primary)]">Dense + BM25</div>
+          <p className="text-[13px] text-[var(--text-secondary)]">Single-pass rank fusion</p>
         </div>
       </div>
 
       {/* ── 3. Main Split Workspace ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        <div className="lg:col-span-3 bg-[var(--card-bg)] border border-[var(--border)] rounded-2xl p-4 space-y-5 shadow-sm">
+        <div className="lg:col-span-3 pc-card p-4 space-y-5">
           {NAV.map((group, gi) => (
             <div key={gi} className="space-y-1.5">
-              <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--text-dim)] px-3 font-semibold">
+              <p className="text-[12.5px] uppercase tracking-[0.08em] text-[var(--text-secondary)] px-3 font-semibold">
                 {group.group}
               </p>
               <div className="space-y-0.5">
@@ -710,16 +822,13 @@ export default function Docs() {
                   <button
                     key={item.id}
                     onClick={() => handleSelectTab(item.id)}
-                    className={`w-full text-left px-3 py-2 rounded-xl text-xs transition flex items-center justify-between ${
+                    className={`w-full text-left px-3.5 py-2.5 rounded-[2px] text-[14.5px] flex items-center justify-between cursor-pointer ${
                       active === item.id
-                        ? 'bg-blue-600/15 text-blue-400 font-semibold border border-blue-500/20'
-                        : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] border border-transparent'
+                        ? 'bg-[var(--nav-active-bg)] text-[var(--accent)] font-semibold'
+                        : 'text-[var(--text-primary)] hover:bg-[var(--bg-hover)] font-medium'
                     }`}
                   >
                     <span>{item.title}</span>
-                    {active === item.id && (
-                      <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
-                    )}
                   </button>
                 ))}
               </div>
@@ -731,24 +840,24 @@ export default function Docs() {
               href={`${API_URL}/docs`}
               target="_blank"
               rel="noreferrer"
-              className="flex items-center justify-between px-3 py-2 text-xs text-blue-400 hover:text-blue-300 font-medium transition rounded-xl bg-blue-500/5 hover:bg-blue-500/10 border border-blue-500/20"
+              className="pc-btn-secondary w-full !justify-between"
             >
               <span>Swagger UI Playground</span>
-              <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15,3 21,3 21,9"/><line x1="10" y1="14" x2="21" y2="3"/>
               </svg>
             </a>
           </div>
         </div>
 
-        <div className="lg:col-span-9 bg-[var(--card-bg)] border border-[var(--border)] rounded-2xl p-6 md:p-8 space-y-6 shadow-sm">
+        <div className="lg:col-span-9 pc-card p-6 md:p-8 space-y-6">
           {doc && (
             <>
               <div className="pb-4 border-b border-[var(--border)]">
-                <h2 className="text-xl font-bold text-[var(--text-primary)] tracking-tight">
+                <h2 className="text-[22px] font-semibold text-[var(--text-primary)] tracking-tight">
                   {doc.title}
                 </h2>
-                <p className="text-xs text-[var(--text-muted)] mt-1">
+                <p className="text-[14.5px] text-[var(--text-secondary)] mt-1.5">
                   {doc.desc}
                 </p>
               </div>
@@ -757,8 +866,8 @@ export default function Docs() {
                 {doc.sections.map((sec, si) => (
                   <div key={si} className="space-y-3">
                     {sec.heading && (
-                      <h3 className="text-sm font-semibold text-[var(--text-primary)] flex items-center gap-2">
-                        <span className="text-[11px] font-mono text-blue-400 bg-blue-500/10 border border-blue-500/20 px-1.5 py-0.5 rounded">
+                      <h3 className="text-[17px] font-semibold text-[var(--text-primary)] flex items-center gap-2.5">
+                        <span className="text-[13px] font-mono text-[var(--accent)] bg-[var(--bg-surface2)] border border-[var(--border)] px-2 py-0.5 rounded-[2px]">
                           {String(si + 1).padStart(2, '0')}
                         </span>
                         <span>{sec.heading}</span>
@@ -766,16 +875,16 @@ export default function Docs() {
                     )}
 
                     {sec.text && (
-                      <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+                      <p className="text-[14.5px] text-[var(--text-secondary)] leading-[1.65]">
                         {renderBold(sec.text)}
                       </p>
                     )}
 
                     {sec.list && (
-                      <ul className="space-y-2 bg-[var(--bg-surface)] border border-[var(--border)] rounded-xl p-4">
+                      <ul className="space-y-2 bg-[var(--bg-base)] border border-[var(--border)] rounded-[2px] p-4">
                         {sec.list.map((item, li) => (
-                          <li key={li} className="flex items-start gap-2.5 text-xs text-[var(--text-secondary)] leading-relaxed">
-                            <span className="text-blue-400 font-bold mt-0.5">›</span>
+                          <li key={li} className="flex items-start gap-2.5 text-[14.5px] text-[var(--text-secondary)] leading-[1.65]">
+                            <span className="text-[var(--accent)] font-bold mt-0.5">›</span>
                             <span>{renderBold(item)}</span>
                           </li>
                         ))}

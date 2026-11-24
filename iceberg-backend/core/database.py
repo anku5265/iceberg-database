@@ -95,6 +95,35 @@ def init_db():
             created_at INTEGER NOT NULL,
             FOREIGN KEY (user_id) REFERENCES users(id)
         );
+
+        CREATE TABLE IF NOT EXISTS partner_integrations (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            name TEXT NOT NULL,
+            slug TEXT UNIQUE NOT NULL,
+            logo_url TEXT DEFAULT '',
+            return_mechanism TEXT DEFAULT 'web_message',
+            allowed_origins TEXT DEFAULT '[]',
+            created_at INTEGER NOT NULL,
+            FOREIGN KEY (user_id) REFERENCES users(id)
+        );
+
+        CREATE TABLE IF NOT EXISTS integration_usage_stats (
+            source_tag TEXT PRIMARY KEY,
+            request_count INTEGER DEFAULT 0,
+            last_seen_at INTEGER NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS partner_applications (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            email TEXT NOT NULL,
+            repo_or_url TEXT NOT NULL,
+            source_tag TEXT DEFAULT '',
+            description TEXT NOT NULL,
+            status TEXT DEFAULT 'pending',
+            created_at INTEGER NOT NULL
+        );
     """)
     conn.commit()
 

@@ -105,11 +105,14 @@ res = ib.query_vectors(
 
 ---
 
-## 8. `iceberg-mcp` -- Live MCP Server Tools (`npx -y iceberg-mcp`)
+## 8. `iceberg-mcp` -- 16 Live MCP Server Tools (`npx -y iceberg-mcp`)
 - `iceberg_list_collections` -- List all collections in the active project
 - `iceberg_create_collection` -- Create a 384d or custom-dimension vector collection
 - `iceberg_collection_info` -- Inspect vector count, dimension, metric, quantization, and namespaces
 - `iceberg_delete_collection` -- Delete a collection and release vector quota
+- `iceberg_upsert_vectors` -- Batch upsert custom-dimension vectors (`768d`, `1024d`, `1536d`, `3072d`)
+- `iceberg_query_vectors` -- Query custom-dimension vectors with metadata filters
+- `iceberg_delete_vectors` -- Delete vectors by IDs, metadata filter, or `delete_all`
 - `iceberg_index_text` -- Chunk and embed plain text on server CPU (`all-MiniLM-L6-v2`, Rs.0)
 - `iceberg_search` -- Run `hybrid`, `semantic`, or `keyword` search
 - `iceberg_remember` -- Store 4-tier cognitive agent memory
@@ -118,8 +121,15 @@ res = ib.query_vectors(
 
 ---
 
-## 9. `iceberg-docs` -- Official Endpoints & Links
-- Base API: `https://api.icebergdb.in` (Interactive OpenAPI: `https://api.icebergdb.in/docs`)
-- Cloud Console & Keys: `https://dashboard.icebergdb.in`
-- Documentation & Integrations Hub: `https://icebergdb.in/integrations`
-- Framework Adapters (`from iceberg.integrations import ...`): `IcebergLangChainVectorStore`, `IcebergLlamaIndexVectorStore`, `IcebergHaystackDocumentStore`
+## 9. `iceberg-docs` -- All 6 Official SDKs (`v1.0.0`) & Endpoints
+- **Python (`pip install icebergdb`):** `from iceberg import Iceberg; ib = Iceberg(api_key="...", source_tag="my_app")`
+- **Node.js / TypeScript (`npm install icebergdb`):** `import { Iceberg } from 'icebergdb'; const ib = new Iceberg({ apiKey: '...', sourceTag: 'my_app' });`
+- **Java (`io.icebergdb:iceberg-sdk:1.0.0`):** `Iceberg ib = new Iceberg.Builder("...").withSourceTag("my_app").build();`
+- **Go (`go get github.com/anku5265/iceberg-database/iceberg-sdk-go`):** `client, _ := iceberg.NewClient(iceberg.NewClientParams{ ApiKey: "...", SourceTag: "my_app" })`
+- **Rust (`cargo add icebergdb`):** `let ib = icebergdb::Iceberg::new("...").with_source_tag("my_app");`
+- **.NET / C# (`dotnet add package IcebergDb`):** `var ib = new Iceberg.IcebergClient(apiKey: "...", sourceTag: "my_app");`
+- **Official CLI:** `iceberg status`, `iceberg index list|create|stats|delete`, `iceberg ingest`, `iceberg query`, `iceberg memory remember|recall`
+- **Base API:** `https://api.icebergdb.in` (Interactive OpenAPI: `https://api.icebergdb.in/docs`)
+- **Cloud Console & Keys:** `https://dashboard.icebergdb.in`
+- **Documentation & Integrations Hub:** `https://icebergdb.in/integrations`
+- **Framework Adapters (`from iceberg.integrations import ...`):** `IcebergLangChainVectorStore`, `IcebergLlamaIndexVectorStore`, `IcebergHaystackDocumentStore`

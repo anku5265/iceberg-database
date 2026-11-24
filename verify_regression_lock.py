@@ -157,14 +157,35 @@ sdk_client.close()
 
 
 print("\n==================================================================")
-print("LOCK 4: Backend 21-Test Validation Suite")
+print("LOCK 4: Cross-Subdomain Direct Dashboard Session Redirect Lock")
+print("==================================================================")
+
+landing_html = (ROOT / "iceberg-landing" / "index.html").read_text(encoding="utf-8", errors="ignore")
+dash_api = (ROOT / "iceberg-dashboard" / "src" / "lib" / "api.js").read_text(encoding="utf-8", errors="ignore")
+dash_profile = (ROOT / "iceberg-dashboard" / "src" / "components" / "ProfileMenu.jsx").read_text(encoding="utf-8", errors="ignore")
+
+check(
+    "Landing index.html auto-redirects logged-in users (ib_session=1) to dashboard.icebergdb.in",
+    "ib_session=1" in landing_html and "window.location.replace('https://dashboard.icebergdb.in/')" in landing_html,
+)
+check(
+    "Dashboard api.js sets & clears .icebergdb.in cross-subdomain session cookie",
+    "setCrossDomainSessionCookie" in dash_api and "clearCrossDomainSessionCookie" in dash_api and "Domain=.icebergdb.in" in dash_api,
+)
+check(
+    "Dashboard ProfileMenu clears cross-subdomain session cookie on Sign out",
+    "clearCrossDomainSessionCookie()" in dash_profile,
+)
+
+print("\n==================================================================")
+print("LOCK 5: Backend 25-Test Validation Suite")
 print("==================================================================")
 
 rc = subprocess.run(
     [sys.executable, str(ROOT / "iceberg-backend" / "tests" / "test_validation_suite.py")],
     cwd=str(ROOT),
 ).returncode
-check("Backend 21-Test Validation Suite passes 100%", rc == 0)
+check("Backend 25-Test Validation Suite passes 100%", rc == 0)
 
 print("\n==================================================================")
 print(f"MASTER REGRESSION LOCK SUMMARY: {passed} LOCKS PASSED, {failed} FAILED")

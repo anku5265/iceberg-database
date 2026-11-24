@@ -137,9 +137,9 @@ export default function ForgotPassword() {
         </div>
 
         {step === 1 ? (
-          <form onSubmit={handleSendCode} className="bg-[#111] border border-[#222] rounded-xl p-6 space-y-4">
+          <form onSubmit={handleSendCode} className="bg-[#111] border border-[#222] rounded-[2px] p-6 space-y-4">
             <div>
-              <label className="text-[#888] text-xs mb-1.5 block">Account Email</label>
+              <label className="text-[#888] text-[14px] mb-1.5 block">Account Email</label>
               <input
                 type="email"
                 required
@@ -148,12 +148,12 @@ export default function ForgotPassword() {
                 placeholder="you@gmail.com"
                 className="w-full bg-[#0a0a0a] border border-[#2a2a2a] rounded-md px-3 py-2.5 text-white text-sm focus:outline-none focus:border-blue-600 placeholder-[#444]"
               />
-              <p className="text-[#555] text-[11px] mt-1.5">
+              <p className="text-[#555] text-[13px] mt-1.5">
                 We will send an instant 6-digit verification code to your email inbox.
               </p>
             </div>
 
-            {error && <p className="text-red-400 text-xs">{error}</p>}
+            {error && <p className="text-red-400 text-[14px]">{error}</p>}
 
             <button
               type="submit"
@@ -163,14 +163,14 @@ export default function ForgotPassword() {
             </button>
           </form>
         ) : (
-          <form onSubmit={handleResetPassword} className="bg-[#111] border border-[#222] rounded-xl p-6 space-y-4">
+          <form onSubmit={handleResetPassword} className="bg-[#111] border border-[#222] rounded-[2px] p-6 space-y-4">
             {info && (
-              <div className="bg-blue-500/10 border border-blue-500/25 rounded-lg px-3 py-2 text-xs text-blue-300 flex items-center justify-between">
+              <div className="bg-blue-500/10 border border-blue-500/25 rounded-[2px] px-3 py-2 text-[14px] text-blue-300 flex items-center justify-between">
                 <span>{info}</span>
                 <button
                   type="button"
                   onClick={() => setStep(1)}
-                  className="text-[11px] text-blue-400 underline ml-2 shrink-0"
+                  className="text-[13px] text-blue-400 underline ml-2 shrink-0"
                 >
                   Change
                 </button>
@@ -179,11 +179,11 @@ export default function ForgotPassword() {
 
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="text-[#888] text-xs">6-Digit Verification Code</label>
+                <label className="text-[#888] text-[14px]">6-Digit Verification Code</label>
                 <button
                   type="button"
                   onClick={handleSendCode}
-                  className="text-[11px] text-blue-400 hover:text-blue-300 transition"
+                  className="text-[13px] text-blue-400 hover:text-blue-300 transition"
                 >
                   Resend code
                 </button>
@@ -202,7 +202,7 @@ export default function ForgotPassword() {
             </div>
 
             <div>
-              <label className="text-[#888] text-xs mb-1.5 block">New Password</label>
+              <label className="text-[#888] text-[14px] mb-1.5 block">New Password</label>
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
@@ -226,7 +226,7 @@ export default function ForgotPassword() {
               <PasswordStrengthMeter password={newPassword} />
             </div>
 
-            {error && <p className="text-red-400 text-xs">{error}</p>}
+            {error && <p className="text-red-400 text-[14px]">{error}</p>}
 
             <button
               type="submit"

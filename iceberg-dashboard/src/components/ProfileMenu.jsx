@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTheme } from '../lib/theme'
+import { clearCrossDomainSessionCookie } from '../lib/api'
 
 export default function ProfileMenu() {
   const navigate = useNavigate()
@@ -18,6 +19,7 @@ export default function ProfileMenu() {
   }, [])
 
   const logout = () => {
+    clearCrossDomainSessionCookie()
     localStorage.removeItem('iceberg_api_key')
     localStorage.removeItem('iceberg_user')
     localStorage.removeItem('iceberg_project_id')
@@ -25,7 +27,10 @@ export default function ProfileMenu() {
     navigate('/login')
   }
 
-  const initials = user.email ? user.email[0].toUpperCase() : '?'
+  const emailPrefix = (user.email || 'user').split('@')[0].replace(/[^a-zA-Z0-9]/g, '')
+  const initials = emailPrefix.length >= 2
+    ? emailPrefix.slice(0, 2).toUpperCase()
+    : (emailPrefix[0] || 'U').toUpperCase()
 
   const themes = [
     { key: 'dark', label: 'Dark', icon: <MoonIcon /> },
@@ -35,61 +40,58 @@ export default function ProfileMenu() {
 
   return (
     <div className="relative" ref={ref}>
-      <button onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-[var(--bg-hover)] transition">
-        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-600 to-violet-600 flex items-center justify-center text-white text-xs font-bold">
-          {initials}
-        </div>
-        <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"
-          className={`text-[var(--text-muted)] transition-transform duration-200 ${open ? 'rotate-180' : ''}`}>
-          <polyline points="6 9 12 15 18 9"/>
-        </svg>
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-[38px] h-[38px] rounded-full bg-[var(--avatar-bg)] hover:opacity-90 flex items-center justify-center text-[var(--avatar-text)] text-[14px] font-bold tracking-tight cursor-pointer"
+        title={user.email || 'Account'}
+      >
+        {initials}
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-60 bg-[var(--bg-surface)] border border-[var(--border)] rounded-xl shadow-2xl overflow-hidden z-50">
+        <div className="absolute right-0 top-full mt-2 w-64 bg-[var(--card-bg)] border border-[var(--border2)] rounded-[2px] shadow-[0_14px_34px_rgba(0,0,0,0.55)] overflow-hidden z-[100]">
           {/* User info */}
-          <div className="px-4 py-3 border-b border-[var(--border)]">
+          <div className="px-4 py-3.5 border-b border-[var(--border)]">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-600 to-violet-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
+              <div className="w-9 h-9 rounded-full bg-[var(--avatar-bg)] flex items-center justify-center text-[var(--avatar-text)] text-[13px] font-bold shrink-0">
                 {initials}
               </div>
               <div className="min-w-0">
-                <div className="text-[var(--text-primary)] text-xs font-semibold truncate">{user.email || 'Unknown'}</div>
-                <div className="text-[var(--text-muted)] text-xs mt-0.5">Free plan</div>
+                <div className="text-[var(--text-primary)] text-[13.5px] font-semibold truncate">{user.email || 'Unknown'}</div>
+                <div className="text-[var(--text-secondary)] text-[12px] mt-0.5">Starter Plan · ap-south-1</div>
               </div>
             </div>
           </div>
 
           {/* Actions */}
-          <div className="py-1">
+          <div className="py-1.5">
             <button onClick={() => { setOpen(false); navigate('/apikeys') }}
-              className="w-full flex items-center gap-3 px-4 py-2 text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition text-left">
-              <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><circle cx="7.5" cy="15.5" r="4.5"/><path d="m21 2-9.6 9.6M15 3l3 3"/></svg>
-              API Keys
+              className="w-full flex items-center gap-3 px-4 py-2 text-[13.5px] font-medium text-[var(--text-primary)] hover:bg-[var(--bg-hover)] text-left">
+              <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>
+              API keys
             </button>
             <button onClick={() => { setOpen(false); navigate('/settings') }}
-              className="w-full flex items-center gap-3 px-4 py-2 text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition text-left">
-              <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-              Settings &amp; Infrastructure
+              className="w-full flex items-center gap-3 px-4 py-2 text-[13.5px] font-medium text-[var(--text-primary)] hover:bg-[var(--bg-hover)] text-left">
+              <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+              Settings
             </button>
             <button onClick={() => { setOpen(false); navigate('/docs') }}
-              className="w-full flex items-center gap-3 px-4 py-2 text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition text-left">
-              <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-              Documentation
+              className="w-full flex items-center gap-3 px-4 py-2 text-[13.5px] font-medium text-[var(--text-primary)] hover:bg-[var(--bg-hover)] text-left">
+              <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+              Docs
             </button>
           </div>
 
           {/* Theme switcher */}
           <div className="px-4 py-3 border-t border-[var(--border)]">
-            <div className="text-[var(--text-dim)] text-xs font-semibold uppercase tracking-wider mb-2">Theme</div>
+            <div className="text-[var(--text-secondary)] text-[11px] font-bold uppercase tracking-wider mb-2">Theme</div>
             <div className="grid grid-cols-3 gap-1">
               {themes.map(t => (
                 <button key={t.key} onClick={() => setTheme(t.key)}
-                  className={`flex flex-col items-center gap-1.5 py-2 px-1 rounded-lg text-xs font-medium transition
+                  className={`flex flex-col items-center gap-1.5 py-2 px-1 rounded-[4px] text-[13px] font-semibold cursor-pointer
                     ${theme === t.key
-                      ? 'bg-blue-600 text-white'
-                      : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]'
+                      ? 'bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)]'
+                      : 'text-[var(--text-primary)] hover:bg-[var(--bg-hover)]'
                     }`}>
                   {t.icon}
                   {t.label}
@@ -99,16 +101,16 @@ export default function ProfileMenu() {
           </div>
 
           {/* Sign out */}
-          <div className="border-t border-[var(--border)] py-1">
+          <div className="border-t border-[var(--border)] py-1.5">
             <button onClick={logout}
-              className="w-full flex items-center gap-3 px-4 py-2 text-sm text-[var(--text-muted)] hover:text-red-400 hover:bg-[var(--bg-hover)] transition text-left">
-              <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+              className="w-full flex items-center gap-3 px-4 py-2 text-[13.5px] font-medium text-[var(--text-secondary)] hover:text-red-500 hover:bg-[var(--bg-hover)] text-left">
+              <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
               Sign out
             </button>
           </div>
 
-          <div className="px-4 py-2 border-t border-[var(--border)]">
-            <div className="text-[var(--text-dim)] text-xs">v1.0.0</div>
+          <div className="px-4 py-2.5 border-t border-[var(--border)]">
+            <div className="text-[var(--text-muted)] text-[12px]">v1.0.0</div>
           </div>
         </div>
       )}

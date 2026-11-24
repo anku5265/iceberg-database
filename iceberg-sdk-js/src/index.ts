@@ -83,17 +83,117 @@ export interface ClientOptions {
 export interface ConnectPopupOptions {
   integrationId: string
   dashboardUrl?: string
-  onConnect?: (payload: { apiKey: string; projectId?: string }) => void
+  onConnect?: (apiKey: string, meta?: { apiKey: string; projectId?: string; integrationId?: string }) => void
   onClose?: () => void
 }
 
-export function connectPopup(options: ConnectPopupOptions): Window | null {
-  if (typeof window === 'undefined') {
-    throw new Error('connectPopup can only be called in a browser environment.')
+export interface ConnectPopupController {
+  open: () => Window | null
+  close: () => void
+}
+
+export interface ConnectWidgetOptions {
+  integrationId: string
+  container: HTMLElement | null
+  dashboardUrl?: string
+  height?: number
+}
+
+export function ConnectPopup(options: ConnectPopupOptions): ConnectPopupController {
+  let popupRef: Window | null = null
+  let cleanupListener: (() => void) | null = null
+
+  const close = () => {
+    if (cleanupListener) {
+      cleanupListener()
+      cleanupListener = null
+    }
+    if (popupRef && !popupRef.closed) {
+      popupRef.close()
+    }
+    popupRef = null
   }
+
+  const open = (): Window | null => {
+    if (typeof window === 'undefined') {
+      throw new Error('ConnectPopup can only be called in a browser environment.')
+    }
+    if (!options || !options.integrationId || !String(options.integrationId).trim()) {
+      console.warn('[Iceberg Connect] Missing required option `integrationId`; popup was not opened.')
+      return null
+    }
+
+    close()
+    const base = (options.dashboardUrl || 'https://dashboard.icebergdb.in').replace(/\/$/, '')
+    const url = `${base}/connect?integration=${encodeURIComponent(options.integrationId.trim())}`
+    popupRef = window.open(url, 'iceberg_connect', 'width=560,height=680,menubar=no,toolbar=no')
+
+    const onMessage = (event: MessageEvent) => {
+      if (!event.origin.startsWith(base)) return
+      const data = event.data as Record<string, unknown> | null
+      if (
+        data &&
+        (data.type === 'ICEBERG_API_KEY_CONNECTED' || data.type === 'ICEBERG_CONNECT_SUCCESS') &&
+        typeof data.apiKey === 'string'
+      ) {
+        const meta = {
+          apiKey: data.apiKey,
+          projectId: typeof data.projectId === 'string' ? data.projectId : undefined,
+          integrationId: options.integrationId,
+        }
+        options.onConnect?.(data.apiKey, meta)
+        close()
+      }
+    }
+
+    window.addEventListener('message', onMessage)
+    cleanupListener = () => window.removeEventListener('message', onMessage)
+
+    if (popupRef && options.onClose) {
+      const timer = window.setInterval(() => {
+        if (!popupRef || popupRef.closed) {
+          window.clearInterval(timer)
+          close()
+          options.onClose?.()
+        }
+      }, 500)
+    }
+
+    return popupRef
+  }
+
+  return { open, close }
+}
+
+export function connectPopup(options: ConnectPopupOptions): Window | null {
+  return ConnectPopup(options).open()
+}
+
+export function connectToIceberg(
+  callback: (apiKey: string, meta?: { apiKey: string; projectId?: string; integrationId?: string }) => void,
+  options: ConnectWidgetOptions
+): { destroy: () => void } {
+  if (typeof window === 'undefined') {
+    throw new Error('connectToIceberg can only be called in a browser environment.')
+  }
+  if (!options || !options.integrationId || !String(options.integrationId).trim() || !options.container) {
+    console.warn('[Iceberg Connect] Both `integrationId` and `container` are required to render the widget.')
+    return { destroy: () => {} }
+  }
+
   const base = (options.dashboardUrl || 'https://dashboard.icebergdb.in').replace(/\/$/, '')
-  const url = `${base}/connect?integration=${encodeURIComponent(options.integrationId)}`
-  const popup = window.open(url, 'iceberg_connect', 'width=560,height=680,menubar=no,toolbar=no')
+  const iframe = document.createElement('iframe')
+  iframe.src = `${base}/connect?integration=${encodeURIComponent(options.integrationId.trim())}&embed=1`
+  iframe.style.width = '100%'
+  iframe.style.maxWidth = '480px'
+  iframe.style.height = `${options.height || 460}px`
+  iframe.style.border = '1px solid #27272a'
+  iframe.style.borderRadius = '12px'
+  iframe.style.background = '#0b0c10'
+  iframe.setAttribute('allow', 'clipboard-read; clipboard-write')
+
+  options.container.innerHTML = ''
+  options.container.appendChild(iframe)
 
   const onMessage = (event: MessageEvent) => {
     if (!event.origin.startsWith(base)) return
@@ -103,27 +203,21 @@ export function connectPopup(options: ConnectPopupOptions): Window | null {
       (data.type === 'ICEBERG_API_KEY_CONNECTED' || data.type === 'ICEBERG_CONNECT_SUCCESS') &&
       typeof data.apiKey === 'string'
     ) {
-      options.onConnect?.({
+      callback(data.apiKey, {
         apiKey: data.apiKey,
         projectId: typeof data.projectId === 'string' ? data.projectId : undefined,
+        integrationId: options.integrationId,
       })
-      window.removeEventListener('message', onMessage)
-      popup?.close()
     }
   }
   window.addEventListener('message', onMessage)
 
-  if (popup && options.onClose) {
-    const timer = window.setInterval(() => {
-      if (popup.closed) {
-        window.clearInterval(timer)
-        window.removeEventListener('message', onMessage)
-        options.onClose?.()
-      }
-    }, 500)
+  return {
+    destroy: () => {
+      window.removeEventListener('message', onMessage)
+      if (iframe.parentNode) iframe.parentNode.removeChild(iframe)
+    },
   }
-
-  return popup
 }
 
 export class IcebergError extends Error {
@@ -156,7 +250,10 @@ export class Client {
 
   private async request<T>(method: string, path: string, body?: unknown, formData?: FormData): Promise<T> {
     const headers: Record<string, string> = { 'X-API-Key': this.apiKey }
-    if (this.sourceTag) headers['X-Iceberg-Integration'] = this.sourceTag
+    if (this.sourceTag) {
+      headers['X-Iceberg-Integration'] = this.sourceTag
+      headers['User-Agent'] = `iceberg-js/1.0.0; source_tag=${this.sourceTag}`
+    }
     if (body && !formData) headers['Content-Type'] = 'application/json'
 
     let lastError: unknown = null

@@ -20,6 +20,7 @@ import Contact from './pages/Contact'
 import About from './pages/About'
 import Benchmarks from './pages/Benchmarks'
 import Pricing from './pages/Pricing'
+import Engine from './pages/Engine'
 
 const D = import.meta.env.VITE_DASHBOARD_URL || 'https://dashboard.icebergdb.in'
 const API = import.meta.env.VITE_API_URL || 'https://api.icebergdb.in'
@@ -148,6 +149,7 @@ export default function App() {
       <Route path="/product/namespaces" element={<ProductNamespaces />} />
       <Route path="/security" element={<Security />} />
       <Route path="/integrations" element={<Integrations />} />
+      <Route path="/integrations/:slug" element={<Integrations />} />
       <Route path="/docs" element={<Docs />} />
       <Route path="/living-code" element={<LivingCodePage />} />
       <Route path="/privacy" element={<Privacy />} />
@@ -157,6 +159,7 @@ export default function App() {
       <Route path="/about" element={<About />} />
       <Route path="/benchmarks" element={<Benchmarks />} />
       <Route path="/pricing" element={<Pricing />} />
+      <Route path="/engine" element={<Engine />} />
     </Routes>
   )
 }

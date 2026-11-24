@@ -32,6 +32,11 @@ setup(
     install_requires=[
         "httpx>=0.27.0",
     ],
+    entry_points={
+        "console_scripts": [
+            "iceberg=iceberg.cli:main",
+        ],
+    },
     extras_require={
         "dev": [
             "pytest>=8.0.0",
